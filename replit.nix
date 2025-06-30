@@ -7,5 +7,6 @@
     pkgs.python311Packages.discordpy
     pkgs.python311Packages.flask
     pkgs.python311Packages.openai
+    pkgs.ffmpeg
   ];
 }

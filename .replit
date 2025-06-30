@@ -7,9 +7,6 @@ mode = "python3"
 deploymentTarget = "cloudrun"
 run = ["python3", "main.py"]
 
-[nix]
-channel = "stable-24_05"
-
-[env]
-REPLIT_KEEP_PACKAGE_DEV_DEPENDENCIES = "1"
-REPLIT_DISABLE_PACKAGE_LAYER = "1"
+[[ports]]
+localPort = 8080
+externalPort = 80
