@@ -326,6 +326,219 @@ class Grammatica(commands.Cog):
         except discord.Forbidden:
             await ctx.send("⚠️ Ik kan je geen privébericht sturen. Controleer je privacy-instellingen in Discord en probeer het opnieuw.")
 
+    # ================================
+    # PASSATO PROSSIMO
+    # ================================
+
+@bot.command(name='passato-regole')
+async def passato_regole(ctx):
+    await ctx.send("""📘 **Passato Prossimo – Gebruik & vorming (regelmatige werkwoorden)**
+
+De passato prossimo gebruik je voor **afgeronde handelingen in het verleden**. 
+Hier zijn de belangrijkste situaties:
+
+🔹 1. **Recente handeling** 
+– *Ho appena finito di studiare.* (Ik ben net klaar met studeren.)
+
+🔹 2. **Lang geleden, maar nog relevant** 
+– *Ho conosciuto Giulia nel 2010.* (En we zijn nog steeds bevriend.)
+
+🔹 3. **Deze week / nog bezig** 
+– *Questa settimana abbiamo lavorato molto.*
+
+🔹 4. **Afgesloten moment in het verleden** 
+– *Ieri sera abbiamo mangiato al ristorante.*
+
+🛠️ **Opbouw van de passato prossimo** 
+→ Hulpwerkwoord (**avere** of **essere**) + voltooid deelwoord
+
+🔹 Werkwoorden op -ARE → `-ato` 
+– parlare → parlato → *Ho parlato*
+
+🔹 Werkwoorden op -ERE → `-uto` 
+– credere → creduto → *Hai creduto*
+
+🔹 Werkwoorden op -IRE → `-ito` 
+– dormire → dormito → *Abbiamo dormito*
+
+📎 Zie ook:
+– `!passato-verbi-regolari`
+– `!passato-irregolari`
+– `!passato-essere`
+– `!passato-esercizio`
+""")
+
+
+@bot.command(name='passato-verbi-regolari')
+async def passato_verbi_regolari(ctx):
+    await ctx.send("""📘 **Passato Prossimo – Regelmatige & vaak gebruikte werkwoorden**
+
+🔹 **WERKWOORDEN OP -ARE** (→ -ATO) 
+→ hulpwerkwoord: meestal **avere**, tenzij beweging → **essere**
+
+– Ho parlato (parlare)
+– Ho telefonato (telefonare)
+– Ho pranzato (pranzare)
+– Ho trovato (trovare)
+– Ho lavato (lavare)
+– Ho visitato (visitare)
+– Ho camminato (camminare)
+– Ho litigato (litigare)
+– Ho passato una bella serata
+– Sono arrivato/a (arrivare)
+– Sono andato/a (andare)
+– Sono entrato/a (entrare)
+– Sono tornato/a (tornare)
+– Sono ritornato/a (ritornare)
+– Sono scappato/a (scappare)
+– Sono salito/a (salire)
+– Sono partito/a (partire)
+– Sono uscito/a (uscire)
+
+🔹 **WERKWOORDEN OP -ERE** (→ -UTO) 
+– Ho creduto (credere)
+– Ho vissuto un’esperienza forte
+– Sono vissuto/a in Italia
+– Sono cresciuto/a in Belgio
+
+🔹 **WERKWOORDEN OP -IRE** (→ -ITO) 
+– Ho dormito (dormire)
+– Ho capito (capire)
+– Ho seguito il corso (seguire)
+– Ho sentito (sentire)
+
+📌 **Let op bij ESSERE** 
+→ voltooid deelwoord aanpassen in geslacht & getal
+""")
+
+
+@bot.command(name='passato-irregolari')
+async def passato_irregolari(ctx):
+    await ctx.send("""📘 **Passato Prossimo – Onregelmatige werkwoorden**
+
+🔹 **Voorbeelden van onregelmatige vormen:**
+
+– fare → **fatto**
+– dire → **detto**
+– leggere → **letto**
+– scrivere → **scritto**
+– vedere → **visto**
+– prendere → **preso**
+– mettere → **messo**
+– chiedere → **chiesto**
+– rispondere → **risposto**
+– aprire → **aperto**
+– offrire → **offerto**
+– venire → **venuto**
+– nascere → **nato**
+– morire → **morto**
+– scegliere → **scelto**
+
+📌 Let op: sommige gebruiken **essere** en moeten worden aangepast in geslacht/getal
+– *Maria è nata.* / *Loro sono venuti.*
+
+📎 Zie ook:
+– `!passato-regole`
+– `!passato-verbi-regolari`
+– `!passato-esercizio`
+""")
+
+
+@bot.command(name='passato-hulpwerkwoorden')
+async def passato_hulpwerkwoorden(ctx):
+    await ctx.send("""👥 **Welk hulpwerkwoord gebruik je: AVERE of ESSERE?**
+
+✅ **AVERE** → Meestal bij werkwoorden met een lijdend voorwerp
+✅ **ESSERE** → Beweging, verandering, reflexieve en onpersoonlijke werkwoorden
+
+🔁 **Verbi riflessivi (altijd met essere)**
+⚖️ **Dubbele vormen (avere/essere) afhankelijk van context**
+
+🎯 **Let op bij pronomi diretti vóór avere:**
+– *L’ho mangiata.* (pizza → vrouwelijk enkelvoud)
+– *Li ho letti.* (libri → mannelijk meervoud)
+""")
+
+
+@bot.command(name='passato-esercizio')
+async def passato_esercizio(ctx):
+    await ctx.send("""📝 **Oefenzinnen – Passato Prossimo**
+
+Vul het juiste vervoegde werkwoord in:
+```plaintext
+1. Ieri ________ (mangiare) una pizza.
+2. Giulia ________ (andare) al cinema con Marco.
+3. Noi ________ (finire) il progetto.
+4. Tu ________ (aprire) la finestra?
+5. Loro ________ (uscire) molto tardi.
+6. Io ________ (leggere) un libro interessante.
+7. Voi ________ (visitare) il museo?
+8. Il treno ________ (arrivare) alle otto.
+9. Mio padre ________ (scrivere) una lettera lunga.
+10. Noi non ________ (capire) la spiegazione.
+11. La lezione ________ (cominciare) alle 9.
+12. ________ (fare) colazione stamattina?
+13. I ragazzi ________ (giocare) a calcio tutto il giorno.
+14. Mia sorella ________ (mettere) la giacca rossa.
+15. Le bambine ________ (nascere) nel 2015.
+16. Marco e Paolo ________ (entrare) nella stanza.
+17. Io ________ (perdere) le chiavi.
+18. L’insegnante ________ (spiegare) bene la grammatica.
+19. Voi ________ (vedere) quel film nuovo?
+20. Il bambino ________ (piangere) tutta la notte.
+21. Tu ________ (dire) la verità?
+22. Noi ________ (lavare) la macchina ieri.
+23. Lucia ________ (scegliere) un dolce.
+24. Io e Mario ________ (partire) alle 6.
+25. Voi ________ (chiedere) het conto?
+26. La pizza? Io ________ (mangiare) tutta!
+27. I libri? Tu non ________ (leggere).
+28. Le ragazze? Voi ________ (vedere)?
+29. Il film? Noi non ________ (vedere) ancora.
+30. La tua lettera? Lui ________ (scrivere) ieri.
+
+📎 Typ !passato-esercizio-soluzioni voor de antwoorden.
+“””)
+
+@bot.command(name='passato-esercizio-soluzioni')
+async def passato_esercizio_soluzioni(ctx):
+    await ctx.author.send("""✅ **Oplossingen – Passato Prossimo**
+
+1. Ieri **ho mangiato** una pizza.  
+2. Giulia **è andata** al cinema con Marco.  
+3. Noi **abbiamo finito** il progetto.  
+4. Tu **hai aperto** la finestra?  
+5. Loro **sono usciti** molto tardi.  
+6. Io **ho letto** un libro interessante.  
+7. Voi **avete visitato** il museo?  
+8. Il treno **è arrivato** alle otto.  
+9. Mio padre **ha scritto** una lettera lunga.  
+10. Noi non **abbiamo capito** la spiegazione.  
+11. La lezione **è cominciata** alle 9.  
+12. **Hai fatto** colazione stamattina?  
+13. I ragazzi **hanno giocato** a calcio tutto de dag.  
+14. Mia sorella **ha messo** la giacca rossa.  
+15. Le bambine **sono nate** nel 2015.  
+16. Marco e Paolo **sono entrati** nella stanza.  
+17. Io **ho perso** le chiavi.  
+18. L’insegnante **ha spiegato** bene la grammatica.  
+19. Voi **avete visto** quel film nuovo?  
+20. Il bambino **ha pianto** tutta la notte.  
+21. Tu **hai detto** la verità?  
+22. Noi **abbiamo lavato** la macchina ieri.  
+23. Lucia **ha scelto** un dolce.  
+24. Io e Mario **siamo partiti** alle 6.  
+25. Voi **avete chiesto** il conto?
+
+🔁 **Extra – met pronomi diretti**  
+26. La pizza? Io **l’ho mangiata** tutta!  
+27. I libri? Tu non **li hai letti**.  
+28. Le ragazze? Voi **le avete viste**?  
+29. Il film? Noi non **l’abbiamo visto** ancora.  
+30. La tua lettera? Lui **l’ha scritta** ieri.
+""")
+    await ctx.send("📩 Le soluzioni sono state inviate nella tua inbox (DM)!")
+
 # --- ACTIVEREN VAN DE COG ---
 async def setup(bot):
     await bot.add_cog(Grammatica(bot))
