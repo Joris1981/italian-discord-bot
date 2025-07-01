@@ -539,6 +539,8 @@ async def passato_esercizio_soluzioni(ctx):
 """)
     await ctx.send("📩 Le soluzioni sono state inviate nella tua inbox (DM)!")
 
+# --- ENCODING FIX ---
+
 # --- ACTIVEREN VAN DE COG ---
 async def setup(bot):
     await bot.add_cog(Grammatica(bot))
