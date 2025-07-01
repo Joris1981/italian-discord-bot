@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 import discord
 import openai
 import asyncio
@@ -41,6 +44,15 @@ def health():
 def run():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, use_reloader=False)
+
+# --- Fix voor OpenAI key bij gebruik in wordle.py ---
+import openai as openai_module
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    logging.error("❌ OPENAI_API_KEY niet gevonden in omgevingsvariabelen!")
+else:
+    openai_module.api_key = openai_api_key
+    logging.info("✅ OPENAI_API_KEY succesvol ingesteld.")
 
 def keep_alive():
     t = Thread(target=run)
