@@ -6,6 +6,7 @@ import random
 import datetime
 import asyncio
 import openai
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Thema's per week
 THEMAS = [
