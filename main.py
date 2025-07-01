@@ -228,7 +228,7 @@ async def on_message(message):
                     "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️"
                     "✅ Eccellente! La tua dedizione è ammirevole! 💪"
                     "✅ Bravo/a! Ogni giorno migliori! 🌈",
-                    "✅ Super! La tua passione per l'italiano è evidente! 🎉
+                    "✅ Super! La tua passione per l'italiano è evidente! 🎉"
                     "✅ Splendido! Ogni messaggio è un passo avanti! 🏆",
                     "✅ Il tuo italiano è impeccabile! Complimenti! 🎯🇮🇹",
                     "✅ Scrivi come un vero madrelingua! Bravissimo/a! 🏆📚"
