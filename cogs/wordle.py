@@ -75,6 +75,28 @@ class Wordle(commands.Cog):
             print(f"Fout bij genereren woorden: {e}")
             return []
 
+    async def generate_weekly_wordlist(self):
+        week = self.get_huidige_week()
+        sleutel = f"week{week}_B1"
+
+        if not os.path.exists(WOORDEN_PATH):
+            os.makedirs(os.path.dirname(WOORDEN_PATH), exist_ok=True)
+            with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
+                json.dump({}, f)
+
+        with open(WOORDEN_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if sleutel not in data or not data[sleutel]:
+            thema = self.get_huidig_thema()
+            woorden = await self.genereer_woorden(thema, "B1", 15)
+            data[sleutel] = woorden
+            with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            print(f"Woordlijst gegenereerd voor week {week}: {thema}")
+        else:
+            print(f"Woordlijst voor week {week} bestaat al.")
+
     async def laad_woorden(self, week, moeilijkheid="B1", aantal=15):
         if not os.path.exists(WOORDEN_PATH):
             os.makedirs(os.path.dirname(WOORDEN_PATH), exist_ok=True)
@@ -206,6 +228,14 @@ class Wordle(commands.Cog):
         played[str(week)][gebruikersnaam] = played[str(week)].get(gebruikersnaam, 0) + 1
         self.bewaar_played(played)
 
+    @commands.command(name="genereer_woorden_test")
+    async def genereer_woorden_test(self, ctx):
+        if ctx.author.name != SPELER_GEBRUIKERSNAAM:
+            await ctx.send("Alleen admin kan dit uitvoeren.")
+            return
+        await self.generate_weekly_wordlist()
+        await ctx.send("✅ Woorden gegenereerd via OpenAI voor deze week.")
+
     @tasks.loop(hours=168)
     async def weekelijkse_leaderboard(self):
         await self.bot.wait_until_ready()
@@ -234,6 +264,6 @@ class Wordle(commands.Cog):
         volgende_maandag = volgende_maandag.replace(hour=9, minute=0, second=0, microsecond=0)
         wachtijd = (volgende_maandag - now).total_seconds()
         await asyncio.sleep(wachtijd)
-
+ 
 async def setup(bot):
     await bot.add_cog(Wordle(bot))
