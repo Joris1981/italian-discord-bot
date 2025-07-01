@@ -46,8 +46,8 @@ class Wordle(commands.Cog):
         return THEMAS[self.get_huidige_week()]
 
     async def genereer_woorden(self, thema, moeilijkheid="B1", aantal=15):
-        if SPELER_GEBRUIKERSNAAM in str(os.environ.get("USER", "")):
-            return []
+# if SPELER_GEBRUIKERSNAAM in str(os.environ.get("USER", "")):
+#     return []
 
         prompt = (
             f"Geef {aantal} Italiaanse woorden met lidwoord op niveau {moeilijkheid} rond het thema '{thema}'. "
