@@ -212,7 +212,8 @@ async def on_message(message):
             correction = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "Correggi solo errori grammaticali e ortografici. Rispondi con 'NO_CORRECTION_NEEDED' se tutto è corretto."},
+                    {"role": "system", "content": "Correggi l'italiano, includendo errori grammaticali, ortografici e strutturali. "
+"Se la frase è corretta e naturale, rispondi solo con 'NO_CORRECTION_NEEDED'."},
                     {"role": "user", "content": message.content}
                 ],
                 max_tokens=300
@@ -225,6 +226,12 @@ async def on_message(message):
                     "✅ Perfetto! Sei sulla strada giusta! 🚀",
                     "✅ Benissimo! 🌟",
                     "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️"
+                    "✅ Eccellente! La tua dedizione è ammirevole! 💪"
+                    "✅ Bravo/a! Ogni giorno migliori! 🌈",
+                    "✅ Super! La tua passione per l'italiano è evidente! 🎉
+                    "✅ Splendido! Ogni messaggio è un passo avanti! 🏆",
+                    "✅ Il tuo italiano è impeccabile! Complimenti! 🎯🇮🇹",
+                    "✅ Scrivi come un vero madrelingua! Bravissimo/a! 🏆📚"
                 ]
                 await message.reply(random.choice(compliments))
             elif reply.lower().strip() != message.content.lower().strip():
