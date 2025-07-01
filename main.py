@@ -66,9 +66,8 @@ intents.message_content = True
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
-        self.loop.create_task(reminder_task())
-        await self.load_extension("grammatica")
-        await self.load_extension("cogs.wordle") 
+        await self.load_extension("cogs.grammatica")
+        await self.load_extension("cogs.wordle")
 
 bot = MyBot(command_prefix='!', intents=intents)
 
