@@ -29,7 +29,6 @@ PLAYED_PATH = "data/wordle_played.json"
 
 KANALEN = [1389545682007883816, 1389552706783543307, 1388667261761359932]
 LEADERBOARD_THREAD = 1389552706783543307
-SPELER_GEBRUIKERSNAAM = "joris0650"
 MAX_SPEEL_PER_WEEK = 5
 
 class Wordle(commands.Cog):
@@ -47,8 +46,7 @@ class Wordle(commands.Cog):
         return THEMAS[self.get_huidige_week()]
 
     async def genereer_woorden(self, thema, moeilijkheid="B1", aantal=15):
-# if SPELER_GEBRUIKERSNAAM in str(os.environ.get("USER", "")):
-#     return []
+        print(f"\n🟡 genereer_woorden() aangeroepen voor thema: {thema}, niveau: {moeilijkheid}, aantal: {aantal}")
 
         prompt = (
             f"Geef {aantal} Italiaanse woorden met lidwoord op niveau {moeilijkheid} rond het thema '{thema}'. "
@@ -56,13 +54,18 @@ class Wordle(commands.Cog):
             "1. de kat – il gatto"
         )
 
+        print(f"📝 Verstuurde prompt naar OpenAI:\n{prompt}")
+
         try:
             response = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7
             )
+
             inhoud = response.choices[0].message.content
+            print(f"📦 OpenAI response ontvangen:\n{inhoud}")
+
             lijnen = inhoud.strip().split("\n")
             woorden = []
             for lijn in lijnen:
@@ -71,14 +74,18 @@ class Wordle(commands.Cog):
                     nl = parts[0].split(".")[-1].strip()
                     it = parts[1].strip()
                     woorden.append({"nederlands": nl, "italiaans": it})
+
+            print(f"✅ Parsed woordenlijst ({len(woorden)} items): {woorden}")
             return woorden
+
         except Exception as e:
-            print(f"Fout bij genereren woorden: {e}")
+            print(f"❌ Fout bij genereren woorden: {e}")
             return []
 
     async def generate_weekly_wordlist(self):
         week = self.get_huidige_week()
         sleutel = f"week{week}_B1"
+        print(f"🔁 generate_weekly_wordlist() voor week {week} ({sleutel})")
 
         if not os.path.exists(WOORDEN_PATH):
             os.makedirs(os.path.dirname(WOORDEN_PATH), exist_ok=True)
@@ -94,9 +101,9 @@ class Wordle(commands.Cog):
             data[sleutel] = woorden
             with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-            print(f"Woordlijst gegenereerd voor week {week}: {thema}")
+            print(f"✅ Woordlijst gegenereerd voor week {week}: {thema}")
         else:
-            print(f"Woordlijst voor week {week} bestaat al.")
+            print(f"⏩ Woordlijst voor week {week} bestaat al.")
 
     async def laad_woorden(self, week, moeilijkheid="B1", aantal=15):
         if not os.path.exists(WOORDEN_PATH):
@@ -231,9 +238,6 @@ class Wordle(commands.Cog):
 
     @commands.command(name="genereer_woorden_test")
     async def genereer_woorden_test(self, ctx):
-        if ctx.author.name != SPELER_GEBRUIKERSNAAM:
-            await ctx.send("Alleen admin kan dit uitvoeren.")
-            return
         await self.generate_weekly_wordlist()
         await ctx.send("✅ Woorden gegenereerd via OpenAI voor deze week.")
 
@@ -265,6 +269,6 @@ class Wordle(commands.Cog):
         volgende_maandag = volgende_maandag.replace(hour=9, minute=0, second=0, microsecond=0)
         wachtijd = (volgende_maandag - now).total_seconds()
         await asyncio.sleep(wachtijd)
- 
+
 async def setup(bot):
     await bot.add_cog(Wordle(bot))
