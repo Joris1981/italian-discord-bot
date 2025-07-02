@@ -1,36 +1,27 @@
 import discord
 from discord.ext import commands, tasks
-import json
 import os
-import random
-import datetime
+import json
 import asyncio
-import logging
+import datetime
 from openai import OpenAI
+from dotenv import load_dotenv
 
-client = OpenAI()
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+SCORES_PATH = "wordle_scores.json"
+PLAYED_PATH = "wordle_played.json"
 
 THEMAS = [
-    "In giro per negozi",
-    "Gli animali",
-    "Lessico su aspetto fisico e carattere",
-    "L’oroscopo",
-    "Viaggi e tempo libero",
-    "Frutti e verdura",
-    "Parti del corpo",
-    "Prepararsi per un colloquio",
-    "Tempo e natura",
-    "Relazioni e sentimenti"
+    "La casa", "Il tempo libero", "La scuola", "I mestieri", "Il cibo",
+    "Il tempo", "La famiglia", "Le vacanze", "La città", "La salute"
 ]
-
-STARTDATUM = datetime.datetime(2025, 6, 30, 9, 0)
-WOORDEN_PATH = "data/wordle_woorden.json"
-SCORES_PATH = "data/wordle_scores.json"
-PLAYED_PATH = "data/wordle_played.json"
 
 KANALEN = [1389545682007883816, 1389552706783543307, 1388667261761359932]
 LEADERBOARD_THREAD = 1389552706783543307
 MAX_SPEEL_PER_WEEK = 5
+
 
 class Wordle(commands.Cog):
     def __init__(self, bot):
@@ -38,88 +29,49 @@ class Wordle(commands.Cog):
         self.weekelijkse_leaderboard.start()
 
     def get_huidige_week(self):
-        vandaag = datetime.datetime.now()
-        verschil = vandaag - STARTDATUM
-        weken_verstreken = max(0, verschil.days // 7)
-        return min(weken_verstreken, len(THEMAS) - 1)
+        start = datetime.date(2025, 6, 26)
+        vandaag = datetime.date.today()
+        return (vandaag - start).days // 7
 
     def get_huidig_thema(self):
-        return THEMAS[self.get_huidige_week()]
+        week = self.get_huidige_week()
+        return THEMAS[week % len(THEMAS)]
 
-    async def genereer_woorden(self, thema, moeilijkheid="B1", aantal=15):
-        logging.info(f"\n🟡 genereer_woorden() aangeroepen voor thema: {thema}, niveau: {moeilijkheid}, aantal: {aantal}")
+    async def laad_woorden(self, weeknummer, moeilijkheid="B1", aantal=15):
+        filename = f"wordle_woorden_week_{weeknummer}.json"
+        if os.path.exists(filename):
+            with open(filename, "r", encoding="utf-8") as f:
+                return json.load(f)
+
+        thema = self.get_huidig_thema()
         prompt = (
-            f"Geef {aantal} Italiaanse woorden met lidwoord op niveau {moeilijkheid} rond het thema '{thema}'. "
-            "Toon ze als lijst met het Nederlands en de vertaling in het Italiaans met lidwoord. Bijvoorbeeld:\n"
-            "1. de kat – il gatto"
+            f"Geef een lijst van {aantal} zelfstandige naamwoorden op taalniveau {moeilijkheid}, met bijbehorend lidwoord "
+            f"in het Italiaans die passen binnen het thema '{thema}', samen met hun Nederlandse vertaling. "
+            f"Antwoord in JSON-formaat als een lijst zoals: "
+            f'[{{"italiaans": "la casa", "nederlands": "het huis"}}, ...]'
         )
-        logging.info(f"📝 Verstuurde prompt naar OpenAI:\n{prompt}")
 
         try:
-            response = client.chat.completions.create(
+            completion = client.chat.completions.create(
                 model="gpt-4",
-                messages=[{"role": "user", "content": prompt}],
+                messages=[
+                    {"role": "system", "content": "Je bent een taalassistent Italiaans voor cursisten."},
+                    {"role": "user", "content": prompt}
+                ],
                 temperature=0.7
             )
-            inhoud = response.choices[0].message.content
-            logging.info(f"📦 OpenAI response ontvangen:\n{inhoud}")
+            antwoord = completion.choices[0].message.content
+            woorden = json.loads(antwoord)
 
-            lijnen = inhoud.strip().split("\n")
-            woorden = []
-            for lijn in lijnen:
-                if "–" in lijn:
-                    parts = lijn.split("–")
-                    nl = parts[0].split(".")[-1].strip()
-                    it = parts[1].strip()
-                    woorden.append({"nederlands": nl, "italiaans": it})
-            logging.info(f"✅ Parsed woordenlijst ({len(woorden)} items): {woorden}")
+            with open(filename, "w", encoding="utf-8") as f:
+                json.dump(woorden, f, indent=2, ensure_ascii=False)
+
             return woorden
-
         except Exception as e:
-            logging.error(f"❌ Fout bij genereren woorden: {e}")
+            print(f"❌ Fout bij genereren woordenlijst: {e}")
             return []
 
-    async def generate_weekly_wordlist(self):
-        week = self.get_huidige_week()
-        sleutel = f"week{week}_B1"
-        if not os.path.exists(WOORDEN_PATH):
-            os.makedirs(os.path.dirname(WOORDEN_PATH), exist_ok=True)
-            with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
-                json.dump({}, f)
-
-        with open(WOORDEN_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        if sleutel not in data or not data[sleutel]:
-            thema = self.get_huidig_thema()
-            woorden = await self.genereer_woorden(thema, "B1", 15)
-            data[sleutel] = woorden
-            with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-            print(f"✅ Woordlijst gegenereerd voor week {week}: {thema}")
-        else:
-            print(f"⏩ Woordlijst voor week {week} bestaat al.")
-
-    async def laad_woorden(self, week, moeilijkheid="B1", aantal=15):
-        if not os.path.exists(WOORDEN_PATH):
-            os.makedirs(os.path.dirname(WOORDEN_PATH), exist_ok=True)
-            with open(WOORDEN_PATH, "w") as f:
-                json.dump({}, f)
-
-        with open(WOORDEN_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        sleutel = f"week{week}_{moeilijkheid}"
-        if sleutel not in data:
-            thema = THEMAS[week]
-            woorden = await self.genereer_woorden(thema, moeilijkheid, aantal)
-            data[sleutel] = woorden
-            with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-
-        return data[sleutel]
-    
-        def laad_scores(self):
+    def laad_scores(self):
         if not os.path.exists(SCORES_PATH):
             return {}
         with open(SCORES_PATH, "r", encoding="utf-8") as f:
@@ -233,8 +185,12 @@ class Wordle(commands.Cog):
 
     @commands.command(name="genereer_woorden_test")
     async def genereer_woorden_test(self, ctx):
-        await self.generate_weekly_wordlist()
-        await ctx.send("✅ Woorden gegenereerd via OpenAI voor deze week.")
+        week = self.get_huidige_week()
+        woorden = await self.laad_woorden(week, "B1", 15)
+        if woorden:
+            await ctx.send("✅ Woordenlijst gegenereerd voor deze week.")
+        else:
+            await ctx.send("⚠️ Geen woorden gegenereerd. Controleer OpenAI logs.")
 
     @tasks.loop(hours=168)
     async def weekelijkse_leaderboard(self):
@@ -264,6 +220,7 @@ class Wordle(commands.Cog):
         volgende_maandag = volgende_maandag.replace(hour=9, minute=0, second=0, microsecond=0)
         wachtijd = (volgende_maandag - now).total_seconds()
         await asyncio.sleep(wachtijd)
+
 
 async def setup(bot):
     await bot.add_cog(Wordle(bot))
