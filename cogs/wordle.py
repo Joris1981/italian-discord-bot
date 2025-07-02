@@ -6,6 +6,7 @@ import random
 import datetime
 import asyncio
 import openai
+import logging
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Thema's per week
@@ -46,7 +47,7 @@ class Wordle(commands.Cog):
         return THEMAS[self.get_huidige_week()]
 
     async def genereer_woorden(self, thema, moeilijkheid="B1", aantal=15):
-        print(f"\n🟡 genereer_woorden() aangeroepen voor thema: {thema}, niveau: {moeilijkheid}, aantal: {aantal}")
+        logging.info(f"\n🟡 genereer_woorden() aangeroepen voor thema: {thema}, niveau: {moeilijkheid}, aantal: {aantal}")
 
         prompt = (
             f"Geef {aantal} Italiaanse woorden met lidwoord op niveau {moeilijkheid} rond het thema '{thema}'. "
@@ -54,7 +55,7 @@ class Wordle(commands.Cog):
             "1. de kat – il gatto"
         )
 
-        print(f"📝 Verstuurde prompt naar OpenAI:\n{prompt}")
+        logging.info(f"📝 Verstuurde prompt naar OpenAI:\n{prompt}")
 
         try:
             response = openai.ChatCompletion.create(
@@ -64,7 +65,7 @@ class Wordle(commands.Cog):
             )
 
             inhoud = response.choices[0].message.content
-            print(f"📦 OpenAI response ontvangen:\n{inhoud}")
+            logging.info(f"📦 OpenAI response ontvangen:\n{inhoud}")
 
             lijnen = inhoud.strip().split("\n")
             woorden = []
@@ -75,11 +76,11 @@ class Wordle(commands.Cog):
                     it = parts[1].strip()
                     woorden.append({"nederlands": nl, "italiaans": it})
 
-            print(f"✅ Parsed woordenlijst ({len(woorden)} items): {woorden}")
+            logging.info(f"✅ Parsed woordenlijst ({len(woorden)} items): {woorden}")
             return woorden
 
         except Exception as e:
-            print(f"❌ Fout bij genereren woorden: {e}")
+            logging.error(f"❌ Fout bij genereren woorden: {e}")
             return []
 
     async def generate_weekly_wordlist(self):
