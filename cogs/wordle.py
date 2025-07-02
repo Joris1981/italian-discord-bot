@@ -5,11 +5,11 @@ import os
 import random
 import datetime
 import asyncio
-import openai
 import logging
-openai.api_key = os.getenv("OPENAI_API_KEY")
+from openai import OpenAI
 
-# Thema's per week
+client = OpenAI()
+
 THEMAS = [
     "In giro per negozi",
     "Gli animali",
@@ -48,22 +48,19 @@ class Wordle(commands.Cog):
 
     async def genereer_woorden(self, thema, moeilijkheid="B1", aantal=15):
         logging.info(f"\n🟡 genereer_woorden() aangeroepen voor thema: {thema}, niveau: {moeilijkheid}, aantal: {aantal}")
-
         prompt = (
             f"Geef {aantal} Italiaanse woorden met lidwoord op niveau {moeilijkheid} rond het thema '{thema}'. "
             "Toon ze als lijst met het Nederlands en de vertaling in het Italiaans met lidwoord. Bijvoorbeeld:\n"
             "1. de kat – il gatto"
         )
-
         logging.info(f"📝 Verstuurde prompt naar OpenAI:\n{prompt}")
 
         try:
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7
             )
-
             inhoud = response.choices[0].message.content
             logging.info(f"📦 OpenAI response ontvangen:\n{inhoud}")
 
@@ -75,7 +72,6 @@ class Wordle(commands.Cog):
                     nl = parts[0].split(".")[-1].strip()
                     it = parts[1].strip()
                     woorden.append({"nederlands": nl, "italiaans": it})
-
             logging.info(f"✅ Parsed woordenlijst ({len(woorden)} items): {woorden}")
             return woorden
 
@@ -86,8 +82,6 @@ class Wordle(commands.Cog):
     async def generate_weekly_wordlist(self):
         week = self.get_huidige_week()
         sleutel = f"week{week}_B1"
-        print(f"🔁 generate_weekly_wordlist() voor week {week} ({sleutel})")
-
         if not os.path.exists(WOORDEN_PATH):
             os.makedirs(os.path.dirname(WOORDEN_PATH), exist_ok=True)
             with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
@@ -124,8 +118,8 @@ class Wordle(commands.Cog):
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
         return data[sleutel]
-
-    def laad_scores(self):
+    
+        def laad_scores(self):
         if not os.path.exists(SCORES_PATH):
             return {}
         with open(SCORES_PATH, "r", encoding="utf-8") as f:
