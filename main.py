@@ -8,38 +8,19 @@ import asyncio
 import datetime
 import random
 import logging
-import unicodedata
-import re
 from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
-# ✅ Normaliseer tekst voor quiz-antwoorden
-def normalize(text):
-    text = unicodedata.normalize("NFKD", text).lower().strip()
-    text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
-    text = re.sub(r"[\s’‘`]", "", text)
-    if text == "dell":
-        return "dell'"
-    return text
-
-# Logging
+# --- Logging ---
 logging.basicConfig(level=logging.INFO)
 
-# --- Keep-alive server voor Replit Deployment ---
+# --- Keep-alive server ---
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "✅ Bot is online!"
-
-@app.route('/ping')
-def ping():
-    return "pong", 200
-
-@app.route('/health')
-def health():
-    return "OK", 200
 
 def run():
     port = int(os.environ.get('PORT', 8080))
@@ -49,15 +30,8 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- OpenAI API instellen ---
-import openai as openai_module
+# --- OpenAI instellen ---
 openai_api_key = os.getenv("OPENAI_API_KEY")
-if not openai_api_key:
-    logging.error("❌ OPENAI_API_KEY niet gevonden in omgevingsvariabelen!")
-else:
-    openai_module.api_key = openai_api_key
-    logging.info("✅ OPENAI_API_KEY succesvol ingesteld.")
-
 client = openai.OpenAI(api_key=openai_api_key)
 
 # --- Globals ---
@@ -79,11 +53,10 @@ class MyBot(commands.Bot):
     async def setup_hook(self):
         await self.load_extension("cogs.grammatica")
         await self.load_extension("cogs.wordle")
-        await self.load_extension("cogs.quiz")
+        await self.load_extension("cogs.quiz")  # ✅ beide quizzen nu hierin
 
 bot = MyBot(command_prefix='!', intents=intents)
 
-# --- on_ready ---
 @bot.event
 async def on_ready():
     logging.info(f"✅ {bot.user} is nu online en klaar voor gebruik!")
@@ -119,15 +92,16 @@ async def reminder_task():
             await asyncio.sleep(60)
         await asyncio.sleep(30)
 
-# --- on_message ---
+# --- on_message voor GPT DM en correctie ---
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
 
+    # Geen GPT-reacties tijdens quiz of Wordle
     if isinstance(message.channel, discord.DMChannel):
         if message.author.id in active_quiz_users or message.author.id in active_wordle_users:
-            return  # Geen GPT-reacties tijdens quiz of Wordle
+            return
 
         user_id = message.author.id
         today = datetime.datetime.utcnow().date().isoformat()
@@ -154,10 +128,12 @@ async def on_message(message):
             await message.channel.send("⚠️ Probleem bij ophalen van antwoord.")
         return
 
+    # Verwerk botcommando’s
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
         return
 
+    # Taalcorrectie in doelkanaal
     parent_id = message.channel.id
     if isinstance(message.channel, discord.Thread):
         parent_id = message.channel.parent_id
@@ -200,15 +176,6 @@ async def on_message(message):
                 await message.reply(f"📝 **{reply}**")
         except Exception as e:
             logging.error(f"Taalcorrectie fout: {e}")
-
-# --- Thread reminder ---
-@bot.event
-async def on_thread_create(thread):
-    if thread.parent_id == 1387910961846947991:
-        try:
-            await thread.send("📣 Nieuwe uitdaging! Reageer met **“Quiz”** om een mini-quiz in je DM te krijgen.")
-        except Exception as e:
-            logging.error(f"Reminder fout: {e}")
 
 # --- Commando: ascolto_dai_accompagnami ---
 @bot.command()
@@ -315,53 +282,7 @@ async def curiosita_puttanesca(ctx):
     except discord.Forbidden:
         await ctx.reply("⚠️ Kan geen DM verzenden – check je DM-instellingen.", mention_author=False)
 
-# --- Quizfunctie in DM ---
-async def send_quiz_via_dm(bot, message):
-    user = message.author
-
-    quiz_questions = [
-        {"question": "1. Vengo ___ Milano.", "answer": "da"},
-        {"question": "2. Sono ___ Napoli.", "answer": "di"},
-        {"question": "3. Vado ___ dentista.", "answer": "dal"},
-        {"question": "4. La chiave ___ macchina.", "answer": "della"},
-        {"question": "5. Parto ___ casa alle otto.", "answer": "da"},
-        {"question": "6. Un amico ___ università.", "answer": "dell'"},
-        {"question": "7. Il profumo ___ mia madre.", "answer": "di"},
-        {"question": "8. Torno ___ Roma domani.", "answer": "da"},
-        {"question": "9. Il libro ___ professore.", "answer": "del"},
-        {"question": "10. La finestra ___ cucina.", "answer": "della"},
-        {"question": "11. La penna ___ Giulia.", "answer": "di"},
-        {"question": "12. Vado ___ Giulia più tardi.", "answer": "da"},
-        {"question": "13. Il cane ___ vicino.", "answer": "del"},
-        {"question": "14. Uscita ___ scuola alle tre.", "answer": "da"},
-        {"question": "15. Il computer ___ ragazzo è rotto.", "answer": "del"}
-    ]
-
-    await user.send("📩 Ecco la tua **quiz DI o DA**! Rispondi con `di`, `da`, `dal`, `del`, `della`, `dell'`, ecc. 🇮🇹")
-
-    score = 0
-    for q in quiz_questions:
-        await user.send(q["question"])
-
-        def check(m):
-            return m.author == user and m.channel == user.dm_channel
-
-        try:
-            reply = await bot.wait_for("message", timeout=60, check=check)
-
-            if normalize(reply.content) == normalize(q["answer"]):
-                await user.send("✅ Corretto!")
-                score += 1
-            else:
-                await user.send(f"❌ Sbagliato! La risposta corretta era **{q['answer']}**.")
-        except asyncio.TimeoutError:
-            await user.send("⏰ Tempo scaduto per questa domanda. Passiamo alla prossima.")
-            continue
-
-    await user.send("🎉 *Fine del quiz!* Grazie per aver partecipato!\n📚 Piccole ripetizioni come questa fanno davvero la differenza nel tempo – continua così!")
-    active_quiz_users.discard(user.id)
-
-# --- Bot starten ---
+# ✅ Bot starten
 if __name__ == "__main__":
     keep_alive()
     bot.loop.create_task(reminder_task())
