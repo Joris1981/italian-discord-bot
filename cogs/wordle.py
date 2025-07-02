@@ -6,9 +6,9 @@ import random
 import datetime
 import asyncio
 import logging
-from openai import OpenAI
+import openai
 
-client = OpenAI()
+client = openai.OpenAI()
 
 THEMAS = [
     "In giro per negozi",
@@ -38,15 +38,17 @@ class Wordle(commands.Cog):
         self.weekelijkse_leaderboard.start()
 
     def get_huidige_week(self):
-        verschil = datetime.datetime.now() - STARTDATUM
-        return min(max(0, verschil.days // 7), len(THEMAS) - 1)
+        vandaag = datetime.datetime.now()
+        verschil = vandaag - STARTDATUM
+        weken_verstreken = max(0, verschil.days // 7)
+        return min(weken_verstreken, len(THEMAS) - 1)
 
     def get_huidig_thema(self):
         return THEMAS[self.get_huidige_week()]
 
-    async def genereer_woorden(self, thema, niveau, aantal):
+    async def genereer_woorden(self, thema, moeilijkheid="B1", aantal=40):
         prompt = (
-            f"Geef {aantal} Italiaanse woorden met lidwoord op niveau {niveau} rond het thema '{thema}'. "
+            f"Geef {aantal} Italiaanse woorden met lidwoord op niveau {moeilijkheid} rond het thema '{thema}'. "
             "Toon ze als lijst met het Nederlands en de vertaling in het Italiaans met lidwoord. Bijvoorbeeld:\n"
             "1. de kat – il gatto"
         )
@@ -57,9 +59,10 @@ class Wordle(commands.Cog):
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7
             )
-            content = response.choices[0].message.content
+            inhoud = response.choices[0].message.content
+            lijnen = inhoud.strip().split("\n")
             woorden = []
-            for lijn in content.strip().split("\n"):
+            for lijn in lijnen:
                 if "–" in lijn:
                     parts = lijn.split("–")
                     nl = parts[0].split(".")[-1].strip()
@@ -67,49 +70,77 @@ class Wordle(commands.Cog):
                     woorden.append({"nederlands": nl, "italiaans": it})
             return woorden
         except Exception as e:
-            logging.error(f"Fout bij woorden genereren: {e}")
+            logging.error(f"Fout bij genereren woorden: {e}")
             return []
 
-    def laad_data(self, pad):
-        if not os.path.exists(pad):
-            return {}
-        with open(pad, "r", encoding="utf-8") as f:
-            return json.load(f)
+    async def generate_weekly_wordlist(self):
+        week = self.get_huidige_week()
+        if not os.path.exists(WOORDEN_PATH):
+            os.makedirs(os.path.dirname(WOORDEN_PATH), exist_ok=True)
+            with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
+                json.dump({}, f)
 
-    def bewaar_data(self, pad, data):
-        with open(pad, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        with open(WOORDEN_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
 
-    async def prepare_week_data(self, week):
-        data = self.laad_data(WOORDEN_PATH)
         sleutel_b1 = f"week{week}_B1"
         sleutel_b2 = f"week{week}_B2"
-        thema = THEMAS[week]
 
-        if sleutel_b1 not in data:
-            woorden_b1 = await self.genereer_woorden(thema, "B1", 40)
-            data[sleutel_b1] = woorden_b1
-        if sleutel_b2 not in data:
-            woorden_b2 = await self.genereer_woorden(thema, "B2", 10)
-            data[sleutel_b2] = woorden_b2
+        if sleutel_b1 not in data or not data[sleutel_b1]:
+            b1_woorden = await self.genereer_woorden(self.get_huidig_thema(), "B1", 40)
+            data[sleutel_b1] = b1_woorden
 
-        self.bewaar_data(WOORDEN_PATH, data)
+        if sleutel_b2 not in data or not data[sleutel_b2]:
+            b2_woorden = await self.genereer_woorden(self.get_huidig_thema(), "B2", 10)
+            data[sleutel_b2] = b2_woorden
 
-    def kies_random_woorden(self, lijst, aantal):
-        return random.sample(lijst, min(aantal, len(lijst)))
+        with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
 
-    async def start_wordle_dm(self, user, woorden, bonuswoorden):
+    async def laad_woorden(self, week, moeilijkheid="B1", aantal=15):
+        with open(WOORDEN_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        sleutel = f"week{week}_{moeilijkheid}"
+        if sleutel not in data or not data[sleutel]:
+            return []
+
+        woorden = data[sleutel]
+        return random.sample(woorden, min(aantal, len(woorden)))
+
+    def laad_scores(self):
+        if not os.path.exists(SCORES_PATH):
+            return {}
+        with open(SCORES_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def bewaar_scores(self, scores):
+        with open(SCORES_PATH, "w", encoding="utf-8") as f:
+            json.dump(scores, f, indent=2, ensure_ascii=False)
+
+    def laad_played(self):
+        if not os.path.exists(PLAYED_PATH):
+            return {}
+        with open(PLAYED_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def bewaar_played(self, played):
+        with open(PLAYED_PATH, "w", encoding="utf-8") as f:
+            json.dump(played, f, indent=2, ensure_ascii=False)
+
+    async def start_wordle_dm(self, user, woorden, week, thema):
         score = 0
 
         def check(m):
             return m.author == user and isinstance(m.channel, discord.DMChannel)
 
-        await user.send(f"\U0001F4D6 **Wordle – Thema van de week**")
-
+        await user.send(f"\U0001F4D6 **Wordle – Thema van de week:** *{thema}*")
         for idx, woord in enumerate(woorden, start=1):
             nl = woord["nederlands"]
             it = woord["italiaans"].lower()
-            await user.send(f"\n\U0001F522 **{idx}. Wat is het Italiaans voor:** '{nl}'?\n(Je hebt 60 seconden)")
+
+            await user.send(f"\n\U0001F522 **{idx}. Wat is het Italiaans voor:** '{nl}'?\n"
+                            f"(Je hebt 60 seconden om te antwoorden.)")
 
             try:
                 antwoord = await self.bot.wait_for('message', timeout=60.0, check=check)
@@ -119,15 +150,17 @@ class Wordle(commands.Cog):
                 else:
                     await user.send(f"\u274C No, la risposta era: **{it}**.")
             except asyncio.TimeoutError:
-                await user.send(f"\u23F1 Tempo scaduto! Antwoord: **{it}**.")
+                await user.send(f"\u23F1 Tempo scaduto! De juiste oplossing was **{it}**.")
+
+        await user.send(f"\n\U0001F4CA **Resultaat:** {score}/15 correcte antwoorden.")
 
         sterren = 0
         if score >= 12:
             await user.send("\n\U0001F31F Bonusronde! 5 extra woorden op niveau B2:")
-            bonus = self.kies_random_woorden(bonuswoorden, 5)
+            bonuswoorden = await self.laad_woorden(week, moeilijkheid="B2", aantal=5)
             bonus_score = 0
 
-            for idx, woord in enumerate(bonus, start=1):
+            for idx, woord in enumerate(bonuswoorden, start=1):
                 nl = woord["nederlands"]
                 it = woord["italiaans"].lower()
                 await user.send(f"\n\U0001F195 **Bonus {idx}.** Wat is het Italiaans voor '{nl}'?")
@@ -140,85 +173,83 @@ class Wordle(commands.Cog):
                     else:
                         await user.send(f"\u274C No, la risposta era: **{it}**.")
                 except asyncio.TimeoutError:
-                    await user.send(f"\u23F1 Tempo scaduto! Antwoord: **{it}**.")
+                    await user.send(f"\u23F1 Tempo scaduto! De juiste oplossing was **{it}**.")
 
             if bonus_score >= 3:
                 sterren = 1
                 await user.send("\U0001F31F Bravo! Je hebt een ster verdiend! \U0001F31F")
 
-        await user.send(f"\n\U0001F4CA **Resultaat:** {score}/15 correcte antwoorden.")
         return score, sterren
 
-    @commands.command(name="wordle")
+    @commands.command()
     async def wordle(self, ctx):
         if ctx.channel.id not in KANALEN:
             return
 
-        gebruiker = ctx.author
-        gebruikersnaam = str(gebruiker)
+        user = ctx.author
         week = self.get_huidige_week()
+        thema = self.get_huidig_thema()
 
-        await self.prepare_week_data(week)
-        woorden_data = self.laad_data(WOORDEN_PATH)
-
-        b1_woorden = self.kies_random_woorden(woorden_data[f"week{week}_B1"], 15)
-        b2_woorden = woorden_data[f"week{week}_B2"]
-
-        played = self.laad_data(PLAYED_PATH)
-        scores = self.laad_data(SCORES_PATH)
-
-        if str(week) not in played:
-            played[str(week)] = {}
-
-        if played[str(week)].get(gebruikersnaam, 0) >= MAX_SPEEL_PER_WEEK:
-            await ctx.send("⛔ Je hebt deze week al 5 keer gespeeld.")
+        played = self.laad_played()
+        week_key = f"{user.id}_week{week}"
+        if played.get(week_key, 0) >= MAX_SPEEL_PER_WEEK:
+            await ctx.send(f"{user.mention}, je hebt deze week al {MAX_SPEEL_PER_WEEK} keer gespeeld.")
             return
 
-        nieuwe_score, sterren = await self.start_wordle_dm(gebruiker, b1_woorden, b2_woorden)
+        await self.generate_weekly_wordlist()
+        woorden = await self.laad_woorden(week, aantal=15)
 
-        if str(week) not in scores:
-            scores[str(week)] = {}
+        try:
+            await user.send("\U0001F4E7 Ciao! Het spel start nu in je DM!")
+        except discord.Forbidden:
+            await ctx.send(f"{user.mention}, ik kan je geen DM sturen. Kijk je instellingen na.")
+            return
 
-        huidige_score = scores[str(week)].get(gebruikersnaam, {"score": 0, "ster": 0})
+        score, sterren = await self.start_wordle_dm(user, woorden, week, thema)
 
-        if nieuwe_score > huidige_score["score"]:
-            scores[str(week)][gebruikersnaam] = {"score": nieuwe_score, "ster": sterren}
-            self.bewaar_data(SCORES_PATH, scores)
-            await ctx.send(f"\U0001F389 Nieuwe score ({nieuwe_score}/15) opgeslagen!")
-        else:
-            await ctx.send(f"\U0001F4DD Je score ({nieuwe_score}/15) werd niet verbeterd.")
+        scores = self.laad_scores()
+        uid = str(user.id)
+        if uid not in scores or scores[uid].get("week", -1) != week or score > scores[uid].get("score", 0):
+            scores[uid] = {
+                "naam": user.display_name,
+                "score": score,
+                "sterren": sterren,
+                "week": week
+            }
+            self.bewaar_scores(scores)
 
-        played[str(week)][gebruikersnaam] = played[str(week)].get(gebruikersnaam, 0) + 1
-        self.bewaar_data(PLAYED_PATH, played)
+        played[week_key] = played.get(week_key, 0) + 1
+        self.bewaar_played(played)
+
+        await user.send("\nGrazie per aver giocato! \U0001F44D")
 
     @tasks.loop(hours=168)
     async def weekelijkse_leaderboard(self):
         await self.bot.wait_until_ready()
-        thread = self.bot.get_channel(LEADERBOARD_THREAD)
-        week = self.get_huidige_week()
-        scores = self.laad_data(SCORES_PATH)
-
-        if str(week) not in scores:
-            await thread.send("Er zijn nog geen scores voor deze week.")
+        kanaal = self.bot.get_channel(LEADERBOARD_THREAD)
+        if not kanaal:
             return
 
-        resultaten = scores[str(week)]
-        gesorteerd = sorted(resultaten.items(), key=lambda x: x[1]["score"], reverse=True)
+        scores = self.laad_scores()
+        week = self.get_huidige_week()
+        huidige_scores = {k: v for k, v in scores.items() if v.get("week") == week}
 
-        bericht = f"\U0001F4CA **Leaderboard – Week {week + 1}: {THEMAS[week]}**\n\n"
-        for idx, (naam, data) in enumerate(gesorteerd, start=1):
-            ster = "\u2B50" * data.get("ster", 0)
-            bericht += f"{idx}. **{naam}** – {data['score']}/15 {ster}\n"
+        if not huidige_scores:
+            await kanaal.send("📊 Er zijn deze week nog geen Wordle-scores.")
+            return
 
-        await thread.send(bericht)
+        top = sorted(huidige_scores.values(), key=lambda x: (-x["score"], -x.get("sterren", 0)))[:10]
+
+        tekst = f"🏆 **Leaderboard – Week {week + 1}: {self.get_huidig_thema()}**\n"
+        for i, s in enumerate(top, 1):
+            ster = " ⭐" if s.get("sterren", 0) else ""
+            tekst += f"{i}. **{s['naam']}** – {s['score']}/15{ster}\n"
+
+        await kanaal.send(tekst)
 
     @weekelijkse_leaderboard.before_loop
     async def before_leaderboard(self):
-        now = datetime.datetime.now()
-        volgende_maandag = now + datetime.timedelta(days=(7 - now.weekday()) % 7)
-        volgende_maandag = volgende_maandag.replace(hour=9, minute=0, second=0, microsecond=0)
-        wachtijd = (volgende_maandag - now).total_seconds()
-        await asyncio.sleep(wachtijd)
+        await self.bot.wait_until_ready()
 
 async def setup(bot):
     await bot.add_cog(Wordle(bot))
