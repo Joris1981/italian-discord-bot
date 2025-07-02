@@ -45,7 +45,11 @@ def run():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, use_reloader=False)
 
-# --- Fix voor OpenAI key bij gebruik in wordle.py ---
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# --- OpenAI API instellen ---
 import openai as openai_module
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
@@ -54,12 +58,7 @@ else:
     openai_module.api_key = openai_api_key
     logging.info("✅ OPENAI_API_KEY succesvol ingesteld.")
 
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-
-# --- OpenAI client setup ---
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = openai.OpenAI(api_key=openai_api_key)
 
 # --- Globals ---
 user_message_counts = {}
@@ -69,10 +68,10 @@ TARGET_CHANNEL_IDS = {
     1387569943746318386,
     1388667261761359932
 }
-
 active_quiz_users = set()
+active_wordle_users = set()
 
-# --- Botklasse met reminder_task hook ---
+# --- Botklasse ---
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -108,92 +107,62 @@ async def reminder_task():
             absent = all_members - present
             for m in present:
                 try:
-                    await m.send(
-                        "🎉 **Grazie per aver partecipato al nostro incontro vocale!**\n"
-                        "Je doet het geweldig – blijf oefenen.\n"
-                        "🇮🇹 *Parlare è il modo migliore per imparare.*\n"
-                        "**Ci sentiamo presto!** 🎧"
-                    )
+                    await m.send("🎉 Grazie per aver partecipato al nostro incontro vocale!")
                 except:
                     pass
             for m in absent:
                 try:
-                    await m.send(
-                        "🕖 **Promemoria – conversazione italiana!**\n"
-                        "Ciao! 🇮🇹 We hebben je gemist vandaag. Volgende woensdag om **19u** weer een kans!\n"
-                        "**Ci sentiamo presto!** 💬"
-                    )
+                    await m.send("🕖 Promemoria – conversazione italiana mercoledì alle 19:00!")
                 except:
                     pass
             await asyncio.sleep(60)
         await asyncio.sleep(30)
 
-# --- On-message ---
+# --- on_message ---
 @bot.event
 async def on_message(message):
-    # ⛔ Negeer bot-eigen berichten
     if message.author == bot.user:
         return
 
-    # ❗️Quiztrigger in juiste thread (daily challenge kanaal)
-    if message.channel.type == discord.ChannelType.public_thread and message.content.lower().strip() == "quiz":
-        if message.channel.type == discord.ChannelType.public_thread and message.content.lower() == "quiz":
-            if message.channel.parent_id == 1387910961846947991:  # daily challenge kanaal
-                await message.reply("📩 Quiz in arrivo nella tua inbox! 🇮🇹", mention_author=False)
-                if message.author.id not in active_quiz_users:
-                    active_quiz_users.add(message.author.id)
-                    await send_quiz_via_dm(bot, message)
-                return
-
-    # 📩 Verwerking van DM-berichten
     if isinstance(message.channel, discord.DMChannel):
-        # ❗️Quiz-antwoord? Dan niets doen hier
-        if message.author.id in active_quiz_users:
-            return
+        if message.author.id in active_quiz_users or message.author.id in active_wordle_users:
+            return  # Geen GPT-reacties tijdens quiz of Wordle
 
-        # ✅ GPT DM-chat met limiet
         user_id = message.author.id
         today = datetime.datetime.utcnow().date().isoformat()
         key = f"{user_id}:{today}"
         count = user_message_counts.get(key, 0)
-        logging.info(f"[DM] {message.author} | Count: {count}")
 
         if count >= 5:
-            await message.channel.send("🚫 Hai raggiunto il limite di 5 messaggi per oggi. Riprova domani. 🇮🇹")
+            await message.channel.send("🚫 Hai raggiunto il limite di 5 messaggi per oggi. Riprova domani.")
             return
 
         try:
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "Rispondi sempre in italiano, anche se la domanda è in un'altra lingua."},
+                    {"role": "system", "content": "Rispondi sempre in italiano."},
                     {"role": "user", "content": message.content}
                 ]
             )
             reply = response.choices[0].message.content.strip()
-            if len(reply) > 1900:
-                reply = reply[:1900] + "\n\n_(Risposta troncata per lunghezza.)_"
             await message.channel.send(reply)
             user_message_counts[key] = count + 1
-            logging.info(f"[DM] Antwoord verzonden. Nieuwe teller: {user_message_counts[key]}")
         except Exception as e:
-            logging.error(f"❌ Fout bij OpenAI-verzoek: {e}")
-            await message.channel.send("⚠️ Er ging iets mis bij het ophalen van een antwoord.")
+            logging.error(f"Fout bij OpenAI-verzoek: {e}")
+            await message.channel.send("⚠️ Probleem bij ophalen van antwoord.")
         return
 
-    # 🧾 Commando's verwerken
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
         return
 
-    # 🧠 Taalcorrectie enkel in bepaalde kanalen of threads
     parent_id = message.channel.id
     if isinstance(message.channel, discord.Thread):
         parent_id = message.channel.parent_id
 
     if parent_id in TARGET_CHANNEL_IDS:
         try:
-            # 🌍 Taaldetectie
             detection = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -203,17 +172,14 @@ async def on_message(message):
                 max_tokens=5
             )
             lang_reply = detection.choices[0].message.content.strip().upper()
-            logging.info(f"[Taaldetectie] Kanaal {parent_id} → {lang_reply}")
 
             if lang_reply != "ITALIANO":
                 return
 
-            # ✍️ Correctie
             correction = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "Correggi l'italiano, includendo errori grammaticali, ortografici e strutturali. "
-"Se la frase è corretta e naturale, rispondi solo con 'NO_CORRECTION_NEEDED'."},
+                    {"role": "system", "content": "Correggi errori grammaticali, ortografici e strutturali. Rispondi con 'NO_CORRECTION_NEEDED' se tutto è perfetto."},
                     {"role": "user", "content": message.content}
                 ],
                 max_tokens=300
@@ -225,33 +191,23 @@ async def on_message(message):
                     "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
                     "✅ Perfetto! Sei sulla strada giusta! 🚀",
                     "✅ Benissimo! 🌟",
-                    "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️"
-                    "✅ Eccellente! La tua dedizione è ammirevole! 💪"
-                    "✅ Bravo/a! Ogni giorno migliori! 🌈",
+                    "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️",
                     "✅ Super! La tua passione per l'italiano è evidente! 🎉"
-                    "✅ Splendido! Ogni messaggio è un passo avanti! 🏆",
-                    "✅ Il tuo italiano è impeccabile! Complimenti! 🎯🇮🇹",
-                    "✅ Scrivi come un vero madrelingua! Bravissimo/a! 🏆📚"
                 ]
                 await message.reply(random.choice(compliments))
             elif reply.lower().strip() != message.content.lower().strip():
                 await message.reply(f"📝 **{reply}**")
         except Exception as e:
-            logging.error(f"❌ Fout bij taalcorrectie: {e}")
-            
-# --- Thread aanmaak reminder ---
+            logging.error(f"Taalcorrectie fout: {e}")
+
+# --- Thread reminder ---
 @bot.event
 async def on_thread_create(thread):
     if thread.parent_id == 1387910961846947991:
         try:
-            await thread.send(
-                "📣 **Reminder!**\n"
-                "Een nieuwe dag, een nieuwe uitdaging! 🇮🇹\n"
-                "👉 Reageer hieronder met **“Quiz”** en je ontvangt een mini-quiz in je DM.\n\n"
-                "📬 *Heb je meldingen van threads uitstaan? Vergeet dan niet even op ‘Volgen’ te klikken.*"
-            )
+            await thread.send("📣 Nieuwe uitdaging! Reageer met **“Quiz”** om een mini-quiz in je DM te krijgen.")
         except Exception as e:
-            logging.error(f"❌ Fout bij verzenden reminder in thread: {e}")
+            logging.error(f"Reminder fout: {e}")
 
 # --- Commando: ascolto_dai_accompagnami ---
 @bot.command()
@@ -407,4 +363,5 @@ async def send_quiz_via_dm(bot, message):
 # --- Bot starten ---
 if __name__ == "__main__":
     keep_alive()
+    bot.loop.create_task(reminder_task())
     bot.run(os.getenv("DISCORD_TOKEN"))
