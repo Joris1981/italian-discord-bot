@@ -8,19 +8,38 @@ import asyncio
 import datetime
 import random
 import logging
+import unicodedata
+import re
 from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
-# --- Logging ---
+# ✅ Normaliseer tekst voor quiz-antwoorden
+def normalize(text):
+    text = unicodedata.normalize("NFKD", text).lower().strip()
+    text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
+    text = re.sub(r"[\s’‘`]", "", text)
+    if text == "dell":
+        return "dell'"
+    return text
+
+# Logging
 logging.basicConfig(level=logging.INFO)
 
-# --- Keep-alive server ---
+# --- Keep-alive server voor Replit/Render ---
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "✅ Bot is online!"
+
+@app.route('/ping')
+def ping():
+    return "pong", 200
+
+@app.route('/health')
+def health():
+    return "OK", 200
 
 def run():
     port = int(os.environ.get('PORT', 8080))
@@ -30,8 +49,15 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- OpenAI instellen ---
+# --- OpenAI API instellen ---
+import openai as openai_module
 openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    logging.error("❌ OPENAI_API_KEY niet gevonden in omgevingsvariabelen!")
+else:
+    openai_module.api_key = openai_api_key
+    logging.info("✅ OPENAI_API_KEY succesvol ingesteld.")
+
 client = openai.OpenAI(api_key=openai_api_key)
 
 # --- Globals ---
@@ -53,10 +79,12 @@ class MyBot(commands.Bot):
     async def setup_hook(self):
         await self.load_extension("cogs.grammatica")
         await self.load_extension("cogs.wordle")
-        await self.load_extension("cogs.quiz")  # ✅ beide quizzen nu hierin
+        await self.load_extension("cogs.quiz")
+        self.loop.create_task(reminder_task())  # ✅ reminder_task hier starten
 
 bot = MyBot(command_prefix='!', intents=intents)
 
+# --- on_ready ---
 @bot.event
 async def on_ready():
     logging.info(f"✅ {bot.user} is nu online en klaar voor gebruik!")
@@ -92,13 +120,12 @@ async def reminder_task():
             await asyncio.sleep(60)
         await asyncio.sleep(30)
 
-# --- on_message voor GPT DM en correctie ---
+# --- on_message ---
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
 
-    # Geen GPT-reacties tijdens quiz of Wordle
     if isinstance(message.channel, discord.DMChannel):
         if message.author.id in active_quiz_users or message.author.id in active_wordle_users:
             return
@@ -128,12 +155,10 @@ async def on_message(message):
             await message.channel.send("⚠️ Probleem bij ophalen van antwoord.")
         return
 
-    # Verwerk botcommando’s
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
         return
 
-    # Taalcorrectie in doelkanaal
     parent_id = message.channel.id
     if isinstance(message.channel, discord.Thread):
         parent_id = message.channel.parent_id
@@ -176,6 +201,15 @@ async def on_message(message):
                 await message.reply(f"📝 **{reply}**")
         except Exception as e:
             logging.error(f"Taalcorrectie fout: {e}")
+
+# --- Thread reminder voor quiz ---
+@bot.event
+async def on_thread_create(thread):
+    if thread.parent_id == 1387910961846947991:
+        try:
+            await thread.send("📣 Nieuwe uitdaging! Reageer met **“Quiz”** om een mini-quiz in je DM te krijgen.")
+        except Exception as e:
+            logging.error(f"Reminder fout: {e}")
 
 # --- Commando: ascolto_dai_accompagnami ---
 @bot.command()
@@ -282,8 +316,7 @@ async def curiosita_puttanesca(ctx):
     except discord.Forbidden:
         await ctx.reply("⚠️ Kan geen DM verzenden – check je DM-instellingen.", mention_author=False)
 
-# ✅ Bot starten
+# --- Bot starten ---
 if __name__ == "__main__":
     keep_alive()
-    bot.loop.create_task(reminder_task())
     bot.run(os.getenv("DISCORD_TOKEN"))
