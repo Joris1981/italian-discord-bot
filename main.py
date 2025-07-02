@@ -79,6 +79,7 @@ class MyBot(commands.Bot):
     async def setup_hook(self):
         await self.load_extension("cogs.grammatica")
         await self.load_extension("cogs.wordle")
+        await self.load_extension("cogs.quiz")
 
 bot = MyBot(command_prefix='!', intents=intents)
 
