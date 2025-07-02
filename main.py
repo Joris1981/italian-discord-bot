@@ -120,7 +120,7 @@ async def reminder_task():
             await asyncio.sleep(60)
         await asyncio.sleep(30)
 
-# --- on_message ---
+# --- on_message event voor DM's en taalcorrectie ---
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -128,7 +128,7 @@ async def on_message(message):
 
     if isinstance(message.channel, discord.DMChannel):
         if message.author.id in active_quiz_users or message.author.id in active_wordle_users:
-            return
+            return  # Quiz- of Wordle-antwoorden worden niet geteld en krijgen geen GPT-reactie
 
         user_id = message.author.id
         today = datetime.datetime.utcnow().date().isoformat()
