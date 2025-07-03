@@ -115,7 +115,7 @@ class Quiz(commands.Cog):
         quiz_data["index"] += 1
 
         if quiz_data["index"] < len(quiz_data["questions"]):
-            await self.ask_next_question(message.channel)
+            await self.ask_next_question(message.author)  # ✅ Fix toegepast hier
         else:
             score = quiz_data["score"]
             del self.active_quizzes[str(message.author.id)]
