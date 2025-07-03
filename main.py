@@ -13,11 +13,12 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 from dotenv import load_dotenv
-import session_manager
+from session_manager import is_user_in_active_session
 
+# === 🔁 Load env ===
 load_dotenv()
 
-# --- Normaliseer tekst ---
+# === 🧼 Normalize tekst ===
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
     text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
@@ -26,43 +27,31 @@ def normalize(text):
         return "dell'"
     return text
 
-# --- Logging ---
+# === 🪵 Logging ===
 logging.basicConfig(level=logging.INFO)
 
-# --- Keep alive ---
+# === 🌐 Keep-alive server ===
 app = Flask(__name__)
-
 @app.route('/')
-def home():
-    return "✅ Bot is online!"
-
+def home(): return "✅ Bot is online!"
 @app.route('/ping')
-def ping():
-    return "pong", 200
-
+def ping(): return "pong", 200
 @app.route('/health')
-def health():
-    return "OK", 200
+def health(): return "OK", 200
 
-def run():
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, use_reloader=False)
+def run(): app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), use_reloader=False)
+def keep_alive(): Thread(target=run).start()
 
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-
-# --- OpenAI ---
+# === 🔑 OpenAI setup ===
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     logging.error("❌ OPENAI_API_KEY ontbreekt!")
 else:
     openai.api_key = openai_api_key
     logging.info("✅ OpenAI ingesteld.")
-
 client = openai.OpenAI(api_key=openai_api_key)
 
-# --- Globals ---
+# === 🌍 Globals ===
 user_message_counts = {}
 TARGET_CHANNEL_IDS = {
     1387910961846947991,
@@ -71,7 +60,7 @@ TARGET_CHANNEL_IDS = {
     1388667261761359932
 }
 
-# --- Bot setup ---
+# === 🤖 Bot class ===
 intents = discord.Intents.default()
 intents.message_content = True
 intents.dm_messages = True
@@ -85,49 +74,41 @@ class MyBot(commands.Bot):
 
 bot = MyBot(command_prefix='!', intents=intents)
 
-# --- Reminder op woensdagavond ---
+# === 🔔 Reminder woensdagavond ===
 async def reminder_task():
     await bot.wait_until_ready()
-    channel_id = 1387552031631478945  # voice kanaal ID
+    kanaal_id = 1387552031631478945
     while not bot.is_closed():
         now = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
         if now.weekday() == 2 and now.hour == 20 and now.minute == 0:
             guild = discord.utils.get(bot.guilds)
-            if not guild:
-                await asyncio.sleep(60)
-                continue
-            voice_channel = guild.get_channel(channel_id)
-            if not voice_channel:
-                await asyncio.sleep(60)
-                continue
-            present = {m for m in voice_channel.members if not m.bot}
+            if not guild: await asyncio.sleep(60); continue
+            vc = guild.get_channel(kanaal_id)
+            if not vc: await asyncio.sleep(60); continue
+            present = {m for m in vc.members if not m.bot}
             all_members = {m for m in guild.members if not m.bot}
             absent = all_members - present
             for m in present:
-                try:
-                    await m.send("🎉 Grazie per aver partecipato al nostro incontro vocale!")
-                except:
-                    pass
+                try: await m.send("🎉 Grazie per aver partecipato al nostro incontro vocale!")
+                except: pass
             for m in absent:
-                try:
-                    await m.send("🕖 Promemoria – conversazione italiana mercoledì alle 19:00!")
-                except:
-                    pass
+                try: await m.send("🕖 Promemoria – conversazione italiana mercoledì alle 19:00!")
+                except: pass
             await asyncio.sleep(60)
         await asyncio.sleep(30)
 
-# --- on_ready ---
+# === 🚀 Bot online ===
 @bot.event
 async def on_ready():
     logging.info(f"✅ Bot online als {bot.user}!")
 
-# --- on_message: taalcorrectie & GPT in DM ---
+# === 📥 on_message: taalcorrectie & GPT ===
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
-    # ✅ Taalcorrectie in kanalen
+    # 📍 Taalcorrectie enkel in TARGET_CHANNEL_IDS
     parent_id = message.channel.id
     if isinstance(message.channel, discord.Thread):
         parent_id = message.channel.parent_id
@@ -148,7 +129,7 @@ async def on_message(message):
             correction = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "Correggi errori grammaticali, ortografici e di struttura. Rispondi con 'NO_CORRECTION_NEEDED' se è tutto perfetto."},
+                    {"role": "system", "content": "Correggi errori grammaticali, ortografici e di struttura. Rispondi con 'NO_CORRECTION_NEEDED' se tutto è corretto."},
                     {"role": "user", "content": message.content}
                 ]
             )
@@ -161,17 +142,21 @@ async def on_message(message):
                     "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️",
                     "✅ Super! La tua passione per l'italiano è evidente! 🎉"
                 ]
-                await message.reply(random.choice(compliments))
+                await message.reply(random.choice(compliments), suppress_embeds=True)
             elif reply.lower().strip() != message.content.lower().strip():
-                await message.reply(f"📝 **{reply}**")
+                await message.reply(f"📝 **{reply}**", suppress_embeds=True)
         except Exception as e:
             logging.error(f"Taalcorrectie fout: {e}")
         return
 
-    # ✅ GPT in DM (max 5/dag)
+    # 📩 GPT in DM (beperkt tot 5/dag)
     if isinstance(message.channel, discord.DMChannel):
-        if session_manager.is_user_in_active_session(message.author.id):
-            return  # Wordle of quiz sessie actief, geen GPT-reactie
+        if message.content.startswith(bot.command_prefix):
+            await bot.process_commands(message)
+            return
+
+        if is_user_in_active_session(message.author.id):
+            return  # Quiz of Wordle is actief
 
         user_id = message.author.id
         today = datetime.datetime.utcnow().date().isoformat()
@@ -183,25 +168,26 @@ async def on_message(message):
             return
 
         try:
-            response = client.chat.completions.create(
+            reply = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "Rispondi sempre in italiano."},
                     {"role": "user", "content": message.content}
                 ]
             )
-            await message.channel.send(response.choices[0].message.content.strip())
+            await message.channel.send(reply.choices[0].message.content.strip())
             user_message_counts[key] = count + 1
         except Exception as e:
-            logging.error(f"Fout bij OpenAI-verzoek: {e}")
-            await message.channel.send("⚠️ Probleem bij ophalen van antwoord.")
+            logging.error(f"GPT DM fout: {e}")
+            await message.channel.send("⚠️ Er ging iets mis bij het ophalen van een antwoord.")
         return
 
     # ✅ Laat commando’s toe
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
+        return
 
-# --- Commando: ascolto_dai_accompagnami ---
+# === 🎧 Commando’s ===
 @bot.command()
 async def ascolto_dai_accompagnami(ctx):
     try:
@@ -215,7 +201,7 @@ async def ascolto_dai_accompagnami(ctx):
             "**B:** Io non ho tanta voglia. Due giorni fa siamo stati tutto il pomeriggio al centro commerciale e oggi fare il bis... non è che mi attiri tanto.\n"
             "**A:** Dai, accompagnami!... Ti prometto che non compro niente. Andiamo solo a dare un'occhiata.\n"
             "**B:** Sì, sì... Tu dici sempre così... e poi non sai resistere: una nuova gonna, un paio di pantaloni, un nuovo paio di ...\n"
-            "**A:** Ok, allora ti faccio un’altra promessa... compro solo una cosa. Tra l'altro ho bisogno di un cappotto nuovo. La mia amica mi ha detto che hanno cose belissime a un prezzo stracciato.\n"
+            "**A:** Ok, allora ti faccio un’altra promessa... compro solo una cosa. Tra l'altro ho bisogno di un cappotto nuovo. La mia amica mi ha detto che hanno cose bellissime a un prezzo stracciato.\n"
             "**B:** Cominciamo bene...\n\n"
             "---\n\n"
             "🗣️ **Modi di dire – Uitleg**\n"
@@ -232,7 +218,6 @@ async def ascolto_dai_accompagnami(ctx):
     except discord.Forbidden:
         await ctx.reply("⚠️ Kan geen DM verzenden – check je instellingen.", mention_author=False)
 
-# --- Commando: ascolto_puttanesca ---
 @bot.command()
 async def ascolto_puttanesca(ctx):
     print(f"🔔 Commando 'ascolto_puttanesca' uitgevoerd door: {ctx.author}")
@@ -306,7 +291,7 @@ async def curiosita_puttanesca(ctx):
     except discord.Forbidden:
         await ctx.reply("⚠️ Kan geen DM verzenden – check je DM-instellingen.", mention_author=False)
 
-# --- Bot starten ---
+# === ▶️ Start de bot ===
 if __name__ == "__main__":
     keep_alive()
     bot.run(os.getenv("DISCORD_TOKEN"))
