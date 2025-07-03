@@ -3,7 +3,7 @@ from discord.ext import commands
 import unicodedata
 import re
 import asyncio
-import session_manager  # ✅ Correcte import
+import session_manager
 
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
@@ -14,7 +14,7 @@ def normalize(text):
 class Quiz(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.active_quizzes = {}
+        self.active_quizzes = {}  # user_id als int
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -46,7 +46,7 @@ class Quiz(commands.Cog):
     # ================================
 
     async def start_qualche_quiz(self, message):
-        user_id = str(message.author.id)
+        user_id = message.author.id
         questions = [
             ("Non c’è ___ problema, tutto è sotto controllo.", "nessun"),
             ("Ho conosciuto ___ ragazze simpatiche ieri sera.", "alcune"),
@@ -79,6 +79,38 @@ class Quiz(commands.Cog):
         except discord.Forbidden:
             await message.channel.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
 
+    async def handle_quiz_answer(self, message, quiz_data):
+        answer = normalize(message.content)
+        index = quiz_data["index"]
+        question, correct = quiz_data["questions"][index]
+        if answer == normalize(correct):
+            await message.channel.send("✅ Corretto!")
+            quiz_data["score"] += 1
+        else:
+            await message.channel.send(f"❌ Sbagliato! Risposta corretta: **{correct}**")
+        quiz_data["index"] += 1
+
+        if quiz_data["index"] < len(quiz_data["questions"]):
+            await self.ask_next_question(message.author)
+        else:
+            score = quiz_data["score"]
+            user_id = message.author.id
+            del self.active_quizzes[user_id]
+            session_manager.end_quiz(user_id)
+            await message.channel.send(
+                f"**Quiz completata!**\nHai totalizzato **{score}/14** risposte corrette. 🎉\n"
+                "Se vuoi controllare tutte le risposte corrette, scrivi qui in DM:\n`!qualche-soluzioni` 📚\n"
+                "➡️ **Opnieuw proberen? Typ gewoon opnieuw quiz in dezelfde thread.**"
+            )
+
+    async def ask_next_question(self, user):
+        try:
+            quiz_data = self.active_quizzes[user.id]
+            question, _ = quiz_data["questions"][quiz_data["index"]]
+            await user.send(f"{quiz_data['index']+1}/14: {question}")
+        except Exception as e:
+            print(f"❌ Fout bij het verzenden van de quizvraag: {e}")
+
     @commands.command(name="qualche-soluzioni")
     async def qualche_soluzioni(self, ctx):
         solutions = [
@@ -102,37 +134,6 @@ class Quiz(commands.Cog):
                 await ctx.author.send(s)
         except discord.Forbidden:
             await ctx.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
-
-    async def handle_quiz_answer(self, message, quiz_data):
-        answer = normalize(message.content)
-        index = quiz_data["index"]
-        question, correct = quiz_data["questions"][index]
-        if answer == normalize(correct):
-            await message.channel.send("✅ Corretto!")
-            quiz_data["score"] += 1
-        else:
-            await message.channel.send(f"❌ Sbagliato! Risposta corretta: **{correct}**")
-        quiz_data["index"] += 1
-
-        if quiz_data["index"] < len(quiz_data["questions"]):
-            await self.ask_next_question(message.author)  # ✅ Fix toegepast hier
-        else:
-            score = quiz_data["score"]
-            del self.active_quizzes[str(message.author.id)]
-            session_manager.end_quiz(message.author.id)
-            await message.channel.send(
-                f"**Quiz completata!**\nHai totalizzato **{score}/14** risposte corrette. 🎉\n"
-                "Se vuoi controllare tutte le risposte corrette, scrivi qui in DM:\n`!qualche-soluzioni` 📚\n"
-                "➡️ **Opnieuw proberen? Typ gewoon opnieuw quiz in dezelfde thread.**"
-            )
-
-    async def ask_next_question(self, user):
-        try:
-            quiz_data = self.active_quizzes[str(user.id)]
-            question, _ = quiz_data["questions"][quiz_data["index"]]
-            await user.send(f"{quiz_data['index']+1}/14: {question}")
-        except Exception as e:
-            print(f"❌ Fout bij het verzenden van de quizvraag: {e}")
 
     # ================================
     # === DI / DA QUIZ ===
