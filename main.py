@@ -16,7 +16,8 @@ from dotenv import load_dotenv
 from session_manager import is_user_in_active_session
 
 # === 🔁 Load env ===
-load_dotenv()
+if not load_dotenv():
+    logging.warning("⚠️ Kon .env-bestand niet laden.")
 
 # === 🧼 Normalize tekst ===
 def normalize(text):
@@ -58,6 +59,7 @@ TARGET_CHANNEL_IDS = {
     1387571841442385951,
     1387569943746318386,
     1390410564093743285,
+    1390448992520765501,
     1388667261761359932
 }
 
@@ -68,10 +70,12 @@ intents.dm_messages = True
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
-        await self.load_extension("cogs.grammatica")
-        await self.load_extension("cogs.wordle")
-        await self.load_extension("cogs.quiz")
-        await self.load_extension("cogs.lyrics")
+        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics"]:
+            try:
+                await self.load_extension(extension)
+                logging.info(f"✅ Extension geladen: {extension}")
+            except Exception as e:
+                logging.error(f"❌ Fout bij laden van {extension}: {e}")
         self.loop.create_task(reminder_task())
 
 bot = MyBot(command_prefix='!', intents=intents)
@@ -154,7 +158,7 @@ async def on_message(message):
     # 📩 GPT in DM (beperkt tot 5/dag)
     if isinstance(message.channel, discord.DMChannel):
         if is_user_in_active_session(message.author.id):
-            return  # Quiz of Wordle is actief
+            return
 
         user_id = message.author.id
         today = datetime.datetime.utcnow().date().isoformat()
