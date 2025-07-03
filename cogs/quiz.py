@@ -14,7 +14,7 @@ def normalize(text):
 class Quiz(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.active_quizzes = {}  # user_id als int
+        self.active_quizzes = {}
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -22,7 +22,6 @@ class Quiz(commands.Cog):
             return
 
         user_id = message.author.id
-
         if normalize(message.content) == "quiz":
             if session_manager.is_busy(user_id):
                 await message.channel.send("❌ Hai già una quiz attiva. Completa prima quella prima di iniziarne un'altra.")
@@ -36,17 +35,9 @@ class Quiz(commands.Cog):
                 await self.start_in_per_quiz(message.author)
             elif message.channel.id == 1390247257609207819:
                 session_manager.start_quiz(user_id)
-                await self.start_qualche_quiz(message)
+                await self.start_qualche_quiz(message.author)
 
-        elif isinstance(message.channel, discord.DMChannel) and user_id in self.active_quizzes:
-            await self.handle_quiz_answer(message, self.active_quizzes[user_id])
-
-    # ================================
-    # === QUALCHE / ALCUNI QUIZ ===
-    # ================================
-
-    async def start_qualche_quiz(self, message):
-        user_id = message.author.id
+    async def start_qualche_quiz(self, user):
         questions = [
             ("Non c’è ___ problema, tutto è sotto controllo.", "nessun"),
             ("Ho conosciuto ___ ragazze simpatiche ieri sera.", "alcune"),
@@ -61,77 +52,62 @@ class Quiz(commands.Cog):
             ("___ idea è stata accettata.", "qualche"),
             ("Non ho trovato ___ soluzione.", "nessuna"),
             ("C’erano ___ problemi tecnici.", "alcuni"),
-            ("Non c’è ___ persona che lo sappia.", "nessuna"),
+            ("Non c’è ___ persona che lo sappia.", "nessuna")
         ]
         try:
-            await message.author.send(
+            await user.send(
                 "📘 **Quiz: Qualche, Alcuni, Nessuno, Alcuno**\n"
                 "Rispondi con la parola corretta: *qualche, alcuni, alcune, alcuno, alcuna, nessuno, nessuna, nessun, alcun*.\n"
-                "Hai 14 frasi. Iniziamo!"
+                "Hai 14 frasi. Hai 60 secondi per ogni frase. Iniziamo!"
             )
-            self.active_quizzes[user_id] = {
-                "type": "qualche",
-                "index": 0,
-                "score": 0,
-                "questions": questions
-            }
-            await self.ask_next_question(message.author)
-        except discord.Forbidden:
-            await message.channel.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+            score = 0
+            for index, (question, correct) in enumerate(questions):
+                await user.send(f"{index + 1}/14: {question}")
+                try:
+                    reply = await self.bot.wait_for(
+                        "message",
+                        timeout=60,
+                        check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel)
+                    )
+                    if normalize(reply.content) == normalize(correct):
+                        await user.send("✅ Corretto!")
+                        score += 1
+                    else:
+                        await user.send(f"❌ Sbagliato! Risposta corretta: **{correct}**")
+                except asyncio.TimeoutError:
+                    await user.send("⏰ Tempo scaduto per questa frase!")
 
-    async def handle_quiz_answer(self, message, quiz_data):
-        answer = normalize(message.content)
-        index = quiz_data["index"]
-        question, correct = quiz_data["questions"][index]
-        if answer == normalize(correct):
-            await message.channel.send("✅ Corretto!")
-            quiz_data["score"] += 1
-        else:
-            await message.channel.send(f"❌ Sbagliato! Risposta corretta: **{correct}**")
-        quiz_data["index"] += 1
-
-        if quiz_data["index"] < len(quiz_data["questions"]):
-            await self.ask_next_question(message.author)
-        else:
-            score = quiz_data["score"]
-            user_id = message.author.id
-            del self.active_quizzes[user_id]
-            session_manager.end_quiz(user_id)
-            await message.channel.send(
-                f"**Quiz completata!**\nHai totalizzato **{score}/14** risposte corrette. 🎉\n"
+            await user.send(
+                f"🏁 **Quiz completata!**\nHai totalizzato **{score}/14** risposte corrette. 🎉\n"
                 "Se vuoi controllare tutte le risposte corrette, scrivi qui in DM:\n`!qualche-soluzioni` 📚\n"
                 "➡️ **Opnieuw proberen? Typ gewoon opnieuw quiz in dezelfde thread.**"
             )
-
-    async def ask_next_question(self, user):
-        try:
-            quiz_data = self.active_quizzes[user.id]
-            question, _ = quiz_data["questions"][quiz_data["index"]]
-            await user.send(f"{quiz_data['index']+1}/14: {question}")
-        except Exception as e:
-            print(f"❌ Fout bij het verzenden van de quizvraag: {e}")
+        except discord.Forbidden:
+            await user.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+        finally:
+            session_manager.end_quiz(user.id)
 
     @commands.command(name="qualche-soluzioni")
     async def qualche_soluzioni(self, ctx):
         solutions = [
-            "**Non c’è nessun problema**, tutto è sotto controllo.",
-            "**Ho conosciuto alcune ragazze simpatiche** ieri sera.",
-            "**Non ho ricevuto nessuna risposta** alla mia mail.",
-            "**Qualche volta andiamo in bici** al lavoro.",
-            "**Non c’era nessuno** alla festa, era deserta.",
-            "**Hai letto qualche libro interessante** ultimamente?",
-            "**Non ho alcuna voglia** di studiare oggi.",
-            "**Alcuni studenti sono partiti** in anticipo.",
-            "**Non c’è alcun motivo** di preoccuparsi.",
-            "**Non conosco nessuno** con quel nome.",
-            "**Qualche idea è stata accettata.**",
-            "**Non ho trovato nessuna soluzione.**",
-            "**C’erano alcuni problemi tecnici.**",
-            "**Non c’è nessuna persona** che lo sappia."
+            "**1.** Non c’è **nessun** problema, tutto è sotto controllo.",
+            "**2.** Ho conosciuto **alcune** ragazze simpatiche ieri sera.",
+            "**3.** Non ho ricevuto **nessuna** risposta alla mia mail.",
+            "**4.** **Qualche** volta andiamo in bici al lavoro.",
+            "**5.** Non c’era **nessuno** alla festa, era deserta.",
+            "**6.** Hai letto **qualche** libro interessante ultimamente?",
+            "**7.** Non ho **alcuna** voglia di studiare oggi.",
+            "**8.** **Alcuni** studenti sono partiti in anticipo.",
+            "**9.** Non c’è **alcun** motivo di preoccuparsi.",
+            "**10.** Non conosco **nessuno** con quel nome.",
+            "**11.** **Qualche** idea è stata accettata.",
+            "**12.** Non ho trovato **nessuna** soluzione.",
+            "**13.** C’erano **alcuni** problemi tecnici.",
+            "**14.** Non c’è **nessuna** persona che lo sappia."
         ]
         try:
             for s in solutions:
-                await ctx.author.send(s)
+                await ctx.author.send(s + "\n")
         except discord.Forbidden:
             await ctx.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
 
