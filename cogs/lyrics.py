@@ -1,22 +1,13 @@
-# cogs/lyrics.py
-
 import discord
 from discord.ext import commands
 import re
 import os
 import openai
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
 
 load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
-
-if not openai_api_key:
-    raise ValueError("❌ OPENAI_API_KEY ontbreekt in .env!")
-
-client = openai.OpenAI(api_key=openai_api_key)
-
-LYRICS_THREAD_ID = 1390448992520765501
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class Lyrics(commands.Cog):
     def __init__(self, bot):
@@ -27,7 +18,7 @@ class Lyrics(commands.Cog):
         if message.author.bot:
             return
 
-        if str(message.channel.id) != str(LYRICS_THREAD_ID):
+        if str(message.channel.id) != "1390448992520765501":
             return
 
         yt_match = re.search(r"(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)", message.content)
@@ -36,7 +27,7 @@ class Lyrics(commands.Cog):
         if yt_match:
             title = await self.extract_youtube_title(message)
         elif sp_match:
-            title = await self.extract_spotify_title(message)
+            title = await self.extract_spotify_title(message.content)
         else:
             return
 
@@ -51,7 +42,8 @@ class Lyrics(commands.Cog):
             await message.channel.send("❌ Sorry, ik kon geen songtekst reconstrueren.")
             return
 
-        for chunk in self.split_text(lyrics, max_length=1900):
+        chunks = self.split_text(lyrics, max_length=1900)
+        for chunk in chunks:
             await message.channel.send(chunk)
 
     async def extract_youtube_title(self, message):
@@ -59,29 +51,44 @@ class Lyrics(commands.Cog):
             return message.embeds[0].title
         return None
 
-    async def extract_spotify_title(self, message):
+    async def extract_spotify_title(self, url):
         try:
-            embed = message.embeds[0]
-            return f"{embed.title} di {embed.author.name}" if embed and embed.title and embed.author else None
+            headers = {"Accept": "application/json"}
+            async with self.bot.session.get(url, headers=headers) as resp:
+                html = await resp.text()
+                title_match = re.search(r'"name":"(.*?)".*?"artists":\[{"name":"(.*?)"', html)
+                if title_match:
+                    song = title_match.group(1)
+                    artist = title_match.group(2)
+                    return f"{song} di {artist}"
         except Exception:
             return None
 
     async def generate_lyrics_with_translation(self, title):
-        prompt = (
-            f'Il brano si intitola "{title}". Genera una canzone italiana coerente con questo titolo. '
-            "Dopo ogni riga italiana, inserisci la traduzione in olandese tra parentesi e in corsivo. "
-            "Mantieni il tono poetico. Scrivi almeno 20 versi. Formaat:\n\n"
-            "Italiano\n(*Nederlandse vertaling*)"
-        )
-
         try:
-            response = client.chat.completions.create(
+            prompt = (
+                f"""Sto cercando il testo completo della canzone italiana intitolata "{title}". 
+Genera fedelmente l'intero testo a partire dall'inizio, senza saltare strofe. 
+Dopo ogni riga, fornisci la traduzione in olandese tra parentesi e in corsivo. 
+Scrivi almeno 20 righe. Formato:
+
+Riga in italiano  
+(*Vertaling in het Nederlands*)"""
+            )
+
+            response = await openai.AsyncOpenAI().chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "Sei un poeta e traduttore italiano. Scrivi testi poetici con traduzione olandese dopo ogni riga."},
+                    {
+                        "role": "system",
+                        "content": (
+                            "Sei un esperto traduttore e paroliere. Ricostruisci testi fedeli e poetici, "
+                            "senza saltare l'inizio, con traduzione dopo ogni riga tra parentesi in corsivo."
+                        )
+                    },
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.9,
+                temperature=0.8,
                 max_tokens=1400
             )
             return response.choices[0].message.content.strip()
