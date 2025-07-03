@@ -1,11 +1,10 @@
-# cogs/lyrics.py
-
 import discord
 from discord.ext import commands
 import re
 import os
 import openai
-from urllib.parse import urlparse
+import aiohttp
+from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,11 +19,9 @@ class Lyrics(commands.Cog):
         if message.author.bot:
             return
 
-        # Alleen in de juiste lyrics-thread
         if str(message.channel.id) != "1390448992520765501":
             return
 
-        # Detecteer YouTube of Spotify-link
         yt_match = re.search(r"(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)", message.content)
         sp_match = re.search(r"(https?://open\.spotify\.com/track/[a-zA-Z0-9]+)", message.content)
 
@@ -51,9 +48,25 @@ class Lyrics(commands.Cog):
             await message.channel.send(chunk)
 
     async def extract_youtube_title(self, message):
+        # Eerst proberen via embed
         if message.embeds and message.embeds[0].title:
             return message.embeds[0].title
-        # Fallback naar ruwe tekst als embed ontbreekt
+
+        # Fallback via HTTP scraping van <title>
+        yt_url_match = re.search(r"(https?://[^\s]+)", message.content)
+        if not yt_url_match:
+            return None
+        url = yt_url_match.group(1)
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    text = await resp.text()
+                    title_match = re.search(r"<title>(.*?)</title>", text, re.IGNORECASE)
+                    if title_match:
+                        return title_match.group(1).replace(" - YouTube", "").strip()
+        except Exception as e:
+            print(f"❌ Fout bij ophalen van YouTube titel: {e}")
         return None
 
     async def extract_spotify_title(self, url):
@@ -73,7 +86,7 @@ class Lyrics(commands.Cog):
         try:
             prompt = (
                 f"""Sto cercando il testo completo della canzone italiana intitolata "{title}". 
-Genera fedelmente l'intero testo a partire dalla **prima riga**, senza saltare nulla. 
+Genera fedelmente l'intero testo a partire dall'inizio, senza saltare strofe. 
 Dopo ogni riga, fornisci la traduzione in olandese tra parentesi e in corsivo. 
 Scrivi almeno 20 righe. Formato:
 
@@ -82,7 +95,7 @@ Riga in italiano
             )
 
             response = await openai.AsyncOpenAI().chat.completions.create(
-                model="gpt-4-turbo",
+                model="gpt-4",
                 messages=[
                     {
                         "role": "system",
@@ -93,7 +106,7 @@ Riga in italiano
                     },
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.85,
+                temperature=0.8,
                 max_tokens=3072
             )
             return response.choices[0].message.content.strip()
