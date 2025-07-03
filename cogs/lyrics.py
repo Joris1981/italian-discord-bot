@@ -1,5 +1,3 @@
-# cogs/lyrics.py
-
 import os
 import re
 import logging
@@ -22,7 +20,7 @@ class LyricsCog(commands.Cog):
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Bearer {GENIUS_API_TOKEN}",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            "User-Agent": "Mozilla/5.0"
         })
         self.openai_client = openai.OpenAI()
 
@@ -31,15 +29,12 @@ class LyricsCog(commands.Cog):
         if message.author.bot:
             return
 
-        # Alleen reageren in juiste thread
         if not (isinstance(message.channel, discord.Thread) and message.channel.id == LYRICS_THREAD_ID):
             return
 
-        # Negeer als gebruiker in actieve sessie zit
         if is_user_in_active_session(message.author.id):
             return
 
-        # Check op YouTube-link
         youtube_regex = r"(https?://)?(www\.)?(youtube\.com|youtu\.?be)/.+"
         if not re.search(youtube_regex, message.content):
             return
@@ -53,7 +48,15 @@ class LyricsCog(commands.Cog):
 
         lyrics_lines = self.scrape_lyrics(song_info["url"])
         if not lyrics_lines:
-            await message.channel.send("⚠️ Kon de songtekst niet ophalen.")
+            await message.channel.send("⚠️ Lyrics niet gevonden via Genius. Probeer OpenAI fallback…")
+            title = song_info["title"]
+            artist = title.split("by")[-1].strip() if "by" in title else "Artista sconosciuto"
+            fallback = await self.fallback_lyrics_openai(title, artist)
+            if fallback:
+                for chunk in self.split_into_chunks(fallback, 1900):
+                    await message.channel.send(f"🎶\n{chunk}")
+            else:
+                await message.channel.send("❌ Geen lyrics gevonden, ook niet via OpenAI.")
             return
 
         translated = await self.translate_lyrics(lyrics_lines)
@@ -98,6 +101,26 @@ class LyricsCog(commands.Cog):
             return lines
         except Exception as e:
             logging.error(f"Fout bij scrapen van lyrics: {e}")
+            return None
+
+    async def fallback_lyrics_openai(self, title, artist):
+        prompt = (
+            f"Dammi il testo completo della canzone '{title}' di '{artist}' in italiano. "
+            "Se lo conosci, mostrami ogni riga con una traduzione tra parentesi in corsivo in olandese sotto ciascuna riga. "
+            "Se non lo conosci, dì chiaramente che non puoi aiutare."
+        )
+        try:
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Sei un traduttore esperto di testi musicali italiani."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logging.error(f"Fout bij ophalen fallback lyrics via OpenAI: {e}")
             return None
 
     async def translate_lyrics(self, lines):
