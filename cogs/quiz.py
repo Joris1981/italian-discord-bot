@@ -3,6 +3,7 @@ from discord.ext import commands
 import unicodedata
 import re
 import asyncio
+from session_manager import session_manager
 
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
@@ -20,23 +21,27 @@ class Quiz(commands.Cog):
         if message.author.bot:
             return
 
-        # DI O DA quiz
-        if message.channel.id == 1388866025679880256 and normalize(message.content) == "quiz":
-            await self.start_di_da_quiz(message.author)
+        user_id = message.author.id
 
-        # PER O IN quiz
-        elif message.channel.id == 1390080013533052949 and normalize(message.content) == "quiz":
-            await self.start_in_per_quiz(message.author)
+        # START nieuwe quiz: di/da, per/in, qualche
+        if normalize(message.content) == "quiz":
+            if session_manager.has_active_session(user_id):
+                await message.channel.send("❌ Hai già una quiz attiva. Completa prima quella prima di iniziarne un'altra.")
+                return
 
-        # QUALCHE / ALCUNI / NESSUNO quiz
-        elif message.channel.id == 1390247257609207819 and normalize(message.content) == "quiz":
-            await self.start_qualche_quiz(message)
+            if message.channel.id == 1388866025679880256:
+                await self.start_di_da_quiz(message.author)
+                session_manager.start_quiz(user_id)
+            elif message.channel.id == 1390080013533052949:
+                await self.start_in_per_quiz(message.author)
+                session_manager.start_quiz(user_id)
+            elif message.channel.id == 1390247257609207819:
+                await self.start_qualche_quiz(message)
+                session_manager.start_quiz(user_id)
 
-        # Blokkeer andere DM-reacties tijdens een actieve quiz
-        elif isinstance(message.channel, discord.DMChannel):
-            user_id = str(message.author.id)
-            if user_id in self.active_quizzes:
-                await self.handle_quiz_answer(message, self.active_quizzes[user_id])
+        # Tijdens quiz: verwerk antwoorden enkel in DM
+        elif isinstance(message.channel, discord.DMChannel) and user_id in self.active_quizzes:
+            await self.handle_quiz_answer(message, self.active_quizzes[user_id])
 
     # ================================
     # === QUALCHE / ALCUNI QUIZ ===
@@ -112,6 +117,7 @@ class Quiz(commands.Cog):
         else:
             score = quiz_data["score"]
             del self.active_quizzes[str(message.author.id)]
+            session_manager.end_quiz(message.author.id)
             await message.channel.send(
                 f"**Quiz completata!**\nHai totalizzato **{score}/14** risposte corrette. 🎉\n"
                 "Se vuoi controllare tutte le risposte corrette, scrivi qui in DM:\n`!qualche-soluzioni` 📚\n"
@@ -173,6 +179,7 @@ class Quiz(commands.Cog):
         try:
             dm = await user.create_dm()
             await dm.send(f"📚 **Quiz: {title}**\nRispondi scrivendo solo la preposizione corretta (es: `di`, `da`, `in`, `per`, `a`). Hai 60 secondi per ogni frase. Buona fortuna!")
+            session_manager.start_quiz(user.id)
 
             score = 0
             for q in questions:
@@ -196,7 +203,7 @@ class Quiz(commands.Cog):
         except Exception as e:
             print(f"❌ Errore nella quiz ({title}): {e}")
         finally:
-            self.active_quizzes.pop(str(user.id), None)
+            session_manager.end_quiz(user.id)
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))
