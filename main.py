@@ -57,6 +57,7 @@ TARGET_CHANNEL_IDS = {
     1387910961846947991,
     1387571841442385951,
     1387569943746318386,
+    1390410564093743285,
     1388667261761359932
 }
 
@@ -290,6 +291,29 @@ async def curiosita_puttanesca(ctx):
         await ctx.reply("✅ Curiosità verzonden via DM!", mention_author=False)
     except discord.Forbidden:
         await ctx.reply("⚠️ Kan geen DM verzenden – check je DM-instellingen.", mention_author=False)
+        
+# --- Commando: ascolto_cristina ---
+@bot.command(name='ascolto_cristina')
+async def ascolto_cristina(ctx):
+    try:
+        await ctx.author.send(
+            "**📄 Transcript – 'Cristina e la sua famiglia'**\n"
+            "Mi chiamo Cristina, ho 11 anni e vivo in un paesino nella campagna toscana.\n"
+            "Mio padre si chiama Giacomo ed è un apicoltore che produce del miele dolce e squisito: lui mi dice sempre che le api sono degli insetti preziosi che bisogna sempre proteggere.\n"
+            "Mia madre, Liliana, è un'illustratrice di libri per bambini che nel tempo libero ama leggere e fare giardinaggio.\n"
+            "Ho una sorella più piccola di me che si chiama Ginevra ed ha 7 anni: trascorriamo molto tempo insieme a giocare e a disegnare.\n"
+            "Ogni giorno dopo la scuola vado a trovare la nonna Berta che abita vicino a noi: con lei mi piace preparare tanti dolci, come ad esempio la crostata di fragole e i biscotti.\n\n"
+            "**✅ Soluzioni quiz**\n"
+            "1️⃣ = 🅱️\n"
+            "2️⃣ = 🅰️\n"
+            "3️⃣ = 🅱️\n"
+            "4️⃣ = 🅱️\n"
+            "5️⃣ = 🅰️\n"
+            "6️⃣ = 🅱️"
+        )
+        await ctx.reply("📬 Ti ho inviato il transcript e le soluzioni in DM!", mention_author=False)
+    except discord.Forbidden:
+        await ctx.reply("❌ Non posso inviarti un DM. Controlla le tue impostazioni di privacy.", mention_author=False)
 
 # === ▶️ Start de bot ===
 if __name__ == "__main__":
