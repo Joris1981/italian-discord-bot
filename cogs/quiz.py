@@ -1,37 +1,134 @@
 import discord
 from discord.ext import commands
-import asyncio
 import unicodedata
 import re
+import asyncio
+
+def normalize(text):
+    text = unicodedata.normalize("NFKD", text).lower().strip()
+    text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
+    text = re.sub(r"[\s’‘`]", "", text)
+    return text
 
 class Quiz(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.active_quizzes = {}
-        self.thread_di_da = 1388866025679880256
-        self.thread_in_per = 1390080013533052949
-
-    def normalize(self, text):
-        text = unicodedata.normalize("NFKD", text).lower().strip()
-        text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
-        text = re.sub(r"[\s’‘`]", "", text)
-        if text == "dell":
-            return "dell'"
-        return text
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or message.content.lower().strip() != "quiz":
+        if message.author.bot:
             return
 
-        if message.channel.id == self.thread_di_da:
-            if message.author.id not in self.active_quizzes:
-                self.active_quizzes[message.author.id] = "di_da"
-                await self.start_di_da_quiz(message.author)
-        elif message.channel.id == self.thread_in_per:
-            if message.author.id not in self.active_quizzes:
-                self.active_quizzes[message.author.id] = "in_per"
-                await self.start_in_per_quiz(message.author)
+        # DI O DA quiz
+        if message.channel.id == 1388866025679880256 and normalize(message.content) == "quiz":
+            await self.start_di_da_quiz(message.author)
+
+        # PER O IN quiz
+        elif message.channel.id == 1390080013533052949 and normalize(message.content) == "quiz":
+            await self.start_in_per_quiz(message.author)
+
+        # QUALCHE / ALCUNI / NESSUNO quiz
+        elif message.channel.id == 1390247257609207819 and normalize(message.content) == "quiz":
+            await self.start_qualche_quiz(message)
+
+        # Blokkeer andere DM-reacties tijdens een actieve quiz
+        elif isinstance(message.channel, discord.DMChannel):
+            user_id = str(message.author.id)
+            if user_id in self.active_quizzes:
+                await self.handle_quiz_answer(message, self.active_quizzes[user_id])
+
+    # ================================
+    # === QUALCHE / ALCUNI QUIZ ===
+    # ================================
+
+    async def start_qualche_quiz(self, message):
+        user_id = str(message.author.id)
+        questions = [
+            ("Non c’è ___ problema, tutto è sotto controllo.", "nessun"),
+            ("Ho conosciuto ___ ragazze simpatiche ieri sera.", "alcune"),
+            ("Non ho ricevuto ___ risposta alla mia mail.", "nessuna"),
+            ("___ volta andiamo in bici al lavoro.", "qualche"),
+            ("Non c’era ___ alla festa, era deserta.", "nessuno"),
+            ("Hai letto ___ libro interessante ultimamente?", "qualche"),
+            ("Non ho ___ voglia di studiare oggi.", "alcuna"),
+            ("___ studenti sono partiti in anticipo.", "alcuni"),
+            ("Non c’è ___ motivo di preoccuparsi.", "alcun"),
+            ("Non conosco ___ con quel nome.", "nessuno"),
+            ("___ idea è stata accettata.", "qualche"),
+            ("Non ho trovato ___ soluzione.", "nessuna"),
+            ("C’erano ___ problemi tecnici.", "alcuni"),
+            ("Non c’è ___ persona che lo sappia.", "nessuna"),
+        ]
+        try:
+            await message.author.send("📘 **Quiz: Qualche, Alcuni, Nessuno, Alcuno**\nRispondi con la parola corretta: *qualche, alcuni, alcune, alcuno, alcuna, nessuno, nessuna, nessun, alcun*.\nHai 14 frasi. Iniziamo!")
+            self.active_quizzes[user_id] = {
+                "type": "qualche",
+                "index": 0,
+                "score": 0,
+                "questions": questions
+            }
+            await self.ask_next_question(message.author)
+        except discord.Forbidden:
+            await message.channel.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+
+    @commands.command(name="qualche-soluzioni")
+    async def qualche_soluzioni(self, ctx):
+        solutions = [
+            "**Non c’è nessun problema**, tutto è sotto controllo.",
+            "**Ho conosciuto alcune ragazze simpatiche** ieri sera.",
+            "**Non ho ricevuto nessuna risposta** alla mia mail.",
+            "**Qualche volta andiamo in bici** al lavoro.",
+            "**Non c’era nessuno** alla festa, era deserta.",
+            "**Hai letto qualche libro interessante** ultimamente?",
+            "**Non ho alcuna voglia** di studiare oggi.",
+            "**Alcuni studenti sono partiti** in anticipo.",
+            "**Non c’è alcun motivo** di preoccuparsi.",
+            "**Non conosco nessuno** con quel nome.",
+            "**Qualche idea è stata accettata.**",
+            "**Non ho trovato nessuna soluzione.**",
+            "**C’erano alcuni problemi tecnici.**",
+            "**Non c’è nessuna persona** che lo sappia."
+        ]
+        try:
+            for s in solutions:
+                await ctx.author.send(s)
+        except discord.Forbidden:
+            await ctx.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+
+    async def handle_quiz_answer(self, message, quiz_data):
+        answer = normalize(message.content)
+        index = quiz_data["index"]
+        question, correct = quiz_data["questions"][index]
+        if answer == normalize(correct):
+            await message.channel.send("✅ Corretto!")
+            quiz_data["score"] += 1
+        else:
+            await message.channel.send(f"❌ Sbagliato! Risposta corretta: **{correct}**")
+        quiz_data["index"] += 1
+
+        if quiz_data["index"] < len(quiz_data["questions"]):
+            await self.ask_next_question(message.channel)
+        else:
+            score = quiz_data["score"]
+            del self.active_quizzes[str(message.author.id)]
+            await message.channel.send(
+                f"**Quiz completata!**\nHai totalizzato **{score}/14** risposte corrette. 🎉\n"
+                "Se vuoi controllare tutte le risposte corrette, scrivi qui in DM:\n`!qualche-soluzioni` 📚\n"
+                "➡️ **Opnieuw proberen? Typ gewoon opnieuw quiz in dezelfde thread.**"
+            )
+
+    async def ask_next_question(self, user):
+        try:
+            quiz_data = self.active_quizzes[str(user.id)]
+            question, _ = quiz_data["questions"][quiz_data["index"]]
+            await user.send(f"{quiz_data['index']+1}/14: {question}")
+        except Exception as e:
+            print(f"❌ Fout bij het verzenden van de quizvraag: {e}")
+
+    # ================================
+    # === DI / DA QUIZ ===
+    # ================================
 
     async def start_di_da_quiz(self, user):
         questions = [
@@ -52,6 +149,10 @@ class Quiz(commands.Cog):
             {"question": "15. Il computer ___ ragazzo è rotto.", "answer": "del"}
         ]
         await self.run_quiz(user, questions, "DI o DA")
+
+    # ================================
+    # === PER / IN QUIZ ===
+    # ================================
 
     async def start_in_per_quiz(self, user):
         questions = [
@@ -82,7 +183,7 @@ class Quiz(commands.Cog):
                         timeout=60,
                         check=lambda m: m.author == user and m.channel == dm
                     )
-                    if self.normalize(reply.content) == self.normalize(q["answer"]):
+                    if normalize(reply.content) == normalize(q["answer"]):
                         await dm.send("✅ Corretto!")
                         score += 1
                     else:
@@ -95,7 +196,7 @@ class Quiz(commands.Cog):
         except Exception as e:
             print(f"❌ Errore nella quiz ({title}): {e}")
         finally:
-            self.active_quizzes.pop(user.id, None)
+            self.active_quizzes.pop(str(user.id), None)
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))
