@@ -191,6 +191,7 @@ async def on_message(message):
 # === 🎧 Commando’s ===
 @bot.command()
 async def ascolto_dai_accompagnami(ctx):
+    print(f"🔔 Commando 'ascolto_dai_accompagnami' uitgevoerd door: {ctx.author}")
     try:
         await ctx.author.send(
             "📘 **Transcript – \"Dai, accompagnami – una conversazione tra amici\"**\n\n"
@@ -282,6 +283,7 @@ async def ascolto_puttanesca(ctx):
 # --- Commando: curiosita_puttanesca ---
 @bot.command()
 async def curiosita_puttanesca(ctx):
+    print(f"🔔 Commando 'curiosita_puttanesca' uitgevoerd door: {ctx.author}")
     try:
         await ctx.author.send(
             "🍝 **Curiosità:**\n"
@@ -295,6 +297,7 @@ async def curiosita_puttanesca(ctx):
 # --- Commando: ascolto_cristina ---
 @bot.command(name='ascolto_cristina')
 async def ascolto_cristina(ctx):
+    print(f"🔔 Commando 'ascolto_cristina' uitgevoerd door: {ctx.author}")
     try:
         await ctx.author.send(
             "**📄 Transcript – 'Cristina e la sua famiglia'**\n"
