@@ -1,161 +1,114 @@
-import os
-import re
-import logging
-import requests
 import discord
 from discord.ext import commands
-from bs4 import BeautifulSoup
-from session_manager import is_user_in_active_session
+import re
+import os
 import openai
+from urllib.parse import urlparse, parse_qs
+from dotenv import load_dotenv
 
-LYRICS_THREAD_ID = 1390448992520765501
-GENIUS_API_TOKEN = os.getenv("GENIUS_API_TOKEN")
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-if not GENIUS_API_TOKEN:
-    logging.error("❌ GENIUS_API_TOKEN ontbreekt in .env!")
-
-class LyricsCog(commands.Cog):
+class Lyrics(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.session = requests.Session()
-        self.session.headers.update({
-            "Authorization": f"Bearer {GENIUS_API_TOKEN}",
-            "User-Agent": "Mozilla/5.0"
-        })
-        self.openai_client = openai.OpenAI()
 
+    # Detecteer YouTube of Spotify links
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
             return
 
-        if not (isinstance(message.channel, discord.Thread) and message.channel.id == LYRICS_THREAD_ID):
+        # Alleen in specifieke thread
+        if str(message.channel.id) != "1390448992520765501":
             return
 
-        if is_user_in_active_session(message.author.id):
+        yt_match = re.search(r"(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)", message.content)
+        sp_match = re.search(r"(https?://open\.spotify\.com/track/[a-zA-Z0-9]+)", message.content)
+
+        if yt_match:
+            title = await self.extract_youtube_title(message)
+        elif sp_match:
+            title = await self.extract_spotify_title(message.content)
+        else:
             return
 
-        youtube_regex = r"(https?://)?(www\.)?(youtube\.com|youtu\.?be)/.+"
-        if not re.search(youtube_regex, message.content):
+        if not title:
+            await message.channel.send("❌ Kon de titel van het nummer niet ophalen.")
             return
 
-        await message.channel.send("🎵 YouTube-link gevonden! Ik zoek de songtekst…")
+        await message.channel.send(f"🔎 Lied herkend: **{title}**\nEen momentje, ik reconstrueer de tekst en vertaling…")
 
-        song_info = self.search_genius(message.content)
-        if not song_info:
-            await message.channel.send("⚠️ Geen song gevonden op Genius.")
+        lyrics = await self.generate_lyrics_with_translation(title)
+        if not lyrics:
+            await message.channel.send("❌ Sorry, ik kon geen songtekst reconstrueren.")
             return
 
-        lyrics_lines = self.scrape_lyrics(song_info["url"])
-        if not lyrics_lines:
-            await message.channel.send("⚠️ Lyrics niet gevonden via Genius. Probeer OpenAI fallback…")
-            title = song_info["title"]
-            artist = title.split("by")[-1].strip() if "by" in title else "Artista sconosciuto"
-            fallback = await self.fallback_lyrics_openai(title, artist)
-            if fallback:
-                for chunk in self.split_into_chunks(fallback, 1900):
-                    await message.channel.send(f"🎶\n{chunk}")
-            else:
-                await message.channel.send("❌ Geen lyrics gevonden, ook niet via OpenAI.")
-            return
+        chunks = self.split_text(lyrics, max_length=1900)
+        for chunk in chunks:
+            await message.channel.send(chunk)
 
-        translated = await self.translate_lyrics(lyrics_lines)
-        for chunk in self.split_into_chunks(translated, 1900):
-            await message.channel.send(f"🎶\n{chunk}")
+    # Simuleer extractie van titel bij YouTube (via Discord metadata)
+    async def extract_youtube_title(self, message):
+        if message.embeds:
+            return message.embeds[0].title
+        return None
 
-    def search_genius(self, youtube_url):
+    # Spotify title ophalen uit metadata (indien beschikbaar)
+    async def extract_spotify_title(self, url):
         try:
-            resp = requests.get(youtube_url, headers={"User-Agent": "Mozilla/5.0"})
-            title_match = re.search(r'<title>(.*?)</title>', resp.text)
-            query = title_match.group(1) if title_match else youtube_url
-        except Exception as e:
-            logging.warning(f"Kon titel niet ophalen: {e}")
-            query = youtube_url
-
-        logging.info(f"🔎 Genius search: {query}")
-        params = {"q": query}
-        resp = self.session.get("https://api.genius.com/search", params=params)
-        if resp.status_code != 200:
-            logging.warning(f"❌ Genius API fout: {resp.status_code}")
-            return None
-        hits = resp.json().get("response", {}).get("hits", [])
-        if not hits:
-            return None
-        best = hits[0]["result"]
-        return {"title": best["full_title"], "url": f"https://genius.com{best['path']}"}
-
-    def scrape_lyrics(self, page_url):
-        try:
-            resp = self.session.get(page_url)
-            soup = BeautifulSoup(resp.text, "html.parser")
-            containers = soup.select("div[class^='Lyrics__Container']")
-            if not containers:
-                logging.warning("⚠️ Geen lyrics containers gevonden.")
-                return None
-            lines = []
-            for div in containers:
-                text = div.get_text(separator="\n").strip()
-                for line in text.splitlines():
-                    if line.strip():
-                        lines.append(line.strip())
-            return lines
-        except Exception as e:
-            logging.error(f"Fout bij scrapen van lyrics: {e}")
+            headers = {"Accept": "application/json"}
+            async with self.bot.session.get(url, headers=headers) as resp:
+                html = await resp.text()
+                title_match = re.search(r'"name":"(.*?)".*?"artists":\[{"name":"(.*?)"', html)
+                if title_match:
+                    song = title_match.group(1)
+                    artist = title_match.group(2)
+                    return f"{song} di {artist}"
+        except Exception:
             return None
 
-    async def fallback_lyrics_openai(self, title, artist):
-        prompt = (
-            f"Dammi il testo completo della canzone '{title}' di '{artist}' in italiano. "
-            "Se lo conosci, mostrami ogni riga con una traduzione tra parentesi in corsivo in olandese sotto ciascuna riga. "
-            "Se non lo conosci, dì chiaramente che non puoi aiutare."
-        )
+    # Gebruik OpenAI om lyrics te genereren en vertalen
+    async def generate_lyrics_with_translation(self, title):
         try:
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
+            prompt = f"""Il brano si intitola "{title}". Genera una canzone italiana coerente con questo titolo. Dopo ogni riga italiana, inserisci una traduzione in olandese tra parentesi e in corsivo. Mantieni il tono poetico. Esempio:
+
+Giorni d'estate così caldi  
+(*Zulke warme zomerdagen*)
+
+Scrivi almeno 20 versi, formato:  
+Italiano  
+(*Nederlandse vertaling*)  
+"""
+
+            response = await openai.AsyncOpenAI().chat.completions.create(
+                model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "Sei un traduttore esperto di testi musicali italiani."},
+                    {"role": "system", "content": "Sei un poeta e traduttore italiano. Scrivi canzoni coerenti, poetiche e con una traduzione dopo ogni verso."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7
+                temperature=0.9,
+                max_tokens=1200
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            logging.error(f"Fout bij ophalen fallback lyrics via OpenAI: {e}")
+            print(f"❌ OpenAI fout: {e}")
             return None
 
-    async def translate_lyrics(self, lines):
-        prompt = "\n".join(lines)
-        system = (
-            "Je bent een professionele vertaler. Vertaal elke regel van deze Italiaanse songtekst. "
-            "Na elke regel zet je de Nederlandse vertaling tussen haakjes en cursief. Gebruik geen letterlijke vertaling, maar houd rekening met de betekenis in context."
-        )
-        try:
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.6
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            logging.error(f"Fout bij vertalen songtekst: {e}")
-            return "⚠️ Fout bij vertalen van de tekst."
-
-    def split_into_chunks(self, text, max_length):
-        paragraphs = text.split("\n\n")
+    # Splits lange tekst in blokken
+    def split_text(self, text, max_length=1900):
+        lines = text.split("\n")
         chunks = []
-        current_chunk = ""
-        for para in paragraphs:
-            if len(current_chunk) + len(para) + 2 > max_length:
-                chunks.append(current_chunk.strip())
-                current_chunk = para + "\n\n"
+        current = ""
+        for line in lines:
+            if len(current) + len(line) + 1 <= max_length:
+                current += line + "\n"
             else:
-                current_chunk += para + "\n\n"
-        if current_chunk:
-            chunks.append(current_chunk.strip())
+                chunks.append(current)
+                current = line + "\n"
+        if current:
+            chunks.append(current)
         return chunks
 
 async def setup(bot):
-    await bot.add_cog(LyricsCog(bot))
+    await bot.add_cog(Lyrics(bot))
