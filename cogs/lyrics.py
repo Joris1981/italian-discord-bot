@@ -1,9 +1,11 @@
+# cogs/lyrics.py
+
 import discord
 from discord.ext import commands
 import re
 import os
 import openai
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,9 +20,11 @@ class Lyrics(commands.Cog):
         if message.author.bot:
             return
 
+        # Alleen in de juiste lyrics-thread
         if str(message.channel.id) != "1390448992520765501":
             return
 
+        # Detecteer YouTube of Spotify-link
         yt_match = re.search(r"(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)", message.content)
         sp_match = re.search(r"(https?://open\.spotify\.com/track/[a-zA-Z0-9]+)", message.content)
 
@@ -47,8 +51,9 @@ class Lyrics(commands.Cog):
             await message.channel.send(chunk)
 
     async def extract_youtube_title(self, message):
-        if message.embeds:
+        if message.embeds and message.embeds[0].title:
             return message.embeds[0].title
+        # Fallback naar ruwe tekst als embed ontbreekt
         return None
 
     async def extract_spotify_title(self, url):
@@ -68,7 +73,7 @@ class Lyrics(commands.Cog):
         try:
             prompt = (
                 f"""Sto cercando il testo completo della canzone italiana intitolata "{title}". 
-Genera fedelmente l'intero testo a partire dall'inizio, senza saltare strofe. 
+Genera fedelmente l'intero testo a partire dalla **prima riga**, senza saltare nulla. 
 Dopo ogni riga, fornisci la traduzione in olandese tra parentesi e in corsivo. 
 Scrivi almeno 20 righe. Formato:
 
@@ -77,7 +82,7 @@ Riga in italiano
             )
 
             response = await openai.AsyncOpenAI().chat.completions.create(
-                model="gpt-4",
+                model="gpt-4-turbo",
                 messages=[
                     {
                         "role": "system",
@@ -88,7 +93,7 @@ Riga in italiano
                     },
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.8,
+                temperature=0.85,
                 max_tokens=3072
             )
             return response.choices[0].message.content.strip()
