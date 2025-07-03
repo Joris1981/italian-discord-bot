@@ -89,7 +89,7 @@ Riga in italiano
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.8,
-                max_tokens=1400
+                max_tokens=3072
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
