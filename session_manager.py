@@ -39,3 +39,6 @@ def end_wordle(user_id):
     Beëindigt de Wordle voor deze gebruiker.
     """
     active_wordle_users.discard(user_id)
+
+# Alias voor compatibiliteit met oudere imports
+is_user_in_active_session = is_busy
