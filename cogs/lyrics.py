@@ -24,18 +24,22 @@ class LyricsCog(commands.Cog):
             "Authorization": f"Bearer {GENIUS_API_TOKEN}",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         })
+        self.openai_client = openai.OpenAI()
 
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
             return
 
+        # Alleen reageren in juiste thread
         if not (isinstance(message.channel, discord.Thread) and message.channel.id == LYRICS_THREAD_ID):
             return
 
+        # Negeer als gebruiker in actieve sessie zit
         if is_user_in_active_session(message.author.id):
             return
 
+        # Check op YouTube-link
         youtube_regex = r"(https?://)?(www\.)?(youtube\.com|youtu\.?be)/.+"
         if not re.search(youtube_regex, message.content):
             return
@@ -103,7 +107,7 @@ class LyricsCog(commands.Cog):
             "Na elke regel zet je de Nederlandse vertaling tussen haakjes en cursief. Gebruik geen letterlijke vertaling, maar houd rekening met de betekenis in context."
         )
         try:
-            completion = openai.ChatCompletion.create(
+            response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": system},
@@ -111,7 +115,7 @@ class LyricsCog(commands.Cog):
                 ],
                 temperature=0.6
             )
-            return completion.choices[0].message.content.strip()
+            return response.choices[0].message.content.strip()
         except Exception as e:
             logging.error(f"Fout bij vertalen songtekst: {e}")
             return "⚠️ Fout bij vertalen van de tekst."
