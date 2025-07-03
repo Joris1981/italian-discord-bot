@@ -1,3 +1,5 @@
+# wordle.py
+
 import discord
 from discord.ext import commands, tasks
 import json
@@ -8,7 +10,7 @@ import asyncio
 import logging
 import openai
 
-from session_manager import session_manager  # ✅ Nieuw
+from session_manager import start, end, is_user_in_active_session
 
 client = openai.OpenAI()
 
@@ -160,7 +162,7 @@ class Wordle(commands.Cog):
             return
 
         user = ctx.author
-        if session_manager.is_active(user.id):
+        if is_user_in_active_session(user.id):
             await ctx.send(f"{user.mention}, je bent al met een quiz of Wordle bezig.")
             return
 
@@ -181,9 +183,9 @@ class Wordle(commands.Cog):
             await ctx.send(f"{user.mention}, ik kan je geen DM sturen. Kijk je instellingen na.")
             return
 
-        session_manager.start(user.id, "wordle")  # ✅ Start sessie
+        start(user.id, "wordle")
         score, sterren = await self.start_wordle_dm(user, woorden, week, thema)
-        session_manager.end(user.id)  # ✅ Einde sessie
+        end(user.id)
 
         scores = self.laad_scores()
         uid = str(user.id)

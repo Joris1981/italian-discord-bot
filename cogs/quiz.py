@@ -23,7 +23,6 @@ class Quiz(commands.Cog):
 
         user_id = message.author.id
 
-        # START nieuwe quiz: di/da, per/in, qualche
         if normalize(message.content) == "quiz":
             if session_manager.has_active_session(user_id):
                 await message.channel.send("❌ Hai già una quiz attiva. Completa prima quella prima di iniziarne un'altra.")
@@ -31,15 +30,11 @@ class Quiz(commands.Cog):
 
             if message.channel.id == 1388866025679880256:
                 await self.start_di_da_quiz(message.author)
-                session_manager.start_quiz(user_id)
             elif message.channel.id == 1390080013533052949:
                 await self.start_in_per_quiz(message.author)
-                session_manager.start_quiz(user_id)
             elif message.channel.id == 1390247257609207819:
                 await self.start_qualche_quiz(message)
-                session_manager.start_quiz(user_id)
 
-        # Tijdens quiz: verwerk antwoorden enkel in DM
         elif isinstance(message.channel, discord.DMChannel) and user_id in self.active_quizzes:
             await self.handle_quiz_answer(message, self.active_quizzes[user_id])
 
@@ -66,13 +61,18 @@ class Quiz(commands.Cog):
             ("Non c’è ___ persona che lo sappia.", "nessuna"),
         ]
         try:
-            await message.author.send("📘 **Quiz: Qualche, Alcuni, Nessuno, Alcuno**\nRispondi con la parola corretta: *qualche, alcuni, alcune, alcuno, alcuna, nessuno, nessuna, nessun, alcun*.\nHai 14 frasi. Iniziamo!")
+            await message.author.send(
+                "📘 **Quiz: Qualche, Alcuni, Nessuno, Alcuno**\n"
+                "Rispondi con la parola corretta: *qualche, alcuni, alcune, alcuno, alcuna, nessuno, nessuna, nessun, alcun*.\n"
+                "Hai 14 frasi. Iniziamo!"
+            )
             self.active_quizzes[user_id] = {
                 "type": "qualche",
                 "index": 0,
                 "score": 0,
                 "questions": questions
             }
+            session_manager.start_quiz(int(user_id))
             await self.ask_next_question(message.author)
         except discord.Forbidden:
             await message.channel.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
