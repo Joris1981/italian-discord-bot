@@ -71,6 +71,7 @@ class MyBot(commands.Bot):
         await self.load_extension("cogs.grammatica")
         await self.load_extension("cogs.wordle")
         await self.load_extension("cogs.quiz")
+        await self.load_extension("cogs.lyrics")
         self.loop.create_task(reminder_task())
 
 bot = MyBot(command_prefix='!', intents=intents)
