@@ -3,7 +3,7 @@ from discord.ext import commands
 import unicodedata
 import re
 import asyncio
-from session_manager import session_manager
+import session_manager  # ✅ Correcte import
 
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
@@ -24,15 +24,18 @@ class Quiz(commands.Cog):
         user_id = message.author.id
 
         if normalize(message.content) == "quiz":
-            if session_manager.has_active_session(user_id):
+            if session_manager.is_busy(user_id):
                 await message.channel.send("❌ Hai già una quiz attiva. Completa prima quella prima di iniziarne un'altra.")
                 return
 
             if message.channel.id == 1388866025679880256:
+                session_manager.start_quiz(user_id)
                 await self.start_di_da_quiz(message.author)
             elif message.channel.id == 1390080013533052949:
+                session_manager.start_quiz(user_id)
                 await self.start_in_per_quiz(message.author)
             elif message.channel.id == 1390247257609207819:
+                session_manager.start_quiz(user_id)
                 await self.start_qualche_quiz(message)
 
         elif isinstance(message.channel, discord.DMChannel) and user_id in self.active_quizzes:
@@ -72,7 +75,6 @@ class Quiz(commands.Cog):
                 "score": 0,
                 "questions": questions
             }
-            session_manager.start_quiz(int(user_id))
             await self.ask_next_question(message.author)
         except discord.Forbidden:
             await message.channel.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
@@ -179,7 +181,6 @@ class Quiz(commands.Cog):
         try:
             dm = await user.create_dm()
             await dm.send(f"📚 **Quiz: {title}**\nRispondi scrivendo solo la preposizione corretta (es: `di`, `da`, `in`, `per`, `a`). Hai 60 secondi per ogni frase. Buona fortuna!")
-            session_manager.start_quiz(user.id)
 
             score = 0
             for q in questions:
