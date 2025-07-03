@@ -33,7 +33,7 @@ class Quiz(commands.Cog):
             elif message.channel.id == 1390080013533052949:
                 session_manager.start_quiz(user_id)
                 await self.start_in_per_quiz(message.author)
-            elif message.channel.id == 1390247257609207819:
+            elif message.channel.id == 1390371003414216805:
                 session_manager.start_quiz(user_id)
                 await self.start_qualche_quiz(message.author)
 
