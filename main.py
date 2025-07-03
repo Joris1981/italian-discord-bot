@@ -1,7 +1,6 @@
-import os
-from dotenv import load_dotenv
-load_dotenv()
+# main.py
 
+import os
 import discord
 import openai
 import asyncio
@@ -13,9 +12,12 @@ import re
 from discord.ext import commands
 from flask import Flask
 from threading import Thread
-from session_manager import is_user_in_active_session
+from dotenv import load_dotenv
+import session_manager
 
-# ✅ Normaliseer tekst voor quiz-antwoorden
+load_dotenv()
+
+# --- Normaliseer tekst ---
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
     text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
@@ -24,10 +26,10 @@ def normalize(text):
         return "dell'"
     return text
 
-# Logging
+# --- Logging ---
 logging.basicConfig(level=logging.INFO)
 
-# --- Keep-alive server voor Replit/Render ---
+# --- Keep alive ---
 app = Flask(__name__)
 
 @app.route('/')
@@ -50,14 +52,13 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- OpenAI API instellen ---
-import openai as openai_module
+# --- OpenAI ---
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
-    logging.error("❌ OPENAI_API_KEY niet gevonden in omgevingsvariabelen!")
+    logging.error("❌ OPENAI_API_KEY ontbreekt!")
 else:
-    openai_module.api_key = openai_api_key
-    logging.info("✅ OPENAI_API_KEY succesvol ingesteld.")
+    openai.api_key = openai_api_key
+    logging.info("✅ OpenAI ingesteld.")
 
 client = openai.OpenAI(api_key=openai_api_key)
 
@@ -69,31 +70,25 @@ TARGET_CHANNEL_IDS = {
     1387569943746318386,
     1388667261761359932
 }
-active_quiz_users = set()
-active_wordle_users = set()
 
-# --- Botklasse ---
+# --- Bot setup ---
 intents = discord.Intents.default()
 intents.message_content = True
+intents.dm_messages = True
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
         await self.load_extension("cogs.grammatica")
         await self.load_extension("cogs.wordle")
         await self.load_extension("cogs.quiz")
-        self.loop.create_task(reminder_task())  # ✅ reminder_task hier starten
+        self.loop.create_task(reminder_task())
 
 bot = MyBot(command_prefix='!', intents=intents)
 
-# --- on_ready ---
-@bot.event
-async def on_ready():
-    logging.info(f"✅ {bot.user} is nu online en klaar voor gebruik!")
-
-# --- Reminder woensdagavond ---
+# --- Reminder op woensdagavond ---
 async def reminder_task():
     await bot.wait_until_ready()
-    channel_id = 1387552031631478945
+    channel_id = 1387552031631478945  # voice kanaal ID
     while not bot.is_closed():
         now = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
         if now.weekday() == 2 and now.hour == 20 and now.minute == 0:
@@ -121,18 +116,63 @@ async def reminder_task():
             await asyncio.sleep(60)
         await asyncio.sleep(30)
 
-# --- on_message event voor DM's en taalcorrectie ---
+# --- on_ready ---
+@bot.event
+async def on_ready():
+    logging.info(f"✅ Bot online als {bot.user}!")
+
+# --- on_message: taalcorrectie & GPT in DM ---
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
+    if message.author.bot:
         return
 
-    # Check: is gebruiker in quiz of wordle sessie via session manager
-    if isinstance(message.channel, discord.DMChannel):
-        if is_user_in_active_session(message.author.id):
-            return  # Laat quiz of wordle cog de antwoorden verwerken, geen GPT-reactie
+    # ✅ Taalcorrectie in kanalen
+    parent_id = message.channel.id
+    if isinstance(message.channel, discord.Thread):
+        parent_id = message.channel.parent_id
 
-        # GPT-DM functionaliteit (max 5 per dag)
+    if parent_id in TARGET_CHANNEL_IDS:
+        try:
+            detection = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Rispondi solo con 'ITALIANO' se il testo è italiano, altrimenti 'ALTRO'."},
+                    {"role": "user", "content": message.content}
+                ],
+                max_tokens=5
+            )
+            if detection.choices[0].message.content.strip().upper() != "ITALIANO":
+                return
+
+            correction = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Correggi errori grammaticali, ortografici e di struttura. Rispondi con 'NO_CORRECTION_NEEDED' se è tutto perfetto."},
+                    {"role": "user", "content": message.content}
+                ]
+            )
+            reply = correction.choices[0].message.content.strip()
+            if reply == "NO_CORRECTION_NEEDED":
+                compliments = [
+                    "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
+                    "✅ Perfetto! Sei sulla strada giusta! 🚀",
+                    "✅ Benissimo! 🌟",
+                    "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️",
+                    "✅ Super! La tua passione per l'italiano è evidente! 🎉"
+                ]
+                await message.reply(random.choice(compliments))
+            elif reply.lower().strip() != message.content.lower().strip():
+                await message.reply(f"📝 **{reply}**")
+        except Exception as e:
+            logging.error(f"Taalcorrectie fout: {e}")
+        return
+
+    # ✅ GPT in DM (max 5/dag)
+    if isinstance(message.channel, discord.DMChannel):
+        if session_manager.is_user_in_active_session(message.author.id):
+            return  # Wordle of quiz sessie actief, geen GPT-reactie
+
         user_id = message.author.id
         today = datetime.datetime.utcnow().date().isoformat()
         key = f"{user_id}:{today}"
@@ -150,62 +190,16 @@ async def on_message(message):
                     {"role": "user", "content": message.content}
                 ]
             )
-            reply = response.choices[0].message.content.strip()
-            await message.channel.send(reply)
+            await message.channel.send(response.choices[0].message.content.strip())
             user_message_counts[key] = count + 1
         except Exception as e:
             logging.error(f"Fout bij OpenAI-verzoek: {e}")
             await message.channel.send("⚠️ Probleem bij ophalen van antwoord.")
         return
 
-    # Commando's toelaten
+    # ✅ Laat commando’s toe
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
-        return
-
-    # Taalcorrectie in bepaalde kanalen/threads
-    parent_id = message.channel.id
-    if isinstance(message.channel, discord.Thread):
-        parent_id = message.channel.parent_id
-
-    if parent_id in TARGET_CHANNEL_IDS:
-        try:
-            detection = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Rispondi solo con 'ITALIANO' se il testo è italiano, altrimenti 'ALTRO'."},
-                    {"role": "user", "content": message.content}
-                ],
-                max_tokens=5
-            )
-            lang_reply = detection.choices[0].message.content.strip().upper()
-
-            if lang_reply != "ITALIANO":
-                return
-
-            correction = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Correggi errori grammaticali, ortografici e strutturali. Rispondi con 'NO_CORRECTION_NEEDED' se tutto è perfetto."},
-                    {"role": "user", "content": message.content}
-                ],
-                max_tokens=300
-            )
-            reply = correction.choices[0].message.content.strip()
-
-            if reply == "NO_CORRECTION_NEEDED":
-                compliments = [
-                    "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
-                    "✅ Perfetto! Sei sulla strada giusta! 🚀",
-                    "✅ Benissimo! 🌟",
-                    "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️",
-                    "✅ Super! La tua passione per l'italiano è evidente! 🎉"
-                ]
-                await message.reply(random.choice(compliments))
-            elif reply.lower().strip() != message.content.lower().strip():
-                await message.reply(f"📝 **{reply}**")
-        except Exception as e:
-            logging.error(f"Taalcorrectie fout: {e}")
 
 # --- Commando: ascolto_dai_accompagnami ---
 @bot.command()
