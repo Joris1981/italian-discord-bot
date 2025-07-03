@@ -10,7 +10,7 @@ import asyncio
 import logging
 import openai
 
-from session_manager import start, end, is_user_in_active_session
+from session_manager import start_wordle, end_wordle, is_busy
 
 client = openai.OpenAI()
 
