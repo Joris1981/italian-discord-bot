@@ -98,18 +98,18 @@ async def reminder_task():
             await asyncio.sleep(60)
         await asyncio.sleep(30)
 
-# === 🚀 Bot online ===
-@bot.event
-async def on_ready():
-    logging.info(f"✅ Bot online als {bot.user}!")
-
 # === 📥 on_message: taalcorrectie & GPT ===
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
-    # 📍 Taalcorrectie enkel in TARGET_CHANNEL_IDS
+    # 📍 Commando’s eerst verwerken
+    if message.content.startswith(bot.command_prefix):
+        await bot.process_commands(message)
+        return
+
+    # 📍 Taalcorrectie in bepaalde kanalen
     parent_id = message.channel.id
     if isinstance(message.channel, discord.Thread):
         parent_id = message.channel.parent_id
@@ -152,10 +152,6 @@ async def on_message(message):
 
     # 📩 GPT in DM (beperkt tot 5/dag)
     if isinstance(message.channel, discord.DMChannel):
-        if message.content.startswith(bot.command_prefix):
-            await bot.process_commands(message)
-            return
-
         if is_user_in_active_session(message.author.id):
             return  # Quiz of Wordle is actief
 
@@ -181,11 +177,6 @@ async def on_message(message):
         except Exception as e:
             logging.error(f"GPT DM fout: {e}")
             await message.channel.send("⚠️ Er ging iets mis bij het ophalen van een antwoord.")
-        return
-
-    # ✅ Laat commando’s toe
-    if message.content.startswith(bot.command_prefix):
-        await bot.process_commands(message)
         return
 
 # === 🎧 Commando’s ===
