@@ -13,6 +13,7 @@ import re
 from discord.ext import commands
 from flask import Flask
 from threading import Thread
+from session_manager import is_user_in_active_session
 
 # ✅ Normaliseer tekst voor quiz-antwoorden
 def normalize(text):
@@ -126,10 +127,12 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
+    # Check: is gebruiker in quiz of wordle sessie via session manager
     if isinstance(message.channel, discord.DMChannel):
-        if message.author.id in active_quiz_users or message.author.id in active_wordle_users:
-            return  # Quiz- of Wordle-antwoorden worden niet geteld en krijgen geen GPT-reactie
+        if is_user_in_active_session(message.author.id):
+            return  # Laat quiz of wordle cog de antwoorden verwerken, geen GPT-reactie
 
+        # GPT-DM functionaliteit (max 5 per dag)
         user_id = message.author.id
         today = datetime.datetime.utcnow().date().isoformat()
         key = f"{user_id}:{today}"
@@ -155,10 +158,12 @@ async def on_message(message):
             await message.channel.send("⚠️ Probleem bij ophalen van antwoord.")
         return
 
+    # Commando's toelaten
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
         return
 
+    # Taalcorrectie in bepaalde kanalen/threads
     parent_id = message.channel.id
     if isinstance(message.channel, discord.Thread):
         parent_id = message.channel.parent_id
@@ -201,15 +206,6 @@ async def on_message(message):
                 await message.reply(f"📝 **{reply}**")
         except Exception as e:
             logging.error(f"Taalcorrectie fout: {e}")
-
-# --- Thread reminder voor quiz ---
-@bot.event
-async def on_thread_create(thread):
-    if thread.parent_id == 1387910961846947991:
-        try:
-            await thread.send("📣 Nieuwe uitdaging! Reageer met **“Quiz”** om een mini-quiz in je DM te krijgen.")
-        except Exception as e:
-            logging.error(f"Reminder fout: {e}")
 
 # --- Commando: ascolto_dai_accompagnami ---
 @bot.command()
