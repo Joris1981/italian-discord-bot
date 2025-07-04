@@ -25,8 +25,8 @@ SCORES_PATH = "data/wordle_scores.json"
 PLAYED_PATH = "data/wordle_played.json"
 
 KANALEN = [1389545682007883816, 1389552706783543307, 1388667261761359932]
-LEADERBOARD_THREAD = 1389552706783543307
-MAX_SPEEL_PER_WEEK = 5
+LEADERBOARD_THREAD = 1390779837593026594
+MAX_SPEEL_PER_WEEK = 7
 
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
