@@ -1,44 +1,52 @@
-# session_manager.py
+import datetime
 
-# Huidige actieve gebruikers
-active_quiz_users = set()
-active_wordle_users = set()
+# Huidige actieve sessies per gebruiker
+# Voorbeeld: {123456789: {"type": "wordle", "start": datetime}}
+_active_sessions = {}
 
-def is_busy(user_id):
+def start_session(user_id, session_type):
     """
-    Controleert of gebruiker bezig is met een quiz of wordle.
+    Start een sessie van het opgegeven type voor de gebruiker.
+    Returnt True als gelukt, False als gebruiker al een sessie heeft lopen.
     """
-    return user_id in active_quiz_users or user_id in active_wordle_users
-
-def start_quiz(user_id):
-    """
-    Start een quiz voor deze gebruiker (enkel als hij vrij is).
-    """
-    if is_busy(user_id):
+    if user_id in _active_sessions:
         return False
-    active_quiz_users.add(user_id)
+    _active_sessions[user_id] = {
+        "type": session_type,
+        "start": datetime.datetime.now()
+    }
     return True
 
-def end_quiz(user_id):
+def end_session(user_id):
     """
-    Beëindigt de quiz voor deze gebruiker.
+    Beëindigt de sessie van de gebruiker, indien aanwezig.
     """
-    active_quiz_users.discard(user_id)
+    _active_sessions.pop(user_id, None)
 
-def start_wordle(user_id):
+def is_user_in_active_session(user_id, session_type=None):
     """
-    Start een Wordle-spel voor deze gebruiker (enkel als hij vrij is).
+    Controleert of de gebruiker een actieve sessie heeft.
+    Optioneel: controleer enkel voor een bepaald sessietype.
     """
-    if is_busy(user_id):
+    sessie = _active_sessions.get(user_id)
+    if not sessie:
         return False
-    active_wordle_users.add(user_id)
+    if session_type:
+        return sessie["type"] == session_type
     return True
 
-def end_wordle(user_id):
+def get_session_info(user_id):
     """
-    Beëindigt de Wordle voor deze gebruiker.
+    Geeft info terug over de sessie van een gebruiker (of None als geen sessie).
     """
-    active_wordle_users.discard(user_id)
+    return _active_sessions.get(user_id)
 
-# Alias voor compatibiliteit met oudere imports
-is_user_in_active_session = is_busy
+def get_active_session_type(user_id):
+    """
+    Geeft het sessietype terug van een gebruiker (of None).
+    """
+    sessie = _active_sessions.get(user_id)
+    return sessie["type"] if sessie else None
+
+# Backward compatibility alias
+is_busy = is_user_in_active_session

@@ -12,7 +12,7 @@ import openai
 import unicodedata
 import re
 
-from session_manager import start_wordle, end_wordle, is_user_in_active_session
+from session_manager import start_session, end_session, is_user_in_active_session
 
 client = openai.OpenAI()
 
@@ -29,7 +29,7 @@ PLAYED_PATH = "data/wordle_played.json"
 
 KANALEN = [1389545682007883816, 1389552706783543307, 1388667261761359932, 1390779837593026594]
 LEADERBOARD_THREAD = 1390779837593026594
-MAX_SPEEL_PER_WEEK = 5
+MAX_SPEEL_PER_WEEK = 7
 
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
@@ -187,8 +187,8 @@ class Wordle(commands.Cog):
             return
 
         user = ctx.author
-        if is_user_in_active_session(user.id):
-            await ctx.send(f"{user.mention}, je bent al met een quiz of Wordle bezig.")
+        if is_user_in_active_session(user.id, "wordle"):
+            await ctx.send(f"{user.mention}, je bent al met een Wordle bezig.")
             return
 
         week = self.get_huidige_week()
@@ -209,9 +209,9 @@ class Wordle(commands.Cog):
             await ctx.send(f"{user.mention}, ik kan je geen DM sturen. Kijk je instellingen na.")
             return
 
-        start_wordle(user.id)
+        start_session(user.id, "wordle")
         score, sterren = await self.start_wordle_dm(user, woorden, week, thema)
-        end_wordle(user.id)
+        end_session(user.id)
 
         scores = self.laad_scores()
         uid = str(user.id)
