@@ -56,6 +56,9 @@ class Wordle(commands.Cog):
                 temperature=0.7
             )
             inhoud = response.choices[0].message.content
+            logging.info("🧾 GPT response ontvangen:")
+            logging.info(inhoud)  # <<< Volledige inhoud loggen
+
             woorden = []
             for lijn in inhoud.strip().split("\n"):
                 if "–" in lijn:
@@ -63,7 +66,7 @@ class Wordle(commands.Cog):
                     nl = parts[0].split(".")[-1].strip()
                     it = parts[1].strip()
                     woorden.append({"nederlands": nl, "italiaans": it})
-            logging.info(f"✅ {len(woorden)} woorden gegenereerd.")
+            logging.info(f"✅ {len(woorden)} woorden geparsed.")
             return woorden
         except Exception as e:
             logging.error(f"❌ Fout bij genereren woorden: {e}")
