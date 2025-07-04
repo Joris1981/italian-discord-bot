@@ -7,6 +7,8 @@ import datetime
 import asyncio
 import logging
 import openai
+import unicodedata
+import re
 
 from session_manager import start_wordle, end_wordle, is_user_in_active_session
 
@@ -26,6 +28,12 @@ PLAYED_PATH = "data/wordle_played.json"
 KANALEN = [1389545682007883816, 1389552706783543307, 1388667261761359932]
 LEADERBOARD_THREAD = 1389552706783543307
 MAX_SPEEL_PER_WEEK = 5
+
+def normalize(text):
+    text = unicodedata.normalize("NFKD", text).lower().strip()
+    text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
+    text = re.sub(r"\s*'\s*", "'", text)
+    return text
 
 class Wordle(commands.Cog):
     def __init__(self, bot):
@@ -138,7 +146,7 @@ class Wordle(commands.Cog):
             await user.send(f"\n🔢 **{idx}. Wat is het Italiaans voor:** '{woord['nederlands']}'?\n(Je hebt 60 seconden.)")
             try:
                 antwoord = await self.bot.wait_for('message', timeout=60.0, check=check)
-                if antwoord.content.lower().strip() == woord["italiaans"].lower():
+                if normalize(antwoord.content) == normalize(woord["italiaans"]):
                     await user.send("✅ Corretto!")
                     score += 1
                 else:
@@ -157,7 +165,7 @@ class Wordle(commands.Cog):
                 await user.send(f"\n🆕 **Bonus {idx}.** '{woord['nederlands']}'?")
                 try:
                     antwoord = await self.bot.wait_for('message', timeout=60.0, check=check)
-                    if antwoord.content.lower().strip() == woord["italiaans"].lower():
+                    if normalize(antwoord.content) == normalize(woord["italiaans"]):
                         await user.send("✅ Corretto!")
                         bonus_score += 1
                     else:
