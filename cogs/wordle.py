@@ -235,6 +235,13 @@ class Wordle(commands.Cog):
         await user.send("\nGrazie per aver giocato! 👍")
         logging.info(f"✅ Wordle afgerond voor {user} met score {score}/15 en sterren: {sterren}")
 
+    @commands.command()
+    async def test_leaderboard(self, ctx):
+        """Manuele test van het leaderboard"""
+        logging.info(f"🧪 Test leaderboard triggered door {ctx.author}")
+        await self.weekelijkse_leaderboard()
+        await ctx.send("✅ Leaderboard werd gegenereerd (indien scores beschikbaar).")
+
     @tasks.loop(hours=168)
     async def weekelijkse_leaderboard(self):
         await self.bot.wait_until_ready()
