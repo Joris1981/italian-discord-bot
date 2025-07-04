@@ -7,8 +7,6 @@ import datetime
 import asyncio
 import logging
 import openai
-import unicodedata
-import re
 
 from session_manager import start_wordle, end_wordle, is_user_in_active_session
 
@@ -30,10 +28,7 @@ LEADERBOARD_THREAD = 1389552706783543307
 MAX_SPEEL_PER_WEEK = 5
 
 def normalize(text):
-    text = unicodedata.normalize("NFKD", text).lower().strip()
-    text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
-    text = re.sub(r"\s*'\s*", "'", text)
-    return text
+    return text.lower().replace("’", "'").replace("`", "'").strip()
 
 class Wordle(commands.Cog):
     def __init__(self, bot):
@@ -111,12 +106,6 @@ class Wordle(commands.Cog):
         with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
-    async def laad_woorden(self, week, moeilijkheid="B1", aantal=15):
-        with open(WOORDEN_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        sleutel = f"week{week}_{moeilijkheid}"
-        return random.sample(data.get(sleutel, []), min(aantal, len(data.get(sleutel, []))))
-
     def laad_scores(self):
         if not os.path.exists(SCORES_PATH):
             return {}
@@ -124,8 +113,10 @@ class Wordle(commands.Cog):
             return json.load(f)
 
     def bewaar_scores(self, scores):
+        logging.info("💾 Scores worden bewaard...")
         with open(SCORES_PATH, "w", encoding="utf-8") as f:
             json.dump(scores, f, indent=2, ensure_ascii=False)
+        logging.info("✅ Scores succesvol bewaard.")
 
     def laad_played(self):
         if not os.path.exists(PLAYED_PATH):
@@ -187,7 +178,6 @@ class Wordle(commands.Cog):
 
         user = ctx.author
         if is_user_in_active_session(user.id):
-            logging.warning(f"⛔ {user} zit al in een actieve sessie.")
             await ctx.send(f"{user.mention}, je bent al met een quiz of Wordle bezig.")
             return
 
@@ -197,23 +187,18 @@ class Wordle(commands.Cog):
         week_key = f"{user.id}_week{week}"
 
         if played.get(week_key, 0) >= MAX_SPEEL_PER_WEEK:
-            logging.info(f"⛔ {user} heeft deze week al {MAX_SPEEL_PER_WEEK} keer gespeeld.")
             await ctx.send(f"{user.mention}, je hebt deze week al {MAX_SPEEL_PER_WEEK} keer gespeeld.")
             return
 
-        logging.info("🚀 Start met genereren van de woordenlijst...")
         await self.generate_weekly_wordlist()
         woorden = await self.laad_woorden(week, aantal=15)
-        logging.info(f"📚 Eerste 3 woorden geladen: {woorden[:3]}")
 
         try:
             await user.send("📧 Ciao! Het spel start nu in je DM!")
         except discord.Forbidden:
-            logging.warning(f"⛔ Kan geen DM sturen naar {user}.")
             await ctx.send(f"{user.mention}, ik kan je geen DM sturen. Kijk je instellingen na.")
             return
 
-        logging.info("🎯 Start Wordle sessie")
         start_wordle(user.id)
         score, sterren = await self.start_wordle_dm(user, woorden, week, thema)
         end_wordle(user.id)
@@ -227,6 +212,7 @@ class Wordle(commands.Cog):
                 "sterren": sterren,
                 "week": week
             }
+            logging.info(f"📝 Score wordt opgeslagen: {scores[uid]}")
             self.bewaar_scores(scores)
 
         played[week_key] = played.get(week_key, 0) + 1
@@ -237,8 +223,9 @@ class Wordle(commands.Cog):
 
     @commands.command()
     async def test_leaderboard(self, ctx):
-        """Manuele test van het leaderboard"""
-        logging.info(f"🧪 Test leaderboard triggered door {ctx.author}")
+        week = self.get_huidige_week()
+        logging.info(f"🧪 Test leaderboard week: {week}")
+        logging.info(f"🧪 Scores geladen: {self.laad_scores()}")
         await self.weekelijkse_leaderboard()
         await ctx.send("✅ Leaderboard werd gegenereerd (indien scores beschikbaar).")
 
