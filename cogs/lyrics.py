@@ -21,17 +21,20 @@ class Lyrics(commands.Cog):
         if str(message.channel.id) != "1390448992520765501":
             return
 
+        # Herken YouTube-link
         yt_match = re.search(r"(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)", message.content)
         if not yt_match:
             return
 
+        # Probeer titel op te halen
         title = await self.extract_youtube_title(message)
         if not title:
             await message.channel.send("❌ Kon de titel van het YouTube-nummer niet ophalen.")
             return
 
-        await message.channel.send(f"🔎 Lied herkend: **{title}**\nEen momentje, ik reconstrueer de tekst en vertaling…")
+        await message.channel.send(f"\U0001F50D Lied herkend: **{title}**\nEen momentje, ik reconstrueer de tekst en vertaling…")
 
+        # Genereer vertaalde lyrics
         lyrics = await self.generate_lyrics_with_translation(title)
         if not lyrics:
             await message.channel.send("❌ Sorry, ik kon geen songtekst reconstrueren.")
@@ -42,23 +45,27 @@ class Lyrics(commands.Cog):
             await message.channel.send(chunk)
 
     async def extract_youtube_title(self, message):
-        # Eerst proberen via Discord embed
+        # Probeer eerst Discord embed
         if message.embeds and message.embeds[0].title:
             return message.embeds[0].title.strip()
 
-        # Fallback: zelf de titel scrapen van YouTube-pagina
+        # Fallback scraping van YouTube-pagina
         yt_url_match = re.search(r"(https?://[^\s]+)", message.content)
         if yt_url_match:
             url = yt_url_match.group(1)
+            headers = {
+                "User-Agent": "Mozilla/5.0",
+                "Accept-Language": "en-US,en;q=0.9"
+            }
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(url) as resp:
+                    async with session.get(url, headers=headers) as resp:
                         text = await resp.text()
                         title_match = re.search(r"<title>(.*?)</title>", text)
                         if title_match:
                             return title_match.group(1).replace(" - YouTube", "").strip()
             except Exception as e:
-                print(f"❌ Fout bij YouTube fallback scraping!: {e}")
+                print(f"❌ Fout bij YouTube scraping: {e}")
         return None
 
     async def generate_lyrics_with_translation(self, title):
