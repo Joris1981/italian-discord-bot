@@ -10,7 +10,7 @@ import asyncio
 import logging
 import openai
 
-from session_manager import start_wordle, end_wordle, is_busy
+from session_manager import start_wordle, end_wordle, is_user_in_active_session
 
 client = openai.OpenAI()
 
@@ -49,6 +49,7 @@ class Wordle(commands.Cog):
             "1. de kat – il gatto"
         )
         try:
+            logging.info(f"🔤 OpenAI prompt gestuurd voor thema '{thema}', niveau {moeilijkheid}")
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
@@ -62,9 +63,10 @@ class Wordle(commands.Cog):
                     nl = parts[0].split(".")[-1].strip()
                     it = parts[1].strip()
                     woorden.append({"nederlands": nl, "italiaans": it})
+            logging.info(f"✅ {len(woorden)} woorden gegenereerd.")
             return woorden
         except Exception as e:
-            logging.error(f"Fout bij genereren woorden: {e}")
+            logging.error(f"❌ Fout bij genereren woorden: {e}")
             return []
 
     async def generate_weekly_wordlist(self):
@@ -118,7 +120,7 @@ class Wordle(commands.Cog):
     async def start_wordle_dm(self, user, woorden, week, thema):
         score = 0
         def check(m): return m.author == user and isinstance(m.channel, discord.DMChannel)
-        await user.send(f"\U0001F4D6 **Wordle – Thema van de week:** *{thema}*")
+        await user.send(f"\U0001F4D6 **Wordle – Tema della settimana:** *{thema}*")
 
         for idx, woord in enumerate(woorden, start=1):
             await user.send(f"\n\U0001F522 **{idx}. Wat is het Italiaans voor:** '{woord['nederlands']}'?\n(Je hebt 60 seconden.)")
@@ -158,11 +160,14 @@ class Wordle(commands.Cog):
 
     @commands.command()
     async def wordle(self, ctx):
+        logging.info(f"🟡 !wordle ontvangen in kanaal: {ctx.channel.id} door {ctx.author}")
         if ctx.channel.id not in KANALEN:
+            logging.warning(f"⛔ Kanaal {ctx.channel.id} is niet toegestaan voor Wordle.")
             return
 
         user = ctx.author
         if is_user_in_active_session(user.id):
+            logging.warning(f"⛔ {user} zit al in een actieve sessie.")
             await ctx.send(f"{user.mention}, je bent al met een quiz of Wordle bezig.")
             return
 
@@ -170,22 +175,28 @@ class Wordle(commands.Cog):
         thema = self.get_huidig_thema()
         played = self.laad_played()
         week_key = f"{user.id}_week{week}"
+
         if played.get(week_key, 0) >= MAX_SPEEL_PER_WEEK:
+            logging.info(f"⛔ {user} heeft deze week al {MAX_SPEEL_PER_WEEK} keer gespeeld.")
             await ctx.send(f"{user.mention}, je hebt deze week al {MAX_SPEEL_PER_WEEK} keer gespeeld.")
             return
 
+        logging.info("🚀 Start met genereren van de woordenlijst...")
         await self.generate_weekly_wordlist()
         woorden = await self.laad_woorden(week, aantal=15)
+        logging.info(f"📚 Eerste 3 woorden geladen: {woorden[:3]}")
 
         try:
             await user.send("\U0001F4E7 Ciao! Het spel start nu in je DM!")
         except discord.Forbidden:
+            logging.warning(f"⛔ Kan geen DM sturen naar {user}.")
             await ctx.send(f"{user.mention}, ik kan je geen DM sturen. Kijk je instellingen na.")
             return
 
-        start(user.id, "wordle")
+        logging.info("🎯 Start Wordle sessie")
+        start_wordle(user.id)
         score, sterren = await self.start_wordle_dm(user, woorden, week, thema)
-        end(user.id)
+        end_wordle(user.id)
 
         scores = self.laad_scores()
         uid = str(user.id)
@@ -202,6 +213,7 @@ class Wordle(commands.Cog):
         self.bewaar_played(played)
 
         await user.send("\nGrazie per aver giocato! \U0001F44D")
+        logging.info(f"✅ Wordle afgerond voor {user} met score {score}/15 en sterren: {sterren}")
 
     @tasks.loop(hours=168)
     async def weekelijkse_leaderboard(self):
