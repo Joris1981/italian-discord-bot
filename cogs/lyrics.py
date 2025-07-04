@@ -58,7 +58,7 @@ class Lyrics(commands.Cog):
                         if title_match:
                             return title_match.group(1).replace(" - YouTube", "").strip()
             except Exception as e:
-                print(f"❌ Fout bij YouTube fallback scraping: {e}")
+                print(f"❌ Fout bij YouTube fallback scraping!: {e}")
         return None
 
     async def generate_lyrics_with_translation(self, title):
