@@ -4,7 +4,6 @@ import re
 import os
 import openai
 import aiohttp
-from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,17 +22,12 @@ class Lyrics(commands.Cog):
             return
 
         yt_match = re.search(r"(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)", message.content)
-        sp_match = re.search(r"(https?://open\.spotify\.com/track/[a-zA-Z0-9]+)", message.content)
-
-        if yt_match:
-            title = await self.extract_youtube_title(message)
-        elif sp_match:
-            title = await self.extract_spotify_title(message.content)
-        else:
+        if not yt_match:
             return
 
+        title = await self.extract_youtube_title(message)
         if not title:
-            await message.channel.send("❌ Kon de titel van het nummer niet ophalen.")
+            await message.channel.send("❌ Kon de titel van het YouTube-nummer niet ophalen.")
             return
 
         await message.channel.send(f"🔎 Lied herkend: **{title}**\nEen momentje, ik reconstrueer de tekst en vertaling…")
@@ -48,39 +42,24 @@ class Lyrics(commands.Cog):
             await message.channel.send(chunk)
 
     async def extract_youtube_title(self, message):
-        # Eerst proberen via embed
+        # Eerst proberen via Discord embed
         if message.embeds and message.embeds[0].title:
-            return message.embeds[0].title
+            return message.embeds[0].title.strip()
 
-        # Fallback via HTTP scraping van <title>
+        # Fallback: zelf de titel scrapen van YouTube-pagina
         yt_url_match = re.search(r"(https?://[^\s]+)", message.content)
-        if not yt_url_match:
-            return None
-        url = yt_url_match.group(1)
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
-                    text = await resp.text()
-                    title_match = re.search(r"<title>(.*?)</title>", text, re.IGNORECASE)
-                    if title_match:
-                        return title_match.group(1).replace(" - YouTube", "").strip()
-        except Exception as e:
-            print(f"❌ Fout bij ophalen van YouTube titel: {e}")
+        if yt_url_match:
+            url = yt_url_match.group(1)
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as resp:
+                        text = await resp.text()
+                        title_match = re.search(r"<title>(.*?)</title>", text)
+                        if title_match:
+                            return title_match.group(1).replace(" - YouTube", "").strip()
+            except Exception as e:
+                print(f"❌ Fout bij YouTube fallback scraping: {e}")
         return None
-
-    async def extract_spotify_title(self, url):
-        try:
-            headers = {"Accept": "application/json"}
-            async with self.bot.session.get(url, headers=headers) as resp:
-                html = await resp.text()
-                title_match = re.search(r'"name":"(.*?)".*?"artists":\[{"name":"(.*?)"', html)
-                if title_match:
-                    song = title_match.group(1)
-                    artist = title_match.group(2)
-                    return f"{song} di {artist}"
-        except Exception:
-            return None
 
     async def generate_lyrics_with_translation(self, title):
         try:
