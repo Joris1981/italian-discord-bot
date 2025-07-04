@@ -1,5 +1,3 @@
-# wordle.py
-
 import discord
 from discord.ext import commands, tasks
 import json
@@ -49,23 +47,34 @@ class Wordle(commands.Cog):
             "1. de kat – il gatto"
         )
         try:
-            logging.info(f"🔤 OpenAI prompt gestuurd voor thema '{thema}', niveau {moeilijkheid}")
+            logging.info(f"🌤 OpenAI prompt gestuurd voor thema '{thema}', niveau {moeilijkheid}")
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7
             )
             inhoud = response.choices[0].message.content
-            logging.info("🧾 GPT response ontvangen:")
-            logging.info(inhoud)  # <<< Volledige inhoud loggen
+            logging.info("📜 GPT response ontvangen:")
+            logging.info(inhoud)
 
             woorden = []
             for lijn in inhoud.strip().split("\n"):
+                if not lijn.strip():
+                    continue
                 if "–" in lijn:
                     parts = lijn.split("–")
+                elif ":" in lijn:
+                    parts = lijn.split(":")
+                elif "-" in lijn:
+                    parts = lijn.split("-")
+                else:
+                    continue
+
+                if len(parts) == 2:
                     nl = parts[0].split(".")[-1].strip()
                     it = parts[1].strip()
                     woorden.append({"nederlands": nl, "italiaans": it})
+
             logging.info(f"✅ {len(woorden)} woorden geparsed.")
             return woorden
         except Exception as e:
@@ -123,41 +132,41 @@ class Wordle(commands.Cog):
     async def start_wordle_dm(self, user, woorden, week, thema):
         score = 0
         def check(m): return m.author == user and isinstance(m.channel, discord.DMChannel)
-        await user.send(f"\U0001F4D6 **Wordle – Tema della settimana:** *{thema}*")
+        await user.send(f"📖 **Wordle – Tema della settimana:** *{thema}*")
 
         for idx, woord in enumerate(woorden, start=1):
-            await user.send(f"\n\U0001F522 **{idx}. Wat is het Italiaans voor:** '{woord['nederlands']}'?\n(Je hebt 60 seconden.)")
+            await user.send(f"\n🔢 **{idx}. Wat is het Italiaans voor:** '{woord['nederlands']}'?\n(Je hebt 60 seconden.)")
             try:
                 antwoord = await self.bot.wait_for('message', timeout=60.0, check=check)
                 if antwoord.content.lower().strip() == woord["italiaans"].lower():
-                    await user.send("\u2705 Corretto!")
+                    await user.send("✅ Corretto!")
                     score += 1
                 else:
-                    await user.send(f"\u274C No, la risposta era: **{woord['italiaans']}**.")
+                    await user.send(f"❌ No, la risposta era: **{woord['italiaans']}**.")
             except asyncio.TimeoutError:
-                await user.send(f"\u23F1 Tempo scaduto! Oplossing: **{woord['italiaans']}**.")
+                await user.send(f"⏱ Tempo scaduto! Oplossing: **{woord['italiaans']}**.")
 
-        await user.send(f"\n\U0001F4CA **Resultaat:** {score}/15 correcte antwoorden.")
+        await user.send(f"\n📊 **Resultaat:** {score}/15 correcte antwoorden.")
 
         sterren = 0
         if score >= 12:
-            await user.send("\n\U0001F31F Bonusronde! 5 extra woorden op niveau B2:")
+            await user.send("\n🌟 Bonusronde! 5 extra woorden op niveau B2:")
             bonuswoorden = await self.laad_woorden(week, "B2", 5)
             bonus_score = 0
             for idx, woord in enumerate(bonuswoorden, start=1):
-                await user.send(f"\n\U0001F195 **Bonus {idx}.** '{woord['nederlands']}'?")
+                await user.send(f"\n🆕 **Bonus {idx}.** '{woord['nederlands']}'?")
                 try:
                     antwoord = await self.bot.wait_for('message', timeout=60.0, check=check)
                     if antwoord.content.lower().strip() == woord["italiaans"].lower():
-                        await user.send("\u2705 Corretto!")
+                        await user.send("✅ Corretto!")
                         bonus_score += 1
                     else:
-                        await user.send(f"\u274C No, la risposta era: **{woord['italiaans']}**.")
+                        await user.send(f"❌ No, la risposta era: **{woord['italiaans']}**.")
                 except asyncio.TimeoutError:
-                    await user.send(f"\u23F1 Tempo scaduto! Oplossing: **{woord['italiaans']}**.")
+                    await user.send(f"⏱ Tempo scaduto! Oplossing: **{woord['italiaans']}**.")
             if bonus_score >= 3:
                 sterren = 1
-                await user.send("\U0001F31F Bravo! Je hebt een ster verdiend! \U0001F31F")
+                await user.send("🌟 Bravo! Je hebt een ster verdiend! 🌟")
 
         return score, sterren
 
@@ -190,7 +199,7 @@ class Wordle(commands.Cog):
         logging.info(f"📚 Eerste 3 woorden geladen: {woorden[:3]}")
 
         try:
-            await user.send("\U0001F4E7 Ciao! Het spel start nu in je DM!")
+            await user.send("📧 Ciao! Het spel start nu in je DM!")
         except discord.Forbidden:
             logging.warning(f"⛔ Kan geen DM sturen naar {user}.")
             await ctx.send(f"{user.mention}, ik kan je geen DM sturen. Kijk je instellingen na.")
@@ -215,7 +224,7 @@ class Wordle(commands.Cog):
         played[week_key] = played.get(week_key, 0) + 1
         self.bewaar_played(played)
 
-        await user.send("\nGrazie per aver giocato! \U0001F44D")
+        await user.send("\nGrazie per aver giocato! 👍")
         logging.info(f"✅ Wordle afgerond voor {user} met score {score}/15 en sterren: {sterren}")
 
     @tasks.loop(hours=168)
