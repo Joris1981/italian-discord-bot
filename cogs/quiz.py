@@ -85,7 +85,7 @@ class Quiz(commands.Cog):
         except discord.Forbidden:
             await user.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
         finally:
-            session_manager.end_quiz(user.id)
+            session_manager.end_session(user.id)
 
     @commands.command(name="qualche-soluzioni")
     async def qualche_soluzioni(self, ctx):
@@ -157,7 +157,10 @@ class Quiz(commands.Cog):
     async def run_quiz(self, user, questions, title):
         try:
             dm = await user.create_dm()
-            await dm.send(f"📚 **Quiz: {title}**\nRispondi scrivendo solo la preposizione corretta (es: `di`, `da`, `in`, `per`, `a`). Hai 60 secondi per ogni frase. Buona fortuna!")
+            await dm.send(
+                f"📚 **Quiz: {title}**\n"
+                "Rispondi scrivendo solo la preposizione corretta (es: `di`, `da`, `in`, `per`, `a`). Hai 60 secondi per ogni frase. Buona fortuna!"
+            )
 
             score = 0
             for q in questions:
@@ -165,7 +168,7 @@ class Quiz(commands.Cog):
                 try:
                     reply = await self.bot.wait_for(
                         "message",
-                        timeout=60,
+                        timeout=180,
                         check=lambda m: m.author == user and m.channel == dm
                     )
                     if normalize(reply.content) == normalize(q["answer"]):
@@ -174,14 +177,15 @@ class Quiz(commands.Cog):
                     else:
                         await dm.send(f"❌ Sbagliato! La risposta giusta era **{q['answer']}**.")
                 except asyncio.TimeoutError:
-                    await dm.send("⏰ Tempo scaduto per questa frase!")
+                    await dm.send("⏰ Tempo scaduto! La sessione è stata chiusa per inattività.")
+                    return
 
             await dm.send(f"\n🏁 **Quiz finita!** Hai risposto correttamente a **{score} su {len(questions)}** frasi.")
             await dm.send("Vuoi riprovare? Torna nella thread e scrivi di nuovo `quiz`.")
         except Exception as e:
             print(f"❌ Errore nella quiz ({title}): {e}")
         finally:
-            session_manager.end_quiz(user.id)
+            session_manager.end_session(user.id)
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))
