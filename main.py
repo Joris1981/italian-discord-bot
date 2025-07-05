@@ -1,3 +1,5 @@
+# main.py
+
 import os
 import discord
 import openai
@@ -12,6 +14,7 @@ from flask import Flask
 from threading import Thread
 from dotenv import load_dotenv
 from session_manager import is_user_in_active_session
+from utils import normalize
 
 # === 🔁 Load env ===
 if not load_dotenv():
@@ -19,13 +22,6 @@ if not load_dotenv():
 
 # === 🗂 Zorg dat wordle-map bestaat ===
 os.makedirs("data/wordle", exist_ok=True)
-
-# === 🧼 Normalize tekst ===
-def normalize(text):
-    text = unicodedata.normalize("NFKD", text).lower().strip()
-    text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
-    text = re.sub(r"\s*'\s*", "'", text)
-    return text
 
 # === 🪵 Logging ===
 logging.basicConfig(level=logging.INFO)
@@ -77,7 +73,7 @@ class MyBot(commands.Bot):
                 logging.error(f"❌ Fout bij laden van {extension}: {e}")
         self.loop.create_task(reminder_task())
 
-bot = MyBot(command_prefix='!', intents=intents)
+bot = MyBot(command_prefix='!', intents=intents, case_insensitive=True)
 
 # === 🔔 Reminder woensdagavond ===
 async def reminder_task():
