@@ -97,6 +97,7 @@ class Wordle(commands.Cog):
         with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
+    @commands.command(name="reset-woordenlijst")
     @commands.has_permissions(administrator=True)
     async def reset_woordenlijst(self, ctx):
         await ctx.send("🔄 Nieuwe woordenlijst wordt gegenereerd... Dit kan even duren.")
@@ -212,7 +213,7 @@ class Wordle(commands.Cog):
             self.bewaar_scores(scores)
         played[week_key] = played.get(week_key, 0) + 1
         self.bewaar_played(played)
-        await user.send("\nGrazie per aver giocato! Ecco il tuo risultato:")
+        await user.send("\nGrazie per aver giocato!")
 
     @commands.command()
     async def test_leaderboard(self, ctx):
