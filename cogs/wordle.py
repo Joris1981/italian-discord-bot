@@ -258,16 +258,15 @@ class Wordle(commands.Cog):
     @commands.command(name="wordle-speelstatistiek")
     async def wordle_speelstatistiek(self, ctx):
         played = self.laad_played()
-        today = datetime.date.today()
-        week_id = f"{today.isocalendar()[0]}-W{today.isocalendar()[1]}"
+        week = self.get_huidige_week()
 
         resultaten = []
-        for user_id, data in played.items():
-            if week_id in data:
-                tries = data[week_id]
-                member = ctx.guild.get_member(int(user_id))
-                naam = member.display_name if member else f"User {user_id}"
-                resultaten.append((naam, tries))
+        for key, aantal in played.items():
+            if key.endswith(f"_week{week}"):
+                uid = key.replace(f"_week{week}", "")
+                member = ctx.guild.get_member(int(uid))
+                naam = member.display_name if member else f"User {uid}"
+                resultaten.append((naam, aantal))
 
         if not resultaten:
             await ctx.send("📊 Er zijn nog geen gespeelde beurten deze week.")
