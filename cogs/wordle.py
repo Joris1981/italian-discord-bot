@@ -22,9 +22,9 @@ THEMAS = [
 ]
 
 STARTDATUM = datetime.datetime(2025, 7, 2, 9, 0)
-WOORDEN_PATH = "data/wordle_woorden.json"
-SCORES_PATH = "data/wordle_scores.json"
-PLAYED_PATH = "data/wordle_played.json"
+WOORDEN_PATH = "/persistent/data/wordle/wordle_woorden.json"
+SCORES_PATH = "/persistent/data/wordle/wordle_scores.json"
+PLAYED_PATH = "/persistent/data/wordle/wordle_played.json"
 
 KANALEN = [1389545682007883816, 1389552706783543307, 1388667261761359932, 1390779837593026594]
 LEADERBOARD_THREAD = 1390779837593026594
@@ -254,6 +254,35 @@ class Wordle(commands.Cog):
     async def test_leaderboard(self, ctx):
         await self.weekelijkse_leaderboard()
         await ctx.send("✅ Leaderboard gegenereerd.")
+
+    @commands.command(name="wordle-speelstatistiek")
+    async def wordle_speelstatistiek(self, ctx):
+        played = self.laadt_played()
+        today = datetime.date.today()
+        week_id = f"{today.isocalendar()[0]}-W{today.isocalendar()[1]}"
+
+        resultaten = []
+        for user_id, data in played.items():
+            if week_id in data:
+                tries = data[week_id]
+                member = ctx.guild.get_member(int(user_id))
+                naam = member.display_name if member else f"User {user_id}"
+                resultaten.append((naam, tries))
+
+        if not resultaten:
+            await ctx.send("📊 Er zijn nog geen gespeelde beurten deze week.")
+            return
+
+        resultaten.sort(key=lambda x: x[1], reverse=True)
+
+        tekst = "🎮 **Statistieken voor deze week:**\n\n"
+        for naam, tries in resultaten:
+            tekst += f"• {naam} – {tries} keer gespeeld"
+            if tries >= 7:
+                tekst += " ✅"
+            tekst += "\n"
+
+        await ctx.send(tekst)
 
     @commands.command(name="wordle-gemiddelde")
     async def wordle_gemiddelde(self, ctx):

@@ -21,7 +21,7 @@ if not load_dotenv():
     logging.warning("⚠️ Kon .env-bestand niet laden.")
 
 # === 🗂 Zorg dat wordle-map bestaat ===
-os.makedirs("data/wordle", exist_ok=True)
+os.makedirs("/persistent/data/wordle", exist_ok=True)
 
 # === 🪵 Logging ===
 logging.basicConfig(level=logging.INFO)
