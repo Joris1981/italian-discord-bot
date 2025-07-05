@@ -257,7 +257,7 @@ class Wordle(commands.Cog):
 
     @commands.command(name="wordle-speelstatistiek")
     async def wordle_speelstatistiek(self, ctx):
-        played = self.laadt_played()
+        played = self.laad_played()
         today = datetime.date.today()
         week_id = f"{today.isocalendar()[0]}-W{today.isocalendar()[1]}"
 
