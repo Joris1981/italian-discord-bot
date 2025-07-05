@@ -99,7 +99,6 @@ class Wordle(commands.Cog):
 
     @commands.has_permissions(administrator=True)
     async def reset_woordenlijst(self, ctx):
-        """Genereert de woordenlijst opnieuw voor de huidige week (alleen admin)."""
         await ctx.send("🔄 Nieuwe woordenlijst wordt gegenereerd... Dit kan even duren.")
         try:
             await self.generate_weekly_wordlist()
@@ -174,7 +173,7 @@ class Wordle(commands.Cog):
                 await user.send("\U0001F31F Bravo! Je hebt een ster verdiend! \U0001F31F")
         return score, sterren, totale_tijd
 
-    @commands.command(aliases=["Wordle", "WORDLE"])
+    @commands.command()
     async def wordle(self, ctx):
         if ctx.channel.id not in KANALEN:
             return
@@ -219,6 +218,31 @@ class Wordle(commands.Cog):
     async def test_leaderboard(self, ctx):
         await self.weekelijkse_leaderboard()
         await ctx.send("✅ Leaderboard gegenereerd.")
+
+    @commands.command(name="wordle-gemiddelde")
+    async def wordle_gemiddelde(self, ctx):
+        """Toont de gemiddelde speeltijd per speler over alle gespeelde weken."""
+        scores = self.laad_scores()
+        spelers_tijden = {}
+
+        for uid, data in scores.items():
+            naam = data.get("naam", "Onbekend")
+            tijd = data.get("tijd", 0)
+            if tijd > 0:
+                if naam not in spelers_tijden:
+                    spelers_tijden[naam] = []
+                spelers_tijden[naam].append(tijd)
+
+        if not spelers_tijden:
+            await ctx.send("📊 Geen tijdsgegevens beschikbaar.")
+            return
+
+        tekst = "⏱️ **Gemiddelde speeltijd per speler (basisronde):**\n"
+        for naam, tijden in sorted(spelers_tijden.items()):
+            gemiddelde = sum(tijden) / len(tijden)
+            tekst += f"• **{naam}**: {int(gemiddelde)} seconden gemiddeld\n"
+
+        await ctx.send(tekst)
 
     @tasks.loop(hours=168)
     async def weekelijkse_leaderboard(self):
