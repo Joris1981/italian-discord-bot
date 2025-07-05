@@ -23,19 +23,22 @@ THEMAS = [
 ]
 
 STARTDATUM = datetime.datetime(2025, 6, 30, 9, 0)
-WOORDEN_PATH = "data/wordle_woorden.json"
-SCORES_PATH = "data/wordle_scores.json"
-PLAYED_PATH = "data/wordle_played.json"
+WOORDEN_PATH = "/data/wordle/wordle_woorden.json"
+SCORES_PATH = "/data/wordle/wordle_scores.json"
+PLAYED_PATH = "/data/wordle/wordle_played.json"
 
 KANALEN = [1389545682007883816, 1389552706783543307, 1388667261761359932, 1390779837593026594]
 LEADERBOARD_THREAD = 1390779837593026594
 MAX_SPEEL_PER_WEEK = 7
 
+
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
     text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
     text = re.sub(r"\s*'\s*", "'", text)
+    text = re.sub(r"[^a-zàèéìòù' ]", "", text)
     return text
+
 
 class Wordle(commands.Cog):
     def __init__(self, bot):
@@ -93,8 +96,9 @@ class Wordle(commands.Cog):
 
     async def generate_weekly_wordlist(self):
         week = self.get_huidige_week()
+        os.makedirs(os.path.dirname(WOORDEN_PATH), exist_ok=True)
+
         if not os.path.exists(WOORDEN_PATH):
-            os.makedirs(os.path.dirname(WOORDEN_PATH), exist_ok=True)
             with open(WOORDEN_PATH, "w", encoding="utf-8") as f:
                 json.dump({}, f)
 
@@ -126,6 +130,7 @@ class Wordle(commands.Cog):
             return json.load(f)
 
     def bewaar_scores(self, scores):
+        os.makedirs(os.path.dirname(SCORES_PATH), exist_ok=True)
         with open(SCORES_PATH, "w", encoding="utf-8") as f:
             json.dump(scores, f, indent=2, ensure_ascii=False)
 
@@ -136,6 +141,7 @@ class Wordle(commands.Cog):
             return json.load(f)
 
     def bewaar_played(self, played):
+        os.makedirs(os.path.dirname(PLAYED_PATH), exist_ok=True)
         with open(PLAYED_PATH, "w", encoding="utf-8") as f:
             json.dump(played, f, indent=2, ensure_ascii=False)
 
@@ -143,6 +149,7 @@ class Wordle(commands.Cog):
         score = 0
         def check(m): return m.author == user and isinstance(m.channel, discord.DMChannel)
         await user.send(f"📖 **Wordle – Tema della settimana:** *{thema}*")
+        starttijd = datetime.datetime.now()
 
         for idx, woord in enumerate(woorden, start=1):
             await user.send(f"\n🔢 **{idx}. Wat is het Italiaans voor:** '{woord['nederlands']}'?\n(Je hebt 60 seconden.)")
@@ -156,6 +163,8 @@ class Wordle(commands.Cog):
             except asyncio.TimeoutError:
                 await user.send(f"⏱ Tempo scaduto! Oplossing: **{woord['italiaans']}**.")
 
+        eindtijd = datetime.datetime.now()
+        totale_tijd = (eindtijd - starttijd).total_seconds()
         await user.send(f"\n📊 **Resultaat:** {score}/15 correcte antwoorden.")
 
         sterren = 0
@@ -178,7 +187,7 @@ class Wordle(commands.Cog):
                 sterren = 1
                 await user.send("🌟 Bravo! Je hebt een ster verdiend! 🌟")
 
-        return score, sterren
+        return score, sterren, totale_tijd
 
     @commands.command()
     async def wordle(self, ctx):
@@ -210,7 +219,7 @@ class Wordle(commands.Cog):
             return
 
         start_session(user.id, "wordle")
-        score, sterren = await self.start_wordle_dm(user, woorden, week, thema)
+        score, sterren, tijd = await self.start_wordle_dm(user, woorden, week, thema)
         end_session(user.id)
 
         scores = self.laad_scores()
@@ -220,7 +229,8 @@ class Wordle(commands.Cog):
                 "naam": user.display_name,
                 "score": score,
                 "sterren": sterren,
-                "week": week
+                "week": week,
+                "tijd": int(tijd)
             }
             self.bewaar_scores(scores)
 
@@ -246,7 +256,7 @@ class Wordle(commands.Cog):
         if not huidige_scores:
             await kanaal.send("📊 Er zijn deze week nog geen Wordle-scores.")
             return
-        top = sorted(huidige_scores.values(), key=lambda x: (-x["score"], -x.get("sterren", 0)))[:10]
+        top = sorted(huidige_scores.values(), key=lambda x: (-x["score"], -x.get("sterren", 0), x.get("tijd", float('inf'))))[:10]
         tekst = f"🏆 **Leaderboard – Week {week + 1}: {self.get_huidig_thema()}**\n"
         for i, s in enumerate(top, 1):
             ster = " ⭐" if s.get("sterren", 0) else ""
@@ -256,6 +266,7 @@ class Wordle(commands.Cog):
     @weekelijkse_leaderboard.before_loop
     async def before_leaderboard(self):
         await self.bot.wait_until_ready()
+
 
 async def setup(bot):
     await bot.add_cog(Wordle(bot))

@@ -1,5 +1,3 @@
-# main.py
-
 import os
 import discord
 import openai
@@ -19,13 +17,14 @@ from session_manager import is_user_in_active_session
 if not load_dotenv():
     logging.warning("⚠️ Kon .env-bestand niet laden.")
 
+# === 🗂 Zorg dat wordle-map bestaat ===
+os.makedirs("data/wordle", exist_ok=True)
+
 # === 🧼 Normalize tekst ===
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
     text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
-    text = re.sub(r"[\s’‘`]", "", text)
-    if text == "dell":
-        return "dell'"
+    text = re.sub(r"\s*'\s*", "'", text)
     return text
 
 # === 🪵 Logging ===
@@ -109,12 +108,10 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    # 📍 Commando’s eerst verwerken
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
         return
 
-    # 📍 Taalcorrectie in bepaalde kanalen
     parent_id = message.channel.id
     if isinstance(message.channel, discord.Thread):
         parent_id = message.channel.parent_id
@@ -139,6 +136,7 @@ async def on_message(message):
                     {"role": "user", "content": message.content}
                 ]
             )
+            
             reply = correction.choices[0].message.content.strip()
             if reply == "NO_CORRECTION_NEEDED":
                 compliments = [
