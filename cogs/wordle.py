@@ -1,5 +1,3 @@
-# cogs/wordle.py
-
 import discord
 from discord.ext import commands, tasks
 import json
@@ -36,6 +34,7 @@ class Wordle(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.weekelijkse_leaderboard.start()
+        self.weekelijkse_reminder.start()
 
     def get_huidige_week(self):
         verschil = datetime.datetime.now() - STARTDATUM
@@ -44,6 +43,42 @@ class Wordle(commands.Cog):
 
     def get_huidig_thema(self):
         return THEMAS[self.get_huidige_week()]
+
+    def laad_scores(self):
+        if not os.path.exists(SCORES_PATH): return {}
+        with open(SCORES_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def laad_played(self):
+        if not os.path.exists(PLAYED_PATH): return {}
+        with open(PLAYED_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    @tasks.loop(hours=168)
+    async def weekelijkse_reminder(self):
+        await self.bot.wait_until_ready()
+        played = self.laad_played()
+        scores = self.laad_scores()
+        week = self.get_huidige_week()
+        thema = self.get_huidig_thema()
+
+        for uid, data in scores.items():
+            week_key = f"{uid}_week{week}"
+            if played.get(week_key, 0) == 0:
+                try:
+                    user = await self.bot.fetch_user(int(uid))
+                    await user.send(f"\U0001F4CB Ciao! Je hebt deze week nog geen Wordle gespeeld.\nHet thema is *{thema}*. Typ `!wordle` in het kanaal om te starten!")
+                except Exception as e:
+                    logging.warning(f"Kon gebruiker {uid} niet bereiken: {e}")
+
+    @weekelijkse_reminder.before_loop
+    async def before_reminder(self):
+        await self.bot.wait_until_ready()
+
+    @commands.command()
+    async def wordle_herinnering_test(self, ctx):
+        await self.weekelijkse_reminder()
+        await ctx.send("✅ Herinnering handmatig verstuurd (indien van toepassing).")
 
     async def genereer_woorden(self, thema, moeilijkheid="B1", aantal=40):
         prompt = (
