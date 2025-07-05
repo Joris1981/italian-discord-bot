@@ -28,13 +28,13 @@ class Quiz(commands.Cog):
                 return
 
             if message.channel.id == 1388866025679880256:
-                session_manager.start_quiz(user_id)
+                session_manager.start_session(user_id, "quiz")
                 await self.start_di_da_quiz(message.author)
             elif message.channel.id == 1390080013533052949:
-                session_manager.start_quiz(user_id)
+                session_manager.start_session(user_id, "quiz")
                 await self.start_in_per_quiz(message.author)
             elif message.channel.id == 1390371003414216805:
-                session_manager.start_quiz(user_id)
+                session_manager.start_session(user_id, "quiz")
                 await self.start_qualche_quiz(message.author)
 
     async def start_qualche_quiz(self, user):
