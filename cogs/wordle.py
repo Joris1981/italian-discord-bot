@@ -211,32 +211,49 @@ class Wordle(commands.Cog):
 
     @commands.command()
     async def wordle(self, ctx):
-        if ctx.channel.id not in KANALEN:
-            return
         user = ctx.author
-        if is_user_in_active_session(user.id, "wordle"):
-            await ctx.send(f"{user.mention}, je bent al met een Wordle bezig.")
+        if not isinstance(ctx.channel, discord.DMChannel) and ctx.channel.id not in KANALEN:
             return
-        await ctx.send(f"{user.mention}, ⏳ *Un attimo... il gioco inizia nella tua inbox!*")
+
+        if is_user_in_active_session(user.id, "wordle"):
+            if not isinstance(ctx.channel, discord.DMChannel):
+                await ctx.send(f"{user.mention}, je bent al met een Wordle bezig.")
+            else:
+                await ctx.send("❌ Je bent al met een Wordle bezig.")
+            return
+
+        if not isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send(f"{user.mention}, ⏳ *Un attimo... il gioco inizia nella tua inbox!*")
+
         week = self.get_huidige_week()
         thema = self.get_huidig_thema()
         played = self.laad_played()
         week_key = f"{user.id}_week{week}"
+
         if played.get(week_key, 0) >= MAX_SPEEL_PER_WEEK:
-            await ctx.send(f"{user.mention}, je hebt deze week al {MAX_SPEEL_PER_WEEK} keer gespeeld.")
+            if not isinstance(ctx.channel, discord.DMChannel):
+                await ctx.send(f"{user.mention}, je hebt deze week al {MAX_SPEEL_PER_WEEK} keer gespeeld.")
+            else:
+                await ctx.send(f"❌ Je hebt deze week al {MAX_SPEEL_PER_WEEK} keer gespeeld.")
             return
+
         await self.generate_weekly_wordlist()
         woorden = await self.laad_woorden(week, aantal=15)
+
         try:
             await user.send("\U0001F4E7 Ciao! Het spel start nu in je DM!")
         except discord.Forbidden:
-            await ctx.send(f"{user.mention}, ik kan je geen DM sturen. Kijk je instellingen na.")
+            if not isinstance(ctx.channel, discord.DMChannel):
+                await ctx.send(f"{user.mention}, ik kan je geen DM sturen. Kijk je instellingen na.")
             return
+
         start_session(user.id, "wordle")
         score, sterren, tijd = await self.start_wordle_dm(user, woorden, week, thema)
         end_session(user.id)
+
         scores = self.laad_scores()
         uid = str(user.id)
+
         if uid not in scores or scores[uid].get("week", -1) != week or score > scores[uid].get("score", 0):
             scores[uid] = {
                 "naam": user.display_name,
@@ -246,8 +263,10 @@ class Wordle(commands.Cog):
                 "tijd": int(tijd)
             }
             self.bewaar_scores(scores)
+
         played[week_key] = played.get(week_key, 0) + 1
         self.bewaar_played(played)
+
         await user.send("\nGrazie per aver giocato!")
 
     @commands.command()
