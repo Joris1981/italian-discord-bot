@@ -39,6 +39,9 @@ class Quiz(commands.Cog):
             elif message.channel.id == 1393269447094960209:
                 session_manager.start_session(user_id, "quiz")
                 await self.start_che_chi_quiz(message.author)
+            elif message.channel.id == 1393280441221644328:
+                session_manager.start_session(user_id, "quiz")
+                await self.start_ci_di_ne_quiz(message.author)
 
     async def start_che_chi_quiz(self, user):
         questions = [
@@ -58,28 +61,51 @@ class Quiz(commands.Cog):
             ("Non so ______ ha scritto questo libro.", "chi"),
             ("Gli studenti ______ studiano passano l’esame.", "che")
         ]
+        await self.run_custom_quiz(user, questions, "CHE o CHI", ["che", "chi"])
+
+    async def start_ci_di_ne_quiz(self, user):
+        questions = [
+            ("Domani vado a Milano, vuoi venire ___?", "ci"),
+            ("Quanti libri hai letto quest’anno? ___ ho letti cinque.", "ne"),
+            ("Penso spesso ___ quel giorno.", "di"),
+            ("Hai bisogno ___ aiuto?", "di"),
+            ("È una situazione complicata, ___ parleremo domani.", "ne"),
+            ("Questo gelato è buonissimo! Hai già sentito parlare ___?", "di"),
+            ("È molto difficile, ma ___ provo lo stesso.", "ci"),
+            ("Vado spesso in quel ristorante, ___ vado anche stasera.", "ci"),
+            ("Quante bottiglie d’acqua vuoi? ___ prendo due.", "ne"),
+            ("Hai voglia ___ uscire stasera?", "di"),
+            ("Mi fido ___ te.", "di"),
+            ("Vorrei cambiare lavoro. Che ___ pensi?", "ne"),
+            ("Sono sicuro ___ aver chiuso la porta.", "di"),
+            ("Non c’è bisogno di spiegare tutto, ___ hai già parlato ieri.", "ne"),
+            ("Non voglio parlare ancora ___ quel problema, è troppo delicato.", "di")
+        ]
+        await self.run_custom_quiz(user, questions, "CI, NE o DI", ["ci", "ne", "di"])
+
+    async def run_custom_quiz(self, user, questions, title, valid_answers):
         try:
             dm = await user.create_dm()
             await dm.send(
-                "🧠 **Quiz: CHE o CHI?**\nScrivi la parola corretta per ogni frase: `che` o `chi`. Hai 60 secondi per ogni risposta. In bocca al lupo! 🇮🇹\n"
+                f"📚 **Quiz: {title}**\nScrivi `ci`, `ne` o `di` secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
             )
             score = 0
-            for idx, (question, correct_answer) in enumerate(questions, start=1):
-                await dm.send(f"**Domanda {idx}/15:**\n{question}")
+            for idx, (question, answer) in enumerate(questions, start=1):
+                await dm.send(f"{idx}/15: {question}")
                 try:
                     reply = await self.bot.wait_for(
                         "message",
                         timeout=60.0,
-                        check=lambda m: m.author == user and m.channel == dm and m.content.lower() in ["che", "chi"]
+                        check=lambda m: m.author == user and m.channel == dm and normalize(m.content) in valid_answers
                     )
-                    if reply.content.lower() == correct_answer:
+                    if normalize(reply.content) == normalize(answer):
                         await dm.send("✅ Corretto!")
                         score += 1
                     else:
-                        await dm.send(f"❌ Sbagliato! La risposta corretta era **{correct_answer}**.")
+                        await dm.send(f"❌ Sbagliato! Risposta corretta: **{answer}**")
                 except asyncio.TimeoutError:
-                    await dm.send(f"⏱️ Tempo scaduto! La risposta corretta era **{correct_answer}**.")
-            await dm.send(f"\n📊 Fine del quiz! Hai ottenuto **{score}/15** risposte corrette. \nBravo! Continua ad esercitarti con *chi* e *che* ✨")
+                    await dm.send(f"⏰ Tempo scaduto! La risposta giusta era **{answer}**.")
+            await dm.send(f"\n🏁 Fine del quiz **{title}**! Hai totalizzato **{score}/{len(questions)}** risposte corrette. 🎉")
         except discord.Forbidden:
             await user.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
         finally:
