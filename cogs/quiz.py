@@ -8,7 +8,7 @@ import session_manager
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
     text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
-    text = re.sub(r"[\s’‘`]", "", text)
+    text = re.sub(r'[\s’‘`"]', "", text)
     return text
 
 class Quiz(commands.Cog):
@@ -36,6 +36,54 @@ class Quiz(commands.Cog):
             elif message.channel.id == 1390371003414216805:
                 session_manager.start_session(user_id, "quiz")
                 await self.start_qualche_quiz(message.author)
+            elif message.channel.id == 1393269447094960209:
+                session_manager.start_session(user_id, "quiz")
+                await self.start_che_chi_quiz(message.author)
+
+    async def start_che_chi_quiz(self, user):
+        questions = [
+            ("Non so ______ ha lasciato la porta aperta.", "chi"),
+            ("Il ragazzo ______ hai visto ieri è mio cugino.", "che"),
+            ("______ arriva tardi deve spiegare il motivo.", "chi"),
+            ("È un film ______ mi ha fatto piangere.", "che"),
+            ("Non ho capito bene ______ hai invitato.", "chi"),
+            ("La ragazza con ______ esco è molto simpatica.", "che"),
+            ("______ lavora sodo ottiene risultati.", "chi"),
+            ("La canzone ______ stai ascoltando è nuova?", "che"),
+            ("Conosco uno ______ parla cinque lingue.", "che"),
+            ("C’è qualcuno ______ vuole un caffè?", "chi"),
+            ("L’uomo ______ abita qui è un artista.", "che"),
+            ("Non ricordo ______ ha detto quella frase.", "chi"),
+            ("È una persona ______ non si arrende mai.", "che"),
+            ("Non so ______ ha scritto questo libro.", "chi"),
+            ("Gli studenti ______ studiano passano l’esame.", "che")
+        ]
+        try:
+            dm = await user.create_dm()
+            await dm.send(
+                "🧠 **Quiz: CHE o CHI?**\nScrivi la parola corretta per ogni frase: `che` o `chi`. Hai 60 secondi per ogni risposta. In bocca al lupo! 🇮🇹\n"
+            )
+            score = 0
+            for idx, (question, correct_answer) in enumerate(questions, start=1):
+                await dm.send(f"**Domanda {idx}/15:**\n{question}")
+                try:
+                    reply = await self.bot.wait_for(
+                        "message",
+                        timeout=60.0,
+                        check=lambda m: m.author == user and m.channel == dm and m.content.lower() in ["che", "chi"]
+                    )
+                    if reply.content.lower() == correct_answer:
+                        await dm.send("✅ Corretto!")
+                        score += 1
+                    else:
+                        await dm.send(f"❌ Sbagliato! La risposta corretta era **{correct_answer}**.")
+                except asyncio.TimeoutError:
+                    await dm.send(f"⏱️ Tempo scaduto! La risposta corretta era **{correct_answer}**.")
+            await dm.send(f"\n📊 Fine del quiz! Hai ottenuto **{score}/15** risposte corrette. \nBravo! Continua ad esercitarti con *chi* e *che* ✨")
+        except discord.Forbidden:
+            await user.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+        finally:
+            session_manager.end_session(user.id)
 
     async def start_qualche_quiz(self, user):
         questions = [
