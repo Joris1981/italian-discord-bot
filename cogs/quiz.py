@@ -5,11 +5,17 @@ import re
 import asyncio
 import session_manager
 
+
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
     text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
-    text = re.sub(r'[\s’‘`"]', "", text)
+    text = re.sub(r'[\s’‘`"^\u0300\u0301]', "", text)  # strip diacritics
     return text
+
+
+async def confirm_quiz_start(channel):
+    await channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+
 
 class Quiz(commands.Cog):
     def __init__(self, bot):
@@ -24,32 +30,32 @@ class Quiz(commands.Cog):
         user_id = message.author.id
         if normalize(message.content) == "quiz":
             if session_manager.is_busy(user_id):
-                await message.channel.send("❌ Hai già una quiz attiva. Completa prima quella prima di iniziarne un'altra.")
+                await message.channel.send("\u274C Hai già una quiz attiva. Completa prima quella prima di iniziarne un'altra.")
                 return
 
             if message.channel.id == 1388866025679880256:
                 session_manager.start_session(user_id, "quiz")
-                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
+                await confirm_quiz_start(message.channel)
                 await self.start_di_da_quiz(message.author)
             elif message.channel.id == 1390080013533052949:
                 session_manager.start_session(user_id, "quiz")
-                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
+                await confirm_quiz_start(message.channel)
                 await self.start_in_per_quiz(message.author)
             elif message.channel.id == 1390371003414216805:
                 session_manager.start_session(user_id, "quiz")
-                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
+                await confirm_quiz_start(message.channel)
                 await self.start_qualche_quiz(message.author)
             elif message.channel.id == 1393269447094960209:
                 session_manager.start_session(user_id, "quiz")
-                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
+                await confirm_quiz_start(message.channel)
                 await self.start_che_chi_quiz(message.author)
             elif message.channel.id == 1393280441221644328:
                 session_manager.start_session(user_id, "quiz")
-                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
+                await confirm_quiz_start(message.channel)
                 await self.start_ci_di_ne_quiz(message.author)
             elif message.channel.id == 1393289069009830038:
                 session_manager.start_session(user_id, "quiz")
-                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
+                await confirm_quiz_start(message.channel)
                 await self.start_comparativi_quiz(message.author)
 
     async def start_comparativi_quiz(self, user):
@@ -67,10 +73,10 @@ class Quiz(commands.Cog):
             ("La birra è ___ del vino, secondo me.", "migliore"),
             ("Hai un fratello ___ o sei figlio unico?", "maggiore"),
             ("Giulia è la sorella ___ .", "minore"),
-            ("In questo lavoro, l’esperienza è ___ importante dello stipendio.", "più"),
-            ("Questo esercizio è ___ difficile di quello di ieri.", "più")
+            ("In questo lavoro, l’esperienza è ___ importante dello stipendio.", "piu"),
+            ("Questo esercizio è ___ difficile di quello di ieri.", "piu")
         ]
-        await self.run_custom_quiz(user, questions, "I COMPARATIVI", ["che", "di", "più", "meno", "meglio", "migliore", "peggiore", "maggiore", "minore"])
+        await self.run_custom_quiz(user, questions, "I COMPARATIVI", [normalize(a) for a in ["che", "di", "piu", "meno", "meglio", "migliore", "peggiore", "maggiore", "minore"]])
 
     async def start_che_chi_quiz(self, user):
         questions = [
@@ -115,9 +121,16 @@ class Quiz(commands.Cog):
     async def run_custom_quiz(self, user, questions, title, valid_answers):
         try:
             dm = await user.create_dm()
-            await dm.send(
-                f"📚 **Quiz: {title}**\nScrivi la parola corretta secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
-            )
+            if title == "I COMPARATIVI":
+                istruzioni = "Scrivi la parola corretta tra: **che, di, piu, meno, meglio, migliore, peggiore, maggiore, minore**. Hai 60 secondi per ogni frase. In bocca al lupo!"
+            elif title == "CHE o CHI":
+                istruzioni = "Scrivi **che** o **chi** secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
+            elif title == "CI, NE o DI":
+                istruzioni = "Scrivi **ci**, **ne** o **di** secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
+            else:
+                istruzioni = "Scrivi la parola corretta secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
+
+            await dm.send(f"\U0001F4DA **Quiz: {title}**\n{istruzioni}")
             score = 0
             for idx, (question, answer) in enumerate(questions, start=1):
                 await dm.send(f"{idx}/{len(questions)}: {question}")
@@ -128,15 +141,26 @@ class Quiz(commands.Cog):
                         check=lambda m: m.author == user and m.channel == dm and normalize(m.content) in valid_answers
                     )
                     if normalize(reply.content) == normalize(answer):
-                        await dm.send("✅ Corretto!")
+                        await dm.send("\u2705 Corretto!")
                         score += 1
                     else:
-                        await dm.send(f"❌ Sbagliato! Risposta corretta: **{answer}**")
+                        await dm.send(f"\u274C Sbagliato! Risposta corretta: **{answer}**")
                 except asyncio.TimeoutError:
-                    await dm.send(f"⏰ Tempo scaduto! La risposta giusta era **{answer}**.")
-            await dm.send(f"\n🏁 Fine del quiz **{title}**! Hai totalizzato **{score}/{len(questions)}** risposte corrette. 🎉")
+                    await dm.send(f"\u23F0 Tempo scaduto! La risposta giusta era **{answer}**.")
+            await dm.send(f"\n\U0001F3C1 Fine del quiz **{title}**! Hai totalizzato **{score}/{len(questions)}** risposte corrette. \U0001F389")
         except discord.Forbidden:
-            await user.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+            for thread_id in [
+                1388866025679880256,
+                1390080013533052949,
+                1390371003414216805,
+                1393269447094960209,
+                1393280441221644328,
+                1393289069009830038
+            ]:
+                channel = self.bot.get_channel(thread_id)
+                if channel:
+                    await channel.send(f"{user.mention} \u274C Non posso mandarti un messaggio privato. Controlla le impostazioni di privacy.")
+                    break
         finally:
             session_manager.end_session(user.id)
 
