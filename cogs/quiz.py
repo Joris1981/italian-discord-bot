@@ -29,19 +29,48 @@ class Quiz(commands.Cog):
 
             if message.channel.id == 1388866025679880256:
                 session_manager.start_session(user_id, "quiz")
+                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
                 await self.start_di_da_quiz(message.author)
             elif message.channel.id == 1390080013533052949:
                 session_manager.start_session(user_id, "quiz")
+                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
                 await self.start_in_per_quiz(message.author)
             elif message.channel.id == 1390371003414216805:
                 session_manager.start_session(user_id, "quiz")
+                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
                 await self.start_qualche_quiz(message.author)
             elif message.channel.id == 1393269447094960209:
                 session_manager.start_session(user_id, "quiz")
+                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
                 await self.start_che_chi_quiz(message.author)
             elif message.channel.id == 1393280441221644328:
                 session_manager.start_session(user_id, "quiz")
+                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
                 await self.start_ci_di_ne_quiz(message.author)
+            elif message.channel.id == 1393289069009830038:
+                session_manager.start_session(user_id, "quiz")
+                await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
+                await self.start_comparativi_quiz(message.author)
+
+    async def start_comparativi_quiz(self, user):
+        questions = [
+            ("Luca è più simpatico ___ Paolo.", "di"),
+            ("Il caffè è più forte ___ amaro.", "che"),
+            ("Questo libro è più interessante ___ noioso.", "che"),
+            ("La pasta è meno calorica ___ il pane.", "di"),
+            ("Questo problema è più urgente ___ complicato.", "che"),
+            ("Lei è più sportiva ___ me.", "di"),
+            ("Andare al mare è meglio ___ restare in città.", "che"),
+            ("Ho meno tempo ___ te.", "di"),
+            ("Questo film è il ___ che abbia mai visto.", "peggiore"),
+            ("Marta cucina ___ di tutti.", "meglio"),
+            ("La birra è ___ del vino, secondo me.", "migliore"),
+            ("Hai un fratello ___ o sei figlio unico?", "maggiore"),
+            ("Giulia è la sorella ___ .", "minore"),
+            ("In questo lavoro, l’esperienza è ___ importante dello stipendio.", "più"),
+            ("Questo esercizio è ___ difficile di quello di ieri.", "più")
+        ]
+        await self.run_custom_quiz(user, questions, "I COMPARATIVI", ["che", "di", "più", "meno", "meglio", "migliore", "peggiore", "maggiore", "minore"])
 
     async def start_che_chi_quiz(self, user):
         questions = [
@@ -87,11 +116,11 @@ class Quiz(commands.Cog):
         try:
             dm = await user.create_dm()
             await dm.send(
-                f"📚 **Quiz: {title}**\nScrivi `ci`, `ne` o `di` secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
+                f"📚 **Quiz: {title}**\nScrivi la parola corretta secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
             )
             score = 0
             for idx, (question, answer) in enumerate(questions, start=1):
-                await dm.send(f"{idx}/15: {question}")
+                await dm.send(f"{idx}/{len(questions)}: {question}")
                 try:
                     reply = await self.bot.wait_for(
                         "message",
