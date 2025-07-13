@@ -118,7 +118,7 @@ async def on_message(message):
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": (
-                    "Rispondi solo con 'ITALIANO' se il testo contiene una parte significativa in italiano, anche se misto. "
+                    "Rispondi solo con 'ITALIANO' se nel messaggio è presente anche solo una parte scritta in italiano, indipendentemente da parole in altre lingue o nomi propri. Rispondi 'ALTRO' solo se non c'è assolutamente nessun italiano."
                     "Se è interamente in un'altra lingua, rispondi 'ALTRO'."
                 )},
                 {"role": "user", "content": message.content}
