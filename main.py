@@ -1,5 +1,3 @@
-# main.py
-
 import os
 import discord
 import openai
@@ -59,6 +57,47 @@ TARGET_CHANNEL_IDS = {
     1388667261761359932
 }
 
+# === 🔁 Tijdelijke automatische correctie ===
+CORRECTED_MESSAGE_ID = 1393679144197427271
+REACTED_FLAG_FILE = "correctie_done.flag"
+
+async def auto_correct_target_message():
+    if os.path.exists(REACTED_FLAG_FILE):
+        return
+
+    try:
+        channel = bot.get_channel(1388667261761359932)
+        if not channel:
+            logging.warning("Kanaal niet gevonden.")
+            return
+
+        message = await channel.fetch_message(CORRECTED_MESSAGE_ID)
+        if not message:
+            logging.warning("Bericht niet gevonden.")
+            return
+
+        corrected = (
+            "✅ **Versie corretta:**\n"
+            "> Ho già ascoltato spesso il podcast di Irene e mi piace molto perché Irene parla in modo chiaro e bello.\n"
+            "> Anche l’idea che sia possibile imparare una lingua come l’italiano semplicemente ascoltandola mi sembra davvero valida.\n"
+            "> Il problema, però, è che per noi in Belgio è più difficile rispetto a chi vive in Italia, perché non sentiamo l’italiano durante tutta la giornata."
+        )
+
+        risposta = (
+            "\U0001F4AC **Risposta:**\n"
+            "Hai proprio ragione! Irene ha una voce molto chiara e piacevole, ed è un’ottima risorsa per chi studia l’italiano.\n"
+            "Anche se non vivi in Italia, ascoltare ogni giorno è già un grande passo avanti. Continua così! \U0001F4AA🇮🇹"
+        )
+
+        await message.reply(f"{corrected}\n\n{risposta}")
+
+        with open(REACTED_FLAG_FILE, "w") as f:
+            f.write("done")
+
+        logging.info("✅ Automatische correctie geplaatst.")
+    except Exception as e:
+        logging.error(f"❌ Fout bij auto-correctie: {e}")
+
 # === 🤖 Bot class ===
 intents = discord.Intents.default()
 intents.message_content = True
@@ -73,6 +112,7 @@ class MyBot(commands.Bot):
             except Exception as e:
                 logging.error(f"❌ Fout bij laden van {extension}: {e}")
         self.loop.create_task(reminder_task())
+        self.loop.create_task(auto_correct_target_message())  # <== tijdelijke actie
 
 bot = MyBot(command_prefix='!', intents=intents, case_insensitive=True)
 
@@ -150,7 +190,6 @@ async def on_message(message):
             logging.error(f"Taalcorrectie fout: {e}")
         return
 
-    # 📩 GPT in DM (beperkt tot 5/dag)
     if isinstance(message.channel, discord.DMChannel):
         if is_user_in_active_session(message.author.id):
             return
@@ -178,6 +217,11 @@ async def on_message(message):
             logging.error(f"GPT DM fout: {e}")
             await message.channel.send("⚠️ Er ging iets mis bij het ophalen van een antwoord.")
         return
+
+# === ▶️ Start de bot ===
+if __name__ == "__main__":
+    keep_alive()
+    bot.run(os.getenv("DISCORD_TOKEN"))
 
 # === 🎧 Commando’s ===
 @bot.command()
