@@ -245,7 +245,7 @@ async def on_message(message):
         logging.error(f"Taalcorrectie fout: {e}")
         return
 
-# === 🆘 Handmatig hertriggeren ===
+# === 🆘 Handmatig hertriggeren laatste bericht ===
 @bot.command(name='correggi_ultimo')
 async def correggi_ultimo(ctx, member: discord.Member = None):
     target_id = member.id if member and ctx.author.guild_permissions.manage_messages else ctx.author.id
@@ -255,6 +255,22 @@ async def correggi_ultimo(ctx, member: discord.Member = None):
             return
     await ctx.reply("⚠️ Geen geschikt recent bericht gevonden om te corrigeren.", mention_author=False)
 
+# === 🆘 Handmatig corrigeren op basis van Message ID ===
+@bot.command(name='correggi_id')
+@commands.has_permissions(manage_messages=True)
+async def correggi_id(ctx, message_id: int):
+    try:
+        msg = await ctx.channel.fetch_message(message_id)
+        if msg.author.bot or msg.content.startswith("!"):
+            await ctx.reply("⚠️ Dat bericht kan niet worden gecorrigeerd.", mention_author=False)
+            return
+        await on_message(msg)
+    except discord.NotFound:
+        await ctx.reply("❌ Geen bericht gevonden met dat ID in dit kanaal.", mention_author=False)
+    except Exception as e:
+        logging.error(f"Fout bij !correggi_id: {e}")
+        await ctx.reply("⚠️ Er ging iets mis bij het ophalen van het bericht.", mention_author=False)
+        
 # === 🎧 Commando’s ===
 @bot.command()
 async def ascolto_dai_accompagnami(ctx):
