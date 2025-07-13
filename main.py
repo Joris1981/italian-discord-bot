@@ -126,6 +126,11 @@ async def on_message(message):
         return
 
     try:
+        # 🛑 Stop taalverwerking in DM als er een actieve sessie loopt
+        if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
+            return
+
+        # 📌 Detecteer of het Italiaans is
         detection = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -137,6 +142,7 @@ async def on_message(message):
         if detection.choices[0].message.content.strip().upper() != "ITALIANO":
             return
 
+        # ✅ Corrigeer indien nodig
         correction = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -149,15 +155,8 @@ async def on_message(message):
         )
 
         reply = correction.choices[0].message.content.strip()
-        cleaned_reply = reply.lower().strip("📝✏️. ")
 
-        should_reply = (
-            message.channel.id in ALLOWED_CHANNELS_FOR_REACTION
-            or (isinstance(message.channel, discord.Thread) and message.channel.parent_id in ALLOWED_THREAD_PARENTS_FOR_REACTION)
-            or message.channel.id in ALLOWED_EXPLICIT_THREADS
-        )
-
-        if cleaned_reply == "no_correction_needed":
+        if reply == "NO_CORRECTION_NEEDED":
             compliments = [
                 "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
                 "✅ Perfetto! Sei sulla strada giusta! 🚀",
@@ -168,24 +167,16 @@ async def on_message(message):
                 "✅ Che bello vedere i tuoi progressi! 💪"
             ]
             await message.reply(random.choice(compliments), suppress_embeds=True)
-
-            if should_reply:
-                followup = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": (
-                            "Rispondi come un partner di conversazione amichevole. Reagisci brevemente al messaggio dell'utente "
-                            "e fai una domanda per continuare la conversazione, adatta al livello B1."
-                        )},
-                        {"role": "user", "content": message.content}
-                    ],
-                    max_tokens=100
-                )
-                await message.channel.send(followup.choices[0].message.content.strip())
-
         elif reply.lower().strip() != message.content.lower().strip():
             await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
 
+            # ➕ Inhoudelijke reactie in bepaalde kanalen/threads
+            should_reply = (
+                message.channel.id in ALLOWED_CHANNELS_FOR_REACTION
+                or (isinstance(message.channel, discord.Thread) and message.channel.parent_id in ALLOWED_THREAD_PARENTS_FOR_REACTION)
+                or message.channel.id in ALLOWED_EXPLICIT_THREADS
+            )
+
             if should_reply:
                 followup = client.chat.completions.create(
                     model="gpt-3.5-turbo",
@@ -200,10 +191,8 @@ async def on_message(message):
                 )
                 await message.channel.send(followup.choices[0].message.content.strip())
 
+        # 💬 GPT-reactie in DM als er géén actieve sessie is
         if isinstance(message.channel, discord.DMChannel):
-            if is_user_in_active_session(message.author.id):
-                return
-
             user_id = message.author.id
             today = datetime.datetime.utcnow().date().isoformat()
             key = f"{user_id}:{today}"
@@ -213,23 +202,18 @@ async def on_message(message):
                 await message.channel.send("🚫 Hai raggiunto il limite di 5 messaggi per oggi. Riprova domani.")
                 return
 
-            try:
-                reply = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "Rispondi sempre in italiano."},
-                        {"role": "user", "content": message.content}
-                    ]
-                )
-                await message.channel.send(reply.choices[0].message.content.strip())
-                user_message_counts[key] = count + 1
-            except Exception as e:
-                logging.error(f"GPT DM fout: {e}")
-                await message.channel.send("⚠️ Er ging iets mis bij het ophalen van un antwoord.")
+            reply = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Rispondi sempre in italiano."},
+                    {"role": "user", "content": message.content}
+                ]
+            )
+            await message.channel.send(reply.choices[0].message.content.strip())
+            user_message_counts[key] = count + 1
 
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
-        return
 
 # === 🎧 Commando’s ===
 @bot.command()
