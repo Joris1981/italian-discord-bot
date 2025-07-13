@@ -1,5 +1,3 @@
-# main.py
-
 import os
 import discord
 import openai
@@ -20,10 +18,10 @@ from utils import normalize
 if not load_dotenv():
     logging.warning("⚠️ Kon .env-bestand niet laden.")
 
-# === 🗂 Zorg dat wordle-map bestaat ===
+# === 📂 Zorg dat wordle-map bestaat ===
 os.makedirs("/persistent/data/wordle", exist_ok=True)
 
-# === 🪵 Logging ===
+# === 🩵 Logging ===
 logging.basicConfig(level=logging.INFO)
 
 # === 🌐 Keep-alive server ===
@@ -148,11 +146,11 @@ async def on_message(message):
         elif reply.lower().strip() != message.content.lower().strip():
             await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
 
-            # Inhoudelijke reactie bij specifieke kanalen/threads
             should_reply = (
-                message.channel.id == 1387569943746318386 or
-                (isinstance(message.channel, discord.Thread) and message.channel.parent_id == 1387594096759144508)
+                message.channel.id in {1387569943746318386, 1387571841442385951} or
+                (isinstance(message.channel, discord.Thread) and message.channel.parent_id in {1387594096759144508, 1387571841442385951})
             )
+
             if should_reply:
                 followup = client.chat.completions.create(
                     model="gpt-3.5-turbo",
@@ -167,37 +165,36 @@ async def on_message(message):
                 )
                 await message.channel.send(followup.choices[0].message.content.strip())
 
+        if isinstance(message.channel, discord.DMChannel):
+            if is_user_in_active_session(message.author.id):
+                return
+
+            user_id = message.author.id
+            today = datetime.datetime.utcnow().date().isoformat()
+            key = f"{user_id}:{today}"
+            count = user_message_counts.get(key, 0)
+
+            if count >= 5:
+                await message.channel.send("🚫 Hai raggiunto il limite di 5 messaggi per oggi. Riprova domani.")
+                return
+
+            try:
+                reply = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "Rispondi sempre in italiano."},
+                        {"role": "user", "content": message.content}
+                    ]
+                )
+                await message.channel.send(reply.choices[0].message.content.strip())
+                user_message_counts[key] = count + 1
+            except Exception as e:
+                logging.error(f"GPT DM fout: {e}")
+                await message.channel.send("⚠️ Er ging iets mis bij het ophalen van un antwoord.")
+    
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
         return
-
-    # GPT in DM (beperkt tot 5/dag)
-    if isinstance(message.channel, discord.DMChannel):
-        if is_user_in_active_session(message.author.id):
-            return
-
-        user_id = message.author.id
-        today = datetime.datetime.utcnow().date().isoformat()
-        key = f"{user_id}:{today}"
-        count = user_message_counts.get(key, 0)
-
-        if count >= 5:
-            await message.channel.send("🚫 Hai raggiunto il limite di 5 messaggi per oggi. Riprova domani.")
-            return
-
-        try:
-            reply = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Rispondi sempre in italiano."},
-                    {"role": "user", "content": message.content}
-                ]
-            )
-            await message.channel.send(reply.choices[0].message.content.strip())
-            user_message_counts[key] = count + 1
-        except Exception as e:
-            logging.error(f"GPT DM fout: {e}")
-            await message.channel.send("⚠️ Er ging iets mis bij het ophalen van een antwoord.")
 
 # === 🎧 Commando’s ===
 @bot.command()
