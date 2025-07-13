@@ -149,8 +149,15 @@ async def on_message(message):
         )
 
         reply = correction.choices[0].message.content.strip()
+        cleaned_reply = reply.lower().strip("📝✏️. ")
 
-        if reply == "NO_CORRECTION_NEEDED":
+        should_reply = (
+            message.channel.id in ALLOWED_CHANNELS_FOR_REACTION
+            or (isinstance(message.channel, discord.Thread) and message.channel.parent_id in ALLOWED_THREAD_PARENTS_FOR_REACTION)
+            or message.channel.id in ALLOWED_EXPLICIT_THREADS
+        )
+
+        if cleaned_reply == "no_correction_needed":
             compliments = [
                 "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
                 "✅ Perfetto! Sei sulla strada giusta! 🚀",
@@ -161,14 +168,23 @@ async def on_message(message):
                 "✅ Che bello vedere i tuoi progressi! 💪"
             ]
             await message.reply(random.choice(compliments), suppress_embeds=True)
+
+            if should_reply:
+                followup = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": (
+                            "Rispondi come un partner di conversazione amichevole. Reagisci brevemente al messaggio dell'utente "
+                            "e fai una domanda per continuare la conversazione, adatta al livello B1."
+                        )},
+                        {"role": "user", "content": message.content}
+                    ],
+                    max_tokens=100
+                )
+                await message.channel.send(followup.choices[0].message.content.strip())
+
         elif reply.lower().strip() != message.content.lower().strip():
             await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
-
-            should_reply = (
-                message.channel.id in ALLOWED_CHANNELS_FOR_REACTION
-                or (isinstance(message.channel, discord.Thread) and message.channel.parent_id in ALLOWED_THREAD_PARENTS_FOR_REACTION)
-                or message.channel.id in ALLOWED_EXPLICIT_THREADS
-            )
 
             if should_reply:
                 followup = client.chat.completions.create(
