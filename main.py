@@ -147,7 +147,7 @@ async def on_message(message):
             await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
 
             should_reply = (
-                message.channel.id in {1387569943746318386, 1387571841442385951} or
+                message.channel.id in {1387569943746318386, 1387571841442385951, 1387853018845810891} or
                 (isinstance(message.channel, discord.Thread) and message.channel.parent_id in {1387594096759144508, 1387571841442385951})
             )
 
