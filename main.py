@@ -118,14 +118,16 @@ async def on_message(message):
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": (
-                    "Rispondi solo con 'ITALIANO' se nel messaggio è presente anche solo una parte scritta in italiano, indipendentemente da parole in altre lingue o nomi propri. Rispondi 'ALTRO' solo se non c'è assolutamente nessun italiano."
-                    "Se è interamente in un'altra lingua, rispondi 'ALTRO'."
+                    "Rispondi con 'ITALIANO' se c'è del testo in italiano. Rispondi 'DUTCH' solo se è interamente in olandese."
                 )},
                 {"role": "user", "content": message.content}
             ],
             max_tokens=5
         )
-        if detection.choices[0].message.content.strip().upper() != "ITALIANO":
+        result = detection.choices[0].message.content.strip().upper()
+
+        if result == "DUTCH":
+            await message.reply("🗨️ Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
             return
 
         correction = client.chat.completions.create(
