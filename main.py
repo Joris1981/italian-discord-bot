@@ -245,6 +245,16 @@ async def on_message(message):
         logging.error(f"Taalcorrectie fout: {e}")
         return
 
+# === 🆘 Handmatig hertriggeren ===
+@bot.command(name='correggi_ultimo')
+async def correggi_ultimo(ctx, member: discord.Member = None):
+    target_id = member.id if member and ctx.author.guild_permissions.manage_messages else ctx.author.id
+    async for msg in ctx.channel.history(limit=50):
+        if msg.author.id == target_id and not msg.content.startswith("!") and not msg.author.bot:
+            await on_message(msg)
+            return
+    await ctx.reply("⚠️ Geen geschikt recent bericht gevonden om te corrigeren.", mention_author=False)
+
 # === 🎧 Commando’s ===
 @bot.command()
 async def ascolto_dai_accompagnami(ctx):
