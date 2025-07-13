@@ -62,18 +62,23 @@ CORRECTED_MESSAGE_ID = 1393679144197427271
 REACTED_FLAG_FILE = "correctie_done.flag"
 
 async def auto_correct_target_message():
+    logging.info("🚀 Start auto_correct_target_message()")
+
     if os.path.exists(REACTED_FLAG_FILE):
+        logging.info("⏭️ Correctie al uitgevoerd, sla over.")
         return
 
     try:
-        channel = bot.get_channel(1388667261761359932)
+        # Haal de thread op (is een kanaal!)
+        channel = await bot.fetch_channel(1393302364592668784)
         if not channel:
-            logging.warning("Kanaal niet gevonden.")
+            logging.warning("❌ Thread niet gevonden.")
             return
 
+        # Haal het bericht op in de thread
         message = await channel.fetch_message(CORRECTED_MESSAGE_ID)
         if not message:
-            logging.warning("Bericht niet gevonden.")
+            logging.warning("❌ Bericht niet gevonden.")
             return
 
         corrected = (
@@ -94,7 +99,8 @@ async def auto_correct_target_message():
         with open(REACTED_FLAG_FILE, "w") as f:
             f.write("done")
 
-        logging.info("✅ Automatische correctie geplaatst.")
+        logging.info("✅ Correctie succesvol geplaatst.")
+
     except Exception as e:
         logging.error(f"❌ Fout bij auto-correctie: {e}")
 
