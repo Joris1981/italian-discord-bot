@@ -9,7 +9,7 @@ import session_manager
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
     text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
-    text = re.sub(r'[\s’‘`"^\u0300\u0301]', "", text)  # strip diacritics
+    text = re.sub(r'[\s’‘`"^\u0300\u0301]', "", text)
     return text
 
 
@@ -57,6 +57,75 @@ class Quiz(commands.Cog):
                 session_manager.start_session(user_id, "quiz")
                 await confirm_quiz_start(message.channel)
                 await self.start_comparativi_quiz(message.author)
+            elif message.channel.id == 1388241920790237347:
+                session_manager.start_session(user_id, "quiz")
+                await confirm_quiz_start(message.channel)
+                await self.start_ci_quiz(message.author)
+
+    async def start_ci_quiz(self, user):
+        questions = [
+            ("Quale frase usa CI correttamente per indicare un luogo?\nA) Ci vado spesso in palestra\nB) Vado spesso ci\nC) Vado spesso lì", "A"),
+            ("Quale frase è corretta?\nA) Non penso più a ci\nB) Non ci penso più\nC) Non penso ci", "B"),
+            ("Quale frase è corretta?\nA) Ci credo\nB) Credo ci\nC) Credo a ci", "A"),
+            ("Quale frase contiene un errore?\nA) Ci provo sempre\nB) Provo ci sempre\nC) Provo sempre a farlo", "B"),
+            ("Scegli l'opzione corretta.\nA) A Roma ci sono stato\nB) Ci Roma sono stato\nC) Ci sono stato a Roma", "C"),
+            ("CI può sostituire 'a qualcosa'?\nA) Sì, ci penso spesso\nB) No, mai\nC) Solo con i verbi di moto", "A"),
+            ("Qual è la frase corretta?\nA) Penso ci spesso\nB) Ci penso spesso a lei\nC) Ci penso spesso", "C"),
+            ("Dove si usa CI correttamente?\nA) Ci voglio bene\nB) Ci credo davvero\nC) Credo ci molto", "B"),
+            ("Individua l'uso corretto di CI.\nA) Non ci ho pensato\nB) Non ho pensato ci\nC) Non pensato ci ho", "A"),
+            ("Quale frase è corretta?\nA) Ci riesco di solito\nB) Di solito ci riesco\nC) Riesco ci di solito", "B"),
+            ("Quale frase contiene un errore?\nA) Pensaci bene\nB) Ci pensi bene\nC) Bene pensaci", "C"),
+            ("CI può essere usato con 'pensare'?\nA) Sì, ci penso spesso\nB) No, mai\nC) Solo con nomi propri", "A"),
+            ("Qual è la forma corretta?\nA) Non ci faccio caso\nB) Ci non faccio caso\nC) Non faccio caso ci", "A"),
+            ("Scegli la frase con CI usato correttamente.\nA) Non ci torno più\nB) Ci torno non più\nC) Torno ci non più", "A"),
+            ("Qual è la risposta corretta?\nA) Ci provo sempre\nB) Provo ci sempre\nC) Sempre provo ci", "A")
+        ]
+
+        try:
+            dm = await user.create_dm()
+            await dm.send("\U0001F4DA **Quiz: Uso di CI**\nRispondi con A, B o C. Hai 60 secondi per ogni domanda. In bocca al lupo!")
+            score = 0
+            for i, (question, correct) in enumerate(questions, 1):
+                await dm.send(f"{i}. {question}")
+                try:
+                    reply = await self.bot.wait_for("message", timeout=60.0, check=lambda m: m.author == user and m.channel == dm and normalize(m.content) in {"a", "b", "c"})
+                    if normalize(reply.content) == normalize(correct.lower()):
+                        await dm.send("✅ Corretto!")
+                        score += 1
+                    else:
+                        await dm.send(f"❌ Sbagliato! La risposta giusta era **{correct.upper()}**")
+                except asyncio.TimeoutError:
+                    await dm.send(f"⏰ Tempo scaduto! La risposta giusta era **{correct.upper()}**")
+            await dm.send(f"🏁 Hai completato il quiz! Risposte corrette: **{score}/15**. Scrivi `!ci_soluzioni` per vedere le risposte spiegate.")
+        except discord.Forbidden:
+            await user.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+        finally:
+            session_manager.end_session(user.id)
+
+    @commands.command(name="ci_soluzioni")
+    async def ci_soluzioni(self, ctx):
+        solutions = [
+            "1. ❌ C) *Vado spesso lì* → 'lì' è corretto ma non con ci ✅ **A) Ci vado spesso in palestra** è corretta.",
+            "2. ✅ B) *Non ci penso più* → 'ci' sostituisce 'a qualcosa'.",
+            "3. ✅ A) *Ci credo* → uso corretto con 'credere a qualcosa'.",
+            "4. ❌ B) *Provo ci sempre* → 'ci' va prima del verbo. ✅ A) *Ci provo sempre* è corretta.",
+            "5. ✅ C) *Ci sono stato a Roma* → struttura corretta con 'ci'.",
+            "6. ✅ A) *Sì, ci penso spesso* → uso corretto di 'ci' per sostituire 'a qualcosa'.",
+            "7. ✅ C) *Ci penso spesso* → ordine corretto delle parole.",
+            "8. ✅ B) *Ci credo davvero* → 'ci' come sostituto di 'a qualcosa'.",
+            "9. ✅ A) *Non ci ho pensato* → 'ci' prima dell'ausiliare.",
+            "10. ✅ B) *Di solito ci riesco* → posizione corretta di 'ci'.",
+            "11. ✅ A) *Pensaci bene* → forma imperativa corretta con 'ci'.",
+            "12. ✅ A) *Sì, ci penso spesso* → uso corretto con 'pensare'.",
+            "13. ✅ A) *Non ci faccio caso* → espressione fissa corretta.",
+            "14. ✅ A) *Non ci torno più* → 'ci' indica luogo, posizione corretta.",
+            "15. ✅ A) *Ci provo sempre* → 'ci' sostituisce 'a qualcosa'."
+        ]
+        try:
+            for s in solutions:
+                await ctx.author.send(s)
+        except discord.Forbidden:
+            await ctx.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
 
     async def start_comparativi_quiz(self, user):
         questions = [
