@@ -120,7 +120,7 @@ async def on_message(message):
 
         reply = correction.choices[0].message.content.strip()
 
-        if reply == "NO_CORRECTION_NEEDED":
+        if reply.upper() == "NO_CORRECTION_NEEDED":
             compliments = [
                 "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
                 "✅ Perfetto! Sei sulla strada giusta! 🚀",
@@ -131,16 +131,13 @@ async def on_message(message):
                 "✅ Che bello vedere i tuoi progressi! 💪"
             ]
             await message.reply(random.choice(compliments), suppress_embeds=True)
-        elif reply.lower().strip() != message.content.lower().strip():
+        else:
             try:
                 await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
                 logging.info(f"✅ Correctie gepost voor {message.author.display_name}")
             except Exception as e:
                 logging.error(f"❌ Fout bij versturen van correctie-reply: {e}")
                 await message.channel.send("⚠️ Er liep iets mis bij de correctie. Zou je je bericht opnieuw willen posten?")
-        else:
-            logging.warning(f"⚠️ GPT gaf geen corrigerende output terug voor bericht van {message.author.display_name}")
-            await message.channel.send("⚠️ Er liep iets fout bij de correctie. Zou je je bericht opnieuw willen posten?")
 
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
