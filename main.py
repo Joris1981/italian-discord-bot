@@ -57,6 +57,24 @@ TARGET_CHANNEL_IDS = {
     1388667261761359932
 }
 
+ALLOWED_CHANNELS_FOR_REACTION = {
+    1387569943746318386,
+    1387571841442385951,
+    1387552031631478937
+}
+
+ALLOWED_THREAD_PARENTS_FOR_REACTION = {
+    1387594096759144508,
+    1387571841442385951,
+    1387552031631478937
+}
+
+ALLOWED_EXPLICIT_THREADS = {
+    1393302364592668784,
+    1387573784055255263,
+    1387853018845810891
+}
+
 # === 🤖 Bot class ===
 intents = discord.Intents.default()
 intents.message_content = True
@@ -138,20 +156,18 @@ async def on_message(message):
                 "✅ Perfetto! Sei sulla strada giusta! 🚀",
                 "✅ Benissimo! 🌟",
                 "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️",
-                "✅ Super! La tua passione per l'italiano è evidente! 🎉"
+                "✅ Super! La tua passione per l'italiano è evidente! 🎉",
+                "✅ Eccellente! Ogni giorno migliori! 🌈",
+                "✅ Che bello vedere i tuoi progressi! 💪"
             ]
             await message.reply(random.choice(compliments), suppress_embeds=True)
         elif reply.lower().strip() != message.content.lower().strip():
             await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
 
             should_reply = (
-                message.channel.id in {
-                    1387569943746318386, 1387571841442385951, 1387853018845810891,
-                    1387552031631478937, 1393302364592668784, 1388667261761359932, 1387573784055255263
-                } or
-                (isinstance(message.channel, discord.Thread) and message.channel.parent_id in {
-                    1387594096759144508, 1387571841442385951, 1387552031631478937
-                })
+                message.channel.id in ALLOWED_CHANNELS_FOR_REACTION
+                or (isinstance(message.channel, discord.Thread) and message.channel.parent_id in ALLOWED_THREAD_PARENTS_FOR_REACTION)
+                or message.channel.id in ALLOWED_EXPLICIT_THREADS
             )
 
             if should_reply:
