@@ -137,16 +137,35 @@ async def on_message(message):
         if detection.choices[0].message.content.strip().upper() != "ITALIANO":
             return
 
-        correction = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": (
-                    "Correggi il testo a livello B1, solo se ci sono errori grammaticali, lessicali o strutturali. "
-                    "Se il testo è già corretto o contiene solo segni di punteggiatura, rispondi con 'NO_CORRECTION_NEEDED'."
-                )},
-                {"role": "user", "content": message.content}
-            ]
-        )
+        try:
+            correction = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": (
+                        "Correggi il testo a livello B1, solo se ci sono errori grammaticali, lessicali o strutturali. "
+                        "Se il testo è già corretto o contiene solo segni di punteggiatura, rispondi con 'NO_CORRECTION_NEEDED'."
+                    )},
+                    {"role": "user", "content": message.content}
+                ]
+            )
+        except Exception as e:
+            logging.warning(f"Eerste poging taalcorrectie faalde: {e}. Tweede poging...")
+            await asyncio.sleep(2)
+            try:
+                correction = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": (
+                            "Correggi il testo a livello B1, solo se ci sono errori grammaticali, lessicali o strutturali. "
+                            "Se il testo è già corretto o contiene solo segni di punteggiatura, rispondi con 'NO_CORRECTION_NEEDED'."
+                        )},
+                        {"role": "user", "content": message.content}
+                    ]
+                )
+            except Exception as e2:
+                logging.error(f"❌ Beide pogingen tot correctie gefaald: {e2}")
+                await message.channel.send("⚠️ Er liep iets mis bij de correctie. Zou je je bericht opnieuw willen posten?")
+                return
 
         reply = correction.choices[0].message.content.strip()
 
