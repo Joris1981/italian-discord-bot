@@ -129,7 +129,10 @@ async def on_message(message):
         detection = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Rispondi solo con 'ITALIANO' se il testo è italiano, altrimenti 'ALTRO'."},
+                {"role": "system", "content": (
+                    "Rispondi solo con 'ITALIANO' se il testo contiene una parte significativa in italiano, anche se misto. "
+                    "Se è interamente in un'altra lingua, rispondi 'ALTRO'."
+                )},
                 {"role": "user", "content": message.content}
             ],
             max_tokens=5
@@ -137,38 +140,18 @@ async def on_message(message):
         if detection.choices[0].message.content.strip().upper() != "ITALIANO":
             return
 
-        try:
-            correction = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": (
-                        "Correggi il testo a livello B1, solo se ci sono errori grammaticali, lessicali o strutturali. "
-                        "Se il testo è già corretto o contiene solo segni di punteggiatura, rispondi con 'NO_CORRECTION_NEEDED'."
-                    )},
-                    {"role": "user", "content": message.content}
-                ]
-            )
-        except Exception as e:
-            logging.warning(f"Eerste poging taalcorrectie faalde: {e}. Tweede poging...")
-            await asyncio.sleep(2)
-            try:
-                correction = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": (
-                            "Correggi il testo a livello B1, solo se ci sono errori grammaticali, lessicali o strutturali. "
-                            "Se il testo è già corretto o contiene solo segni di punteggiatura, rispondi con 'NO_CORRECTION_NEEDED'."
-                        )},
-                        {"role": "user", "content": message.content}
-                    ]
-                )
-            except Exception as e2:
-                logging.error(f"❌ Beide pogingen tot correctie gefaald: {e2}")
-                await message.channel.send("⚠️ Er liep iets mis bij de correctie. Zou je je bericht opnieuw willen posten?")
-                return
+        correction = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": (
+                    "Correggi il testo a livello B1, solo se ci sono errori grammaticali, lessicali o strutturali. "
+                    "Se il testo è già corretto o contiene solo segni di punteggiatura, rispondi con 'NO_CORRECTION_NEEDED'."
+                )},
+                {"role": "user", "content": message.content}
+            ]
+        )
 
         reply = correction.choices[0].message.content.strip()
-        logging.debug(f"Taalcorrectie: reply='{reply}' | input='{message.content}'")
 
         if reply == "NO_CORRECTION_NEEDED":
             compliments = [
@@ -181,7 +164,7 @@ async def on_message(message):
                 "✅ Che bello vedere i tuoi progressi! 💪"
             ]
             await message.reply(random.choice(compliments), suppress_embeds=True)
-        elif normalize(reply) != normalize(message.content):
+        elif reply.lower().strip() != message.content.lower().strip():
             try:
                 await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
                 logging.info(f"✅ Correctie gepost voor {message.author.display_name}")
@@ -212,38 +195,39 @@ async def on_message(message):
                 except Exception as e:
                     logging.error(f"❌ Fout bij inhoudelijke reactie: {e}")
         else:
-            logging.info("⚠️ Correctie-output gelijk aan input – geen correctie verzonden.")
-
-        if isinstance(message.channel, discord.DMChannel):
-            if is_user_in_active_session(message.author.id):
-                return
-
-            user_id = message.author.id
-            today = datetime.datetime.utcnow().date().isoformat()
-            key = f"{user_id}:{today}"
-            count = user_message_counts.get(key, 0)
-
-            if count >= 5:
-                await message.channel.send("🚫 Hai raggiunto il limite di 5 messaggi per oggi. Riprova domani.")
-                return
-
-            try:
-                reply = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "Rispondi sempre in italiano."},
-                        {"role": "user", "content": message.content}
-                    ]
-                )
-                await message.channel.send(reply.choices[0].message.content.strip())
-                user_message_counts[key] = count + 1
-            except Exception as e:
-                logging.error(f"GPT DM fout: {e}")
-                await message.channel.send("⚠️ Er ging iets mis bij het ophalen van uw antwoord.")
+            logging.warning(f"⚠️ GPT gaf geen corrigerende output terug voor bericht van {message.author.display_name}")
+            await message.channel.send("⚠️ Er liep iets fout bij de correctie. Zou je je bericht opnieuw willen posten?")
 
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
         return
+
+    if isinstance(message.channel, discord.DMChannel):
+        if is_user_in_active_session(message.author.id):
+            return
+
+        user_id = message.author.id
+        today = datetime.datetime.utcnow().date().isoformat()
+        key = f"{user_id}:{today}"
+        count = user_message_counts.get(key, 0)
+
+        if count >= 5:
+            await message.channel.send("🚫 Hai raggiunto il limite di 5 messaggi per oggi. Riprova domani.")
+            return
+
+        try:
+            reply = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Rispondi sempre in italiano."},
+                    {"role": "user", "content": message.content}
+                ]
+            )
+            await message.channel.send(reply.choices[0].message.content.strip())
+            user_message_counts[key] = count + 1
+        except Exception as e:
+            logging.error(f"GPT DM fout: {e}")
+            await message.channel.send("⚠️ Er ging iets mis bij het ophalen van uw antwoord.")
 
 # === 🆘 Handmatig hertriggeren laatste bericht ===
 @bot.command(name='correggi_ultimo')
