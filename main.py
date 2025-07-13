@@ -108,7 +108,6 @@ async def on_message(message):
         return
 
     try:
-        # Detecteer of het bericht Italiaans is
         detection = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -120,7 +119,6 @@ async def on_message(message):
         if detection.choices[0].message.content.strip().upper() != "ITALIANO":
             return
 
-        # Corrigeer het bericht (enkel als er echte fouten zijn)
         correction = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -147,8 +145,13 @@ async def on_message(message):
             await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
 
             should_reply = (
-                message.channel.id in {1387569943746318386, 1387571841442385951, 1387853018845810891} or
-                (isinstance(message.channel, discord.Thread) and message.channel.parent_id in {1387594096759144508, 1387571841442385951})
+                message.channel.id in {
+                    1387569943746318386, 1387571841442385951, 1387853018845810891,
+                    1387552031631478937, 1393302364592668784, 1387573784055255263
+                } or
+                (isinstance(message.channel, discord.Thread) and message.channel.parent_id in {
+                    1387594096759144508, 1387571841442385951, 1387552031631478937
+                })
             )
 
             if should_reply:
@@ -191,7 +194,7 @@ async def on_message(message):
             except Exception as e:
                 logging.error(f"GPT DM fout: {e}")
                 await message.channel.send("⚠️ Er ging iets mis bij het ophalen van un antwoord.")
-    
+
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
         return
