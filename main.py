@@ -69,37 +69,39 @@ async def auto_correct_target_message():
         return
 
     try:
-        # Haal de thread op (is een kanaal!)
+        # Haal de thread op
         channel = await bot.fetch_channel(1393302364592668784)
         if not channel:
             logging.warning("❌ Thread niet gevonden.")
             return
 
-        # Haal het bericht op in de thread
+        # Haal het bericht op
         message = await channel.fetch_message(CORRECTED_MESSAGE_ID)
         if not message:
             logging.warning("❌ Bericht niet gevonden.")
             return
 
-        corrected = (
-            "✅ **Versie corretta:**\n"
-            "> Ho già ascoltato spesso il podcast di Irene e mi piace molto perché Irene parla in modo chiaro e bello.\n"
-            "> Anche l’idea che sia possibile imparare una lingua come l’italiano semplicemente ascoltandola mi sembra davvero valida.\n"
-            "> Il problema, però, è che per noi in Belgio è più difficile rispetto a chi vive in Italia, perché non sentiamo l’italiano durante tutta la giornata."
+        # 1️⃣ Versie corretta (als reply, vetgedrukt)
+        corrected_text = (
+            "\U0001F4DD **Ho già ascoltato spesso il podcast di Irene e mi piace molto perché Irene parla in modo chiaro e bello.**\n"
+            "**Anche l’idea che sia possibile imparare una lingua come l’italiano semplicemente ascoltandola mi sembra davvero valida.**\n"
+            "**Il problema, però, è che per noi in Belgio è più difficile rispetto a chi vive in Italia, perché non sentiamo l’italiano durante tutta la giornata.**"
         )
 
+        await message.reply(corrected_text, mention_author=False)
+
+        # 2️⃣ Risposta (als los bericht in thread, niet vetgedrukt)
         risposta = (
-            "\U0001F4AC **Risposta:**\n"
             "Hai proprio ragione! Irene ha una voce molto chiara e piacevole, ed è un’ottima risorsa per chi studia l’italiano.\n"
-            "Anche se non vivi in Italia, ascoltare ogni giorno è già un grande passo avanti. Continua così! \U0001F4AA🇮🇹"
+            "Anche se non vivi in Italia, ascoltare ogni giorno è già un grande passo avanti. Continua così! 💪🇮🇹"
         )
+        await channel.send(risposta)
 
-        await message.reply(f"{corrected}\n\n{risposta}")
-
+        # Sla op dat het al gebeurd is
         with open(REACTED_FLAG_FILE, "w") as f:
             f.write("done")
 
-        logging.info("✅ Correctie succesvol geplaatst.")
+        logging.info("✅ Correctie en reactie succesvol geplaatst.")
 
     except Exception as e:
         logging.error(f"❌ Fout bij auto-correctie: {e}")
@@ -223,11 +225,6 @@ async def on_message(message):
             logging.error(f"GPT DM fout: {e}")
             await message.channel.send("⚠️ Er ging iets mis bij het ophalen van een antwoord.")
         return
-
-# === ▶️ Start de bot ===
-if __name__ == "__main__":
-    keep_alive()
-    bot.run(os.getenv("DISCORD_TOKEN"))
 
 # === 🎧 Commando’s ===
 @bot.command()
