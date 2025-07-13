@@ -168,6 +168,7 @@ async def on_message(message):
                 return
 
         reply = correction.choices[0].message.content.strip()
+        logging.debug(f"Taalcorrectie: reply='{reply}' | input='{message.content}'")
 
         if reply == "NO_CORRECTION_NEEDED":
             compliments = [
@@ -180,7 +181,7 @@ async def on_message(message):
                 "✅ Che bello vedere i tuoi progressi! 💪"
             ]
             await message.reply(random.choice(compliments), suppress_embeds=True)
-        elif reply.lower().strip() != message.content.lower().strip():
+        elif normalize(reply) != normalize(message.content):
             try:
                 await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
                 logging.info(f"✅ Correctie gepost voor {message.author.display_name}")
@@ -210,6 +211,8 @@ async def on_message(message):
                     await message.channel.send(followup.choices[0].message.content.strip())
                 except Exception as e:
                     logging.error(f"❌ Fout bij inhoudelijke reactie: {e}")
+        else:
+            logging.info("⚠️ Correctie-output gelijk aan input – geen correctie verzonden.")
 
         if isinstance(message.channel, discord.DMChannel):
             if is_user_in_active_session(message.author.id):
