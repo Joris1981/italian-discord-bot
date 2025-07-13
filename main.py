@@ -244,13 +244,34 @@ async def correggi_ultimo(ctx, member: discord.Member = None):
 @commands.has_permissions(manage_messages=True)
 async def correggi_id(ctx, message_id: int):
     try:
-        msg = await ctx.channel.fetch_message(message_id)
+        msg = None
+
+        # Probeer eerst in het huidige kanaal of thread
+        try:
+            msg = await ctx.channel.fetch_message(message_id)
+        except discord.NotFound:
+            pass
+
+        # Als niet gevonden, zoek in alle tekstkanalen van de guild
+        if not msg:
+            for channel in ctx.guild.text_channels:
+                try:
+                    msg = await channel.fetch_message(message_id)
+                    if msg:
+                        break
+                except:
+                    continue
+
+        if not msg:
+            await ctx.reply("❌ Geen bericht gevonden met dat ID in dit kanaal of andere tekstkanalen.", mention_author=False)
+            return
+
         if msg.author.bot or msg.content.startswith("!"):
             await ctx.reply("⚠️ Dat bericht kan niet worden gecorrigeerd.", mention_author=False)
             return
+
         await on_message(msg)
-    except discord.NotFound:
-        await ctx.reply("❌ Geen bericht gevonden met dat ID in dit kanaal.", mention_author=False)
+
     except Exception as e:
         logging.error(f"Fout bij !correggi_id: {e}")
         await ctx.reply("⚠️ Er ging iets mis bij het ophalen van het bericht.", mention_author=False)
