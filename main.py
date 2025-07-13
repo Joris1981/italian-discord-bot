@@ -1,3 +1,5 @@
+# main.py
+
 import os
 import discord
 import openai
@@ -57,55 +59,6 @@ TARGET_CHANNEL_IDS = {
     1388667261761359932
 }
 
-# === 🔁 Tijdelijke automatische correctie ===
-CORRECTED_MESSAGE_ID = 1393679144197427271
-REACTED_FLAG_FILE = "correctie_done.flag"
-
-async def auto_correct_target_message():
-    logging.info("🚀 Start auto_correct_target_message()")
-
-    if os.path.exists(REACTED_FLAG_FILE):
-        logging.info("⏭️ Correctie al uitgevoerd, sla over.")
-        return
-
-    try:
-        # Haal de thread op
-        channel = await bot.fetch_channel(1393302364592668784)
-        if not channel:
-            logging.warning("❌ Thread niet gevonden.")
-            return
-
-        # Haal het bericht op
-        message = await channel.fetch_message(CORRECTED_MESSAGE_ID)
-        if not message:
-            logging.warning("❌ Bericht niet gevonden.")
-            return
-
-        # 1️⃣ Versie corretta (als reply, vetgedrukt)
-        corrected_text = (
-            "\U0001F4DD **Ho già ascoltato spesso il podcast di Irene e mi piace molto perché Irene parla in modo chiaro e bello.**\n"
-            "**Anche l’idea che sia possibile imparare una lingua come l’italiano semplicemente ascoltandola mi sembra davvero valida.**\n"
-            "**Il problema, però, è che per noi in Belgio è più difficile rispetto a chi vive in Italia, perché non sentiamo l’italiano durante tutta la giornata.**"
-        )
-
-        await message.reply(corrected_text, mention_author=False)
-
-        # 2️⃣ Risposta (als los bericht in thread, niet vetgedrukt)
-        risposta = (
-            "Hai proprio ragione! Irene ha una voce molto chiara e piacevole, ed è un’ottima risorsa per chi studia l’italiano.\n"
-            "Anche se non vivi in Italia, ascoltare ogni giorno è già un grande passo avanti. Continua così! 💪🇮🇹"
-        )
-        await channel.send(risposta)
-
-        # Sla op dat het al gebeurd is
-        with open(REACTED_FLAG_FILE, "w") as f:
-            f.write("done")
-
-        logging.info("✅ Correctie en reactie succesvol geplaatst.")
-
-    except Exception as e:
-        logging.error(f"❌ Fout bij auto-correctie: {e}")
-
 # === 🤖 Bot class ===
 intents = discord.Intents.default()
 intents.message_content = True
@@ -120,7 +73,6 @@ class MyBot(commands.Bot):
             except Exception as e:
                 logging.error(f"❌ Fout bij laden van {extension}: {e}")
         self.loop.create_task(reminder_task())
-        self.loop.create_task(auto_correct_target_message())  # <== tijdelijke actie
 
 bot = MyBot(command_prefix='!', intents=intents, case_insensitive=True)
 
@@ -157,47 +109,69 @@ async def on_message(message):
         await bot.process_commands(message)
         return
 
-    parent_id = message.channel.id
-    if isinstance(message.channel, discord.Thread):
-        parent_id = message.channel.parent_id
+    try:
+        # Detecteer of het bericht Italiaans is
+        detection = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Rispondi solo con 'ITALIANO' se il testo è italiano, altrimenti 'ALTRO'."},
+                {"role": "user", "content": message.content}
+            ],
+            max_tokens=5
+        )
+        if detection.choices[0].message.content.strip().upper() != "ITALIANO":
+            return
 
-    if parent_id in TARGET_CHANNEL_IDS:
-        try:
-            detection = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Rispondi solo con 'ITALIANO' se il testo è italiano, altrimenti 'ALTRO'."},
-                    {"role": "user", "content": message.content}
-                ],
-                max_tokens=5
-            )
-            if detection.choices[0].message.content.strip().upper() != "ITALIANO":
-                return
+        # Corrigeer het bericht (enkel als er echte fouten zijn)
+        correction = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": (
+                    "Correggi il testo a livello B1, solo se ci sono errori grammaticali, lessicali o strutturali. "
+                    "Se il testo è già corretto o contiene solo segni di punteggiatura, rispondi con 'NO_CORRECTION_NEEDED'."
+                )},
+                {"role": "user", "content": message.content}
+            ]
+        )
 
-            correction = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Correggi errori grammaticali, ortografici e di struttura. Rispondi con 'NO_CORRECTION_NEEDED' se tutto è corretto."},
-                    {"role": "user", "content": message.content}
-                ]
+        reply = correction.choices[0].message.content.strip()
+
+        if reply == "NO_CORRECTION_NEEDED":
+            compliments = [
+                "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
+                "✅ Perfetto! Sei sulla strada giusta! 🚀",
+                "✅ Benissimo! 🌟",
+                "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️",
+                "✅ Super! La tua passione per l'italiano è evidente! 🎉"
+            ]
+            await message.reply(random.choice(compliments), suppress_embeds=True)
+        elif reply.lower().strip() != message.content.lower().strip():
+            await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
+
+            # Inhoudelijke reactie bij specifieke kanalen/threads
+            should_reply = (
+                message.channel.id == 1387569943746318386 or
+                (isinstance(message.channel, discord.Thread) and message.channel.parent_id == 1387594096759144508)
             )
-            
-            reply = correction.choices[0].message.content.strip()
-            if reply == "NO_CORRECTION_NEEDED":
-                compliments = [
-                    "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
-                    "✅ Perfetto! Sei sulla strada giusta! 🚀",
-                    "✅ Benissimo! 🌟",
-                    "✅ Sei fantastico/a! Continua a scrivere! ✍️❤️",
-                    "✅ Super! La tua passione per l'italiano è evidente! 🎉"
-                ]
-                await message.reply(random.choice(compliments), suppress_embeds=True)
-            elif reply.lower().strip() != message.content.lower().strip():
-                await message.reply(f"📝 **{reply}**", suppress_embeds=True)
-        except Exception as e:
-            logging.error(f"Taalcorrectie fout: {e}")
+            if should_reply:
+                followup = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": (
+                            "Rispondi come un partner di conversazione amichevole. Reagisci brevemente al messaggio dell'utente "
+                            "e fai una domanda per continuare la conversazione, adatta al livello B1."
+                        )},
+                        {"role": "user", "content": message.content}
+                    ],
+                    max_tokens=100
+                )
+                await message.channel.send(followup.choices[0].message.content.strip())
+
+    except Exception as e:
+        logging.error(f"Taalcorrectie fout: {e}")
         return
 
+    # GPT in DM (beperkt tot 5/dag)
     if isinstance(message.channel, discord.DMChannel):
         if is_user_in_active_session(message.author.id):
             return
@@ -224,7 +198,6 @@ async def on_message(message):
         except Exception as e:
             logging.error(f"GPT DM fout: {e}")
             await message.channel.send("⚠️ Er ging iets mis bij het ophalen van een antwoord.")
-        return
 
 # === 🎧 Commando’s ===
 @bot.command()
