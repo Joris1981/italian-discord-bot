@@ -48,13 +48,6 @@ client = openai.OpenAI(api_key=openai_api_key)
 # === 🌍 Globals ===
 user_message_counts = {}
 MAX_CORRECTION_LENGTH = 2000
-TARGET_CHANNEL_IDS = {
-    1387910961846947991, 1387571841442385951, 1387569943746318386,
-    1390410564093743285, 1390448992520765501, 1387552031631478937, 1388667261761359932
-}
-ALLOWED_CHANNELS_FOR_REACTION = {1387569943746318386, 1387571841442385951, 1387552031631478937}
-ALLOWED_THREAD_PARENTS_FOR_REACTION = {1387594096759144508, 1387571841442385951, 1387552031631478937}
-ALLOWED_EXPLICIT_THREADS = {1393302364592668784, 1387573784055255263, 1387853018845810891}
 
 # === 🤖 Bot class ===
 intents = discord.Intents.default()
@@ -96,7 +89,7 @@ async def reminder_task():
             await asyncio.sleep(60)
         await asyncio.sleep(30)
 
-# === 📥 on_message: taalcorrectie & GPT ===
+# === 📥 on_message: standaard correctie zonder taalfilter ===
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -114,22 +107,6 @@ async def on_message(message):
         return
 
     try:
-        detection = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": (
-                    "Rispondi con 'ITALIANO' se c'è del testo in italiano. Rispondi 'DUTCH' solo se è interamente in olandese."
-                )},
-                {"role": "user", "content": message.content}
-            ],
-            max_tokens=5
-        )
-        result = detection.choices[0].message.content.strip().upper()
-
-        if result == "DUTCH":
-            await message.reply("🗨️ Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
-            return
-
         correction = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -161,29 +138,6 @@ async def on_message(message):
             except Exception as e:
                 logging.error(f"❌ Fout bij versturen van correctie-reply: {e}")
                 await message.channel.send("⚠️ Er liep iets mis bij de correctie. Zou je je bericht opnieuw willen posten?")
-
-            should_reply = (
-                message.channel.id in ALLOWED_CHANNELS_FOR_REACTION
-                or (isinstance(message.channel, discord.Thread) and message.channel.parent_id in ALLOWED_THREAD_PARENTS_FOR_REACTION)
-                or message.channel.id in ALLOWED_EXPLICIT_THREADS
-            )
-
-            if should_reply:
-                try:
-                    followup = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "system", "content": (
-                                "Rispondi come un partner di conversazione amichevole. Reagisci brevemente al messaggio dell'utente "
-                                "e fai una domanda per continuare la conversazione, adatta al livello B1."
-                            )},
-                            {"role": "user", "content": message.content}
-                        ],
-                        max_tokens=100
-                    )
-                    await message.channel.send(followup.choices[0].message.content.strip())
-                except Exception as e:
-                    logging.error(f"❌ Fout bij inhoudelijke reactie: {e}")
         else:
             logging.warning(f"⚠️ GPT gaf geen corrigerende output terug voor bericht van {message.author.display_name}")
             await message.channel.send("⚠️ Er liep iets fout bij de correctie. Zou je je bericht opnieuw willen posten?")
@@ -215,16 +169,6 @@ async def on_message(message):
             logging.error(f"GPT DM fout: {e}")
             await message.channel.send("⚠️ Er ging iets mis bij het ophalen van uw antwoord.")
 
-# === 🆘 Handmatig hertriggeren laatste bericht ===
-@bot.command(name='correggi_ultimo')
-async def correggi_ultimo(ctx, member: discord.Member = None):
-    target_id = member.id if member and ctx.author.guild_permissions.manage_messages else ctx.author.id
-    async for msg in ctx.channel.history(limit=50):
-        if msg.author.id == target_id and not msg.content.startswith("!") and not msg.author.bot:
-            await on_message(msg)
-            return
-    await ctx.reply("⚠️ Geen geschikt recent bericht gevonden om te corrigeren.", mention_author=False)
-
 # === 🆘 Handmatig corrigeren op basis van Message ID ===
 @bot.command(name='correggi_id')
 @commands.has_permissions(manage_messages=True)
@@ -232,13 +176,11 @@ async def correggi_id(ctx, message_id: int):
     try:
         msg = None
 
-        # Probeer eerst in het huidige kanaal of thread
         try:
             msg = await ctx.channel.fetch_message(message_id)
         except discord.NotFound:
             pass
 
-        # Als niet gevonden, zoek in alle tekstkanalen van de guild
         if not msg:
             for channel in ctx.guild.text_channels:
                 try:
@@ -261,6 +203,16 @@ async def correggi_id(ctx, message_id: int):
     except Exception as e:
         logging.error(f"Fout bij !correggi_id: {e}")
         await ctx.reply("⚠️ Er ging iets mis bij het ophalen van het bericht.", mention_author=False)
+
+# === 🆘 Handmatig hertriggeren laatste bericht ===
+@bot.command(name='correggi_ultimo')
+async def correggi_ultimo(ctx, member: discord.Member = None):
+    target_id = member.id if member and ctx.author.guild_permissions.manage_messages else ctx.author.id
+    async for msg in ctx.channel.history(limit=50):
+        if msg.author.id == target_id and not msg.content.startswith("!") and not msg.author.bot:
+            await on_message(msg)
+            return
+    await ctx.reply("⚠️ Geen geschikt recent bericht gevonden om te corrigeren.", mention_author=False)
         
 # === 🎧 Commando’s ===
 @bot.command()
