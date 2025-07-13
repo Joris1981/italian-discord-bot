@@ -21,7 +21,7 @@ if not load_dotenv():
 # === 📂 Zorg dat wordle-map bestaat ===
 os.makedirs("/persistent/data/wordle", exist_ok=True)
 
-# === 🩵 Logging ===
+# === 🦥 Logging ===
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
 
 # === 🌐 Keep-alive server ===
@@ -47,33 +47,14 @@ client = openai.OpenAI(api_key=openai_api_key)
 
 # === 🌍 Globals ===
 user_message_counts = {}
+MAX_CORRECTION_LENGTH = 2000
 TARGET_CHANNEL_IDS = {
-    1387910961846947991,
-    1387571841442385951,
-    1387569943746318386,
-    1390410564093743285,
-    1390448992520765501,
-    1387552031631478937,
-    1388667261761359932
+    1387910961846947991, 1387571841442385951, 1387569943746318386,
+    1390410564093743285, 1390448992520765501, 1387552031631478937, 1388667261761359932
 }
-
-ALLOWED_CHANNELS_FOR_REACTION = {
-    1387569943746318386,
-    1387571841442385951,
-    1387552031631478937
-}
-
-ALLOWED_THREAD_PARENTS_FOR_REACTION = {
-    1387594096759144508,
-    1387571841442385951,
-    1387552031631478937
-}
-
-ALLOWED_EXPLICIT_THREADS = {
-    1393302364592668784,
-    1387573784055255263,
-    1387853018845810891
-}
+ALLOWED_CHANNELS_FOR_REACTION = {1387569943746318386, 1387571841442385951, 1387552031631478937}
+ALLOWED_THREAD_PARENTS_FOR_REACTION = {1387594096759144508, 1387571841442385951, 1387552031631478937}
+ALLOWED_EXPLICIT_THREADS = {1393302364592668784, 1387573784055255263, 1387853018845810891}
 
 # === 🤖 Bot class ===
 intents = discord.Intents.default()
@@ -123,6 +104,13 @@ async def on_message(message):
 
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
+        return
+
+    if len(message.content) > MAX_CORRECTION_LENGTH:
+        await message.channel.send("⚠️ Il messaggio è troppo lungo per una correzione automatica. Potresti dividerlo in parti più piccole?")
+        return
+
+    if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
         return
 
     try:
@@ -200,12 +188,8 @@ async def on_message(message):
 
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
-        return
 
     if isinstance(message.channel, discord.DMChannel):
-        if is_user_in_active_session(message.author.id):
-            return
-
         user_id = message.author.id
         today = datetime.datetime.utcnow().date().isoformat()
         key = f"{user_id}:{today}"
