@@ -166,19 +166,6 @@ async def on_message(message):
             logging.error(f"GPT DM fout: {e}")
             await message.channel.send("⚠️ Er ging iets mis bij het ophalen van uw antwoord.")
 
-    # Automatische reactie op specifieke message ID
-    if message.id == 1394015695246725303:
-        antwoord = (
-            "Hai ragione, a volte il feedback diretto funziona e altre volte no… Ci dispiace! 🙏\n"
-            "Purtroppo il bot non sempre riesce a rispondere correttamente, per motivi diversi (ad esempio quando ci sono parole o strutture in olandese).\n"
-            "Per questo abbiamo aggiunto il comando `!correggi_ultimo`, così puoi far correggere il tuo ultimo messaggio manualmente se il bot non ha reagito da solo.\n"
-            "Anche il bot, in fondo, è (quasi) umano 😄"
-        )
-        try:
-            await message.reply(antwoord, mention_author=False)
-        except Exception as e:
-            logging.error(f"❌ Fout bij automatische uitleg-reply: {e}")
-
 # === 🆘 Handmatig corrigeren op basis van Message ID ===
 @bot.command(name='correggi_id')
 @commands.has_permissions(manage_messages=True)
