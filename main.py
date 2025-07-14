@@ -111,8 +111,8 @@ async def on_message(message):
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": (
-                    "Correggi il testo a livello B1, solo se ci sono errori grammaticali, lessicali o strutturali. "
-                    "Se il testo è già corretto o contiene solo segni di punteggiatura, rispondi con 'NO_CORRECTION_NEEDED'."
+                    "Correggi il testo a livello B1. Correggi errori grammaticali, lessicali, ortografici o strutturali. "
+                    "Migliora la fluidità anche se il testo è già corretto. Se il testo è perfetto, rispondi con 'NO_CORRECTION_NEEDED'."
                 )},
                 {"role": "user", "content": message.content}
             ]
