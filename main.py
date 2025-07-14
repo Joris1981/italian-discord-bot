@@ -141,7 +141,7 @@ async def on_message(message):
                 "✅ Eccellente! Ogni giorno migliori! 🌈",
                 "✅ Che bello vedere i tuoi progressi! 💪"
             ]
-            await message.reply(random.choice(compliments), suppress_embeds=True)
+            return  # Geen compliment bij Nederlandse input
         else:
             try:
                 await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
@@ -221,7 +221,6 @@ async def correggi_ultimo(ctx, member: discord.Member = None):
             await on_message(msg)
             return
     await ctx.reply("⚠️ Geen geschikt recent bericht gevonden om te corrigeren.", mention_author=False)
-
         
 # === 🎧 Commando’s ===
 @bot.command()
