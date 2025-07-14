@@ -165,7 +165,20 @@ async def on_message(message):
         else:
             await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
             if message.channel.id in REACTION_CHANNELS or (hasattr(message.channel, 'parent_id') and message.channel.parent_id in REACTION_THREADS):
-                await message.reply("🗨️ Hai qualche altra frase su cui vuoi esercitarti?", mention_author=False)
+                try:
+                    context_reply = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": (
+                                "Rispondi con una frase motivante o coinvolgente che mostra attenzione per il contenuto del messaggio precedente. "
+                                "Fai una domanda per approfondire la conversazione. Sii caloroso/a ma non eccessivamente generico/a."
+                            )},
+                            {"role": "user", "content": message.content}
+                        ]
+                    )
+                    await message.reply(context_reply.choices[0].message.content.strip(), mention_author=False)
+                except Exception as e:
+                    logging.error(f"❌ Fout bij contextuele reactie: {e}")
 
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
@@ -238,11 +251,6 @@ async def correggi_ultimo(ctx, member: discord.Member = None):
             return
     await ctx.reply("⚠️ Geen geschikt recent bericht gevonden om te corrigeren.", mention_author=False)
 
-# === ▶️ Start de bot ===
-if __name__ == "__main__":
-    keep_alive()
-    bot.run(os.getenv("DISCORD_TOKEN"))
-        
 # === 🎧 Commando’s ===
 @bot.command()
 async def ascolto_dai_accompagnami(ctx):
