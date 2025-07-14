@@ -49,6 +49,19 @@ client = openai.OpenAI(api_key=openai_api_key)
 # === 🌍 Globals ===
 user_message_counts = {}
 MAX_CORRECTION_LENGTH = 2000
+EXPLICIT_CORRECTION_REPLIES = {
+    1394015695246725303: (
+        "Hai ragione, a volte il feedback diretto funziona e altre volte no… Ci dispiace! 🙏\n"
+        "Purtroppo il bot non sempre riesce a rispondere correttamente, per motivi diversi (ad esempio quando ci sono parole o strutture in olandese).\n"
+        "Per questo abbiamo aggiunto il comando `!correggi_ultimo`, così puoi far correggere il tuo ultimo messaggio manualmente se il bot non ha reagito da solo.\n"
+        "Anche il bot, in fondo, è (quasi) umano 😄"
+    )
+}
+REACTION_CHANNELS = {
+    1388667261761359932, 1387910961846947991, 1387571841442385951,
+    1387569943746318386, 1390410564093743285, 1387853018845810891
+}
+REACTION_THREADS = {1387594096759144508, 1387571841442385951}
 
 # === 🤖 Bot class ===
 intents = discord.Intents.default()
@@ -107,16 +120,18 @@ async def on_message(message):
     if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
         return
 
+    if message.id in EXPLICIT_CORRECTION_REPLIES:
+        try:
+            await message.reply(EXPLICIT_CORRECTION_REPLIES[message.id], mention_author=False)
+        except Exception as e:
+            logging.error(f"❌ Fout bij automatische uitleg-reply: {e}")
+
     try:
         try:
             langs = detect_langs(message.content)
             is_dutch_dominant = any(l.lang == "nl" and l.prob > 0.95 for l in langs)
         except:
             is_dutch_dominant = False
-
-        if is_dutch_dominant:
-            await message.reply("💬 Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
-            return
 
         correction = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -131,6 +146,13 @@ async def on_message(message):
 
         reply = correction.choices[0].message.content.strip()
 
+        if is_dutch_dominant:
+            if reply.upper() == "NO_CORRECTION_NEEDED":
+                return
+            else:
+                await message.reply("💬 Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
+                return
+
         if reply.upper() == "NO_CORRECTION_NEEDED":
             compliments = [
                 "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
@@ -141,14 +163,12 @@ async def on_message(message):
                 "✅ Eccellente! Ogni giorno migliori! 🌈",
                 "✅ Che bello vedere i tuoi progressi! 💪"
             ]
-            return  # Geen compliment bij Nederlandse input
+            await message.reply(random.choice(compliments), mention_author=False)
+            return
         else:
-            try:
-                await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
-                logging.info(f"✅ Correctie gepost voor {message.author.display_name}")
-            except Exception as e:
-                logging.error(f"❌ Fout bij versturen van correctie-reply: {e}")
-                await message.channel.send("⚠️ Er liep iets mis bij de correctie. Zou je je bericht opnieuw willen posten?")
+            await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
+            if message.channel.id in REACTION_CHANNELS or (hasattr(message.channel, 'parent_id') and message.channel.parent_id in REACTION_THREADS):
+                await message.reply("🗨️ Hai qualche altra frase su cui vuoi esercitarti?", mention_author=False)
 
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
@@ -183,7 +203,6 @@ async def on_message(message):
 async def correggi_id(ctx, message_id: int):
     try:
         msg = None
-
         try:
             msg = await ctx.channel.fetch_message(message_id)
         except discord.NotFound:
