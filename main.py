@@ -13,6 +13,7 @@ from threading import Thread
 from dotenv import load_dotenv
 from session_manager import is_user_in_active_session
 from utils import normalize
+from langdetect import detect
 
 # === 🔁 Load env ===
 if not load_dotenv():
@@ -89,7 +90,7 @@ async def reminder_task():
             await asyncio.sleep(60)
         await asyncio.sleep(30)
 
-# === 📥 on_message: standaard correctie zonder taalfilter ===
+# === 📥 on_message ===
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -107,6 +108,16 @@ async def on_message(message):
         return
 
     try:
+        # Taaldetectie toepassen, enkel blokkeren bij 100% Nederlands
+        try:
+            language = detect(message.content)
+        except:
+            language = "unknown"
+
+        if language == "nl":
+            await message.reply("💬 Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
+            return
+
         correction = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
