@@ -133,6 +133,10 @@ async def on_message(message):
         except:
             is_dutch_dominant = False
 
+        if is_dutch_dominant:
+            await message.reply("💬 Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
+            return
+
         correction = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -145,13 +149,6 @@ async def on_message(message):
         )
 
         reply = correction.choices[0].message.content.strip()
-
-        if is_dutch_dominant:
-            if reply.upper() == "NO_CORRECTION_NEEDED":
-                return
-            else:
-                await message.reply("💬 Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
-                return
 
         if reply.upper() == "NO_CORRECTION_NEEDED":
             compliments = [
@@ -240,6 +237,11 @@ async def correggi_ultimo(ctx, member: discord.Member = None):
             await on_message(msg)
             return
     await ctx.reply("⚠️ Geen geschikt recent bericht gevonden om te corrigeren.", mention_author=False)
+
+# === ▶️ Start de bot ===
+if __name__ == "__main__":
+    keep_alive()
+    bot.run(os.getenv("DISCORD_TOKEN"))
         
 # === 🎧 Commando’s ===
 @bot.command()
