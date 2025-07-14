@@ -110,7 +110,7 @@ async def on_message(message):
     try:
         try:
             langs = detect_langs(message.content)
-            is_dutch_dominant = langs and langs[0].lang == "nl" and langs[0].prob > 0.95
+            is_dutch_dominant = any(l.lang == "nl" and l.prob > 0.95 for l in langs)
         except:
             is_dutch_dominant = False
 
@@ -221,6 +221,7 @@ async def correggi_ultimo(ctx, member: discord.Member = None):
             await on_message(msg)
             return
     await ctx.reply("⚠️ Geen geschikt recent bericht gevonden om te corrigeren.", mention_author=False)
+
         
 # === 🎧 Commando’s ===
 @bot.command()
