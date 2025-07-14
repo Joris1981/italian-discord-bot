@@ -13,7 +13,7 @@ from threading import Thread
 from dotenv import load_dotenv
 from session_manager import is_user_in_active_session
 from utils import normalize
-from langdetect import detect
+from langdetect import detect_langs
 
 # === 🔁 Load env ===
 if not load_dotenv():
@@ -108,13 +108,13 @@ async def on_message(message):
         return
 
     try:
-        # Taaldetectie toepassen, enkel blokkeren bij 100% Nederlands
         try:
-            language = detect(message.content)
+            langs = detect_langs(message.content)
+            is_dutch_dominant = langs and langs[0].lang == "nl" and langs[0].prob > 0.95
         except:
-            language = "unknown"
+            is_dutch_dominant = False
 
-        if language == "nl":
+        if is_dutch_dominant:
             await message.reply("💬 Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
             return
 
