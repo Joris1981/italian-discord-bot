@@ -33,7 +33,11 @@ class Quiz(commands.Cog):
                 await message.channel.send("\u274C Hai già una quiz attiva. Completa prima quella prima di iniziarne un'altra.")
                 return
 
-            if message.channel.id == 1388866025679880256:
+            if message.channel.id == 1394735397824758031:
+                session_manager.start_session(user_id, "quiz")
+                await confirm_quiz_start(message.channel)
+                await self.start_pronomi_quiz(message.author)
+            elif message.channel.id == 1388866025679880256:
                 session_manager.start_session(user_id, "quiz")
                 await confirm_quiz_start(message.channel)
                 await self.start_di_da_quiz(message.author)
@@ -61,6 +65,66 @@ class Quiz(commands.Cog):
                 session_manager.start_session(user_id, "quiz")
                 await confirm_quiz_start(message.channel)
                 await self.start_ci_quiz(message.author)
+
+    async def start_pronomi_quiz(self, user):
+        questions = [
+            ("Hai telefonato a Maria?", "le"),
+            ("Puoi chiamare il medico?", "lo"),
+            ("Devi portare i libri a tua zia?", "le"),
+            ("Ho preso una pizza e...", "l'ho"),
+            ("Hai visto il film?", "l'ho"),
+            ("Non riesco a trovare le chiavi!", "le"),
+            ("Hai ascoltato la nuova canzone?", "la"),
+            ("Luca e Paolo... hanno invitato a casa loro.", "ci"),
+            ("Ho provato a chiamare Marianna ma non... ha risposto.", "mi"),
+            ("Stavi parlando con Roberto?", "gli"),
+            ("Ho comprato i pasticcini. ... porto io alla festa.", "li"),
+            ("Dove sono i tuoi amici? Non so, ... sto aspettando.", "li")
+        ]
+
+        try:
+            dm = await user.create_dm()
+            await dm.send("\U0001F4DA **Quiz: Pronomi diretti e indiretti**\nScrivi il pronome corretto per ogni frase. Hai 60 secondi per ogni frase. In bocca al lupo!")
+            score = 0
+            for i, (question, correct) in enumerate(questions, 1):
+                await dm.send(f"{i}. {question}")
+                try:
+                    reply = await self.bot.wait_for("message", timeout=60.0, check=lambda m: m.author == user and m.channel == dm)
+                    if normalize(reply.content) == normalize(correct):
+                        await dm.send("✅ Corretto!")
+                        score += 1
+                    else:
+                        await dm.send(f"❌ Sbagliato! La risposta giusta era **{correct}**")
+                except asyncio.TimeoutError:
+                    await dm.send(f"⏰ Tempo scaduto! La risposta giusta era **{correct}**")
+            await dm.send(f"\n🏁 Fine del quiz! Risposte corrette: **{score}/{len(questions)}**.\nScrivi `!pronomi-soluzioni` per vedere le soluzioni con spiegazione.")
+        except discord.Forbidden:
+            await user.send("❌ Non posso mandarti un messaggio privato. Controlla le impostazioni di privacy.")
+        finally:
+            session_manager.end_session(user.id)
+
+    @commands.command(name="pronomi-soluzioni")
+    async def pronome_soluzioni(self, ctx):
+        try:
+            await ctx.author.send(
+                "**🧠 Soluzioni del quiz: Pronomi diretti e indiretti**\n"
+                "1. Hai telefonato a Maria? - No, non **le** ho ancora telefonato. *(indiretto: a Maria → le)*\n"
+                "2. Puoi chiamare il medico? - Sì certo, **lo** chiamo tra un secondo. *(diretto: il medico → lo)*\n"
+                "3. Devi portare i libri a tua zia? - Sì, **le** do i libri domani. *(indiretto: a tua zia → le)*\n"
+                "4. Ho preso una pizza e **l’ho** mangiata tutta. *(diretto: la pizza → la)*\n"
+                "5. Hai visto il film? **L’ho** visto ieri. **L’**ho trovato noioso. *(diretto: il film → lo/l’)*\n"
+                "6. Non riesco a trovare le chiavi! **Le** sto cercando da due ore! *(diretto: le chiavi → le)*\n"
+                "7. Hai ascoltato la nuova canzone? **La** sto ascoltando ora. *(diretto: la canzone → la)*\n"
+                "8. Luca e Paolo **ci** hanno invitato a casa loro. *(indiretto plurale: a noi → ci)*\n"
+                "9. Ho provato a chiamare Marianna ma non **mi** ha risposto. *(indiretto: a me → mi)*\n"
+                "10. Stavi parlando con Roberto? - Sì, **gli** stavo chiedendo un favore. *(indiretto: a lui → gli)*\n"
+                "11. Ho comprato i pasticcini. **Li** porto io alla festa. *(diretto: i pasticcini → li)*\n"
+                "12. Dove sono i tuoi amici? Non so, **li** sto aspettando. *(diretto: i tuoi amici → li)*\n\n"
+                "📝 Vuoi deze grammatica nog eens herhalen? Kijk dan in **#grammatica-aiuto**, waar je ook een extra quiz kunt doen. Bravissimo/a! 💪🇮🇹"
+            )
+            await ctx.send("\U0001F4E9 Le soluzioni sono state inviate nei tuoi DM!")
+        except discord.Forbidden:
+            await ctx.send("❌ Non riesco a mandarti un DM. Controlla le impostazioni di privacy.")
 
     async def start_ci_quiz(self, user):
         questions = [
