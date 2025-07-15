@@ -68,18 +68,18 @@ class Quiz(commands.Cog):
 
     async def start_pronomi_quiz(self, user):
         questions = [
-            ("Hai telefonato a Maria?", "le"),
-            ("Puoi chiamare il medico?", "lo"),
-            ("Devi portare i libri a tua zia?", "le"),
-            ("Ho preso una pizza e...", "l'ho"),
-            ("Hai visto il film?", "l'ho"),
-            ("Non riesco a trovare le chiavi!", "le"),
-            ("Hai ascoltato la nuova canzone?", "la"),
-            ("Luca e Paolo... hanno invitato a casa loro.", "ci"),
-            ("Ho provato a chiamare Marianna ma non... ha risposto.", "mi"),
-            ("Stavi parlando con Roberto?", "gli"),
-            ("Ho comprato i pasticcini. ... porto io alla festa.", "li"),
-            ("Dove sono i tuoi amici? Non so, ... sto aspettando.", "li")
+            ("Hai telefonato a Maria? No, non ____ ho ancora telefonto", "le"),
+            ("Puoi chiamare il medico e prendere un appuntamento per domani? Si certo, ____ chiamo tra un secondo.", "lo"),
+            ("Devi portare i libri a tua zia? Si, ____ porto io.", "le"),
+            ("Ho preso una pizza e _____ ho mangiata tutta", "l'ho"),
+            ("Hai visto il film che ti ho consigliato? Si, ____ visto ieri, ma non mi è piacuto molto. _______ ho trovato noioso.", "l'ho"),
+            ("Non riesco a trovare le chiavi! _______ sto cercando da due ore!", "le"),
+            ("Hai ascoltato la nuova canzone di Taylor Swift? Si, ____ sto ascoltando da due ore!", "la"),
+            ("Luca e Paolo ________ hanno invitato a casa loro. Andiamo?", "ci"),
+            ("Ho provato a chiamare Marianna ma non _____ ha risposto.", "mi"),
+            ("Stavi parlando con Roberto? Si, _____ stavo chiedendo un favore", "gli"),
+            ("Ho comprato i pasticcini. _____ porto io alla festa.", "li"),
+            ("Dove sono i tuoi amici? Non so, _____ sto aspettando da 5 minuti.", "li")
         ]
 
         try:
@@ -109,7 +109,7 @@ class Quiz(commands.Cog):
             await ctx.author.send(
                 "**🧠 Soluzioni del quiz: Pronomi diretti e indiretti**\n"
                 "1. Hai telefonato a Maria? - No, non **le** ho ancora telefonato. *(indiretto: a Maria → le)*\n"
-                "2. Puoi chiamare il medico? - Sì certo, **lo** chiamo tra un secondo. *(diretto: il medico → lo)*\n"
+                "2. Puoi chiamare il medico e prendere un appuntamento per domani? - Sì certo, **lo** chiamo tra un secondo. *(diretto: il medico → lo)*\n"
                 "3. Devi portare i libri a tua zia? - Sì, **le** do i libri domani. *(indiretto: a tua zia → le)*\n"
                 "4. Ho preso una pizza e **l’ho** mangiata tutta. *(diretto: la pizza → la)*\n"
                 "5. Hai visto il film? **L’ho** visto ieri. **L’**ho trovato noioso. *(diretto: il film → lo/l’)*\n"
@@ -120,7 +120,7 @@ class Quiz(commands.Cog):
                 "10. Stavi parlando con Roberto? - Sì, **gli** stavo chiedendo un favore. *(indiretto: a lui → gli)*\n"
                 "11. Ho comprato i pasticcini. **Li** porto io alla festa. *(diretto: i pasticcini → li)*\n"
                 "12. Dove sono i tuoi amici? Non so, **li** sto aspettando. *(diretto: i tuoi amici → li)*\n\n"
-                "📝 Vuoi deze grammatica nog eens herhalen? Kijk dan in **#grammatica-aiuto**, waar je ook een extra quiz kunt doen. Bravissimo/a! 💪🇮🇹"
+                "📝 Vuoi deze grammatica nog eens herhalen? Kijk dan in **#grammatica-aiuto** 💪🇮🇹"
             )
             await ctx.send("\U0001F4E9 Le soluzioni sono state inviate nei tuoi DM!")
         except discord.Forbidden:
