@@ -68,21 +68,21 @@ class Quiz(commands.Cog):
 
     async def start_pronomi_quiz(self, user):
         questions = [
-            ("Hai telefonato a Maria? No, non _ _ _ _ _ ho ancora telefonto", "le"),
-            ("Puoi chiamare il medico e prendere un appuntamento per domani? Si certo, _ _ _ _ chiamo tra un secondo.", "lo"),
-            ("Devi portare i libri a tua zia? Si, _ _ _ _ porto io.", "le"),
-            ("Ho preso una pizza e _ _ _ _ ho mangiata tutta", "l'ho"),
-            ("Hai visto il film che ti ho consigliato? Si, _ _ _ _ _ visto ieri, ma non mi è piacuto molto.", "l'ho"),
-            ("Non riesco a trovare le chiavi! _ _ _ _ _ sto cercando da due ore!", "le"),
-            ("Hai ascoltato la nuova canzone di Taylor Swift? Si, _ _ _ _ sto ascoltando da due ore!", "la"),
-            ("Luca e Paolo _ _ _ _ hanno invitato a casa loro. Andiamo?", "ci"),
-            ("Ho provato a chiamare Marianna ma non _ _ _ _ ha risposto.", "mi"),
-            ("Stavi parlando con Roberto? Si, _ _ _ _ stavo chiedendo un favore", "gli"),
-            ("Ho comprato i pasticcini. _ _ _ _ porto io alla festa.", "li"),
-            ("Dove sono i tuoi amici? Non so, _ _ _ _ sto aspettando da 5 minuti.", "li"),
-            ("Il cane porta la palla al suo padrone. Il cane _ _ _ _ _ porta la palla.", "gli"),
-            ("I miei zii hanno regalato una vacanza ai miei cugini. I miei zii _ _ _ _ _ hanno regalato una vacanza.", "gli"),
-            ("Vai da Carlo, _ _ _ _ _ serve una mano a portare i pacchi!", "gli")
+            ("Hai telefonato a Maria? No, non ________ ho ancora telefonto", "le"),
+            ("Puoi chiamare il medico e prendere un appuntamento per domani? Si certo, ________ chiamo tra un secondo.", "lo"),
+            ("Devi portare i libri a tua zia? Si, ________ porto io.", "le"),
+            ("Ho preso una pizza e ________ ho mangiata tutta", "l'ho"),
+            ("Hai visto il film che ti ho consigliato? Si, ________ visto ieri, ma non mi è piacuto molto.", "l'ho"),
+            ("Non riesco a trovare le chiavi! ________ sto cercando da due ore!", "le"),
+            ("Hai ascoltato la nuova canzone di Taylor Swift? Si, ________ sto ascoltando da due ore!", "la"),
+            ("Luca e Paolo ________ hanno invitato a casa loro. Andiamo?", "ci"),
+            ("Ho provato a chiamare Marianna ma non ________ ha risposto.", "mi"),
+            ("Stavi parlando con Roberto? Si, ________ stavo chiedendo un favore", "gli"),
+            ("Ho comprato i pasticcini. ________ porto io alla festa.", "li"),
+            ("Dove sono i tuoi amici? Non so, ________ sto aspettando da 5 minuti.", "li"),
+            ("Il cane porta la palla al suo padrone. Il cane ________ porta la palla.", "gli"),
+            ("I miei zii hanno regalato una vacanza ai miei cugini. I miei zii ________ hanno regalato una vacanza.", "gli"),
+            ("Vai da Carlo, ________ serve una mano a portare i pacchi!", "gli")
         ]
 
         try:
@@ -122,7 +122,7 @@ class Quiz(commands.Cog):
                 "9. Ho provato a chiamare Marianna ma non **mi** ha risposto. *(indiretto: a me → mi)*\n"
                 "10. Stavi parlando con Roberto? - Sì, **gli** stavo chiedendo un favore. *(indiretto: a lui → gli)*\n"
                 "11. Ho comprato i pasticcini. **Li** porto io alla festa. *(diretto: i pasticcini → li)*\n"
-                "12. Dove sono i tuoi amici? Non so, **li** sto aspettando. *(diretto: i tuoi amici → li)*\n\n"
+                "12. Dove sono i tuoi amici? Non so, **li** sto aspettando. *(diretto: i tuoi amici → li)*\n"
                 "13. Il cane porta la palla al suo padrone. - Il cane **gli** porta la palla. *(indiretto: al suo padrone → gli)*\n"
                 "14. I miei zii hanno regalato una vacanza ai miei cugini. - I miei zii **gli** hanno regalato una vacanza. *(indiretto: ai miei cugini → gli)*\n"
                 "15. Vai da Carlo, **gli** serve una mano a portare i pacchi! *(indiretto: a Carlo → gli)*\n\n"
