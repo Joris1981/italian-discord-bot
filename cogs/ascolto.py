@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import re
-import random
+import unicodedata
 
 class AscoltoCog(commands.Cog):
     def __init__(self, bot):
@@ -21,25 +21,29 @@ class AscoltoCog(commands.Cog):
             ("loro", ["sono stati in sardegna"]),
             ("loro", ["hanno noleggiato una macchina"]),
             ("loro", ["hanno fatto il giro dell'isola"]),
-            ("loro", ["sono andati a bere un caff[eè]"]),
+            ("loro", ["sono andati a bere un caffe"]),
             ("lei", ["ha parlato del suo lavoro", "ha chiesto di te"])
         ]
+
+    def normalize_text(self, text):
+        return unicodedata.normalize("NFD", text.lower()).encode("ascii", "ignore").decode("utf-8")
 
     def match_activities(self, content):
         found = []
         used_indexes = set()
         ik_vorm_detected = False
 
-        normalized = content.lower()
+        normalized = self.normalize_text(content)
         for i, (subject, variants) in enumerate(self.activities):
             for variant in variants:
-                if re.search(re.escape(variant), normalized):
+                if re.search(re.escape(self.normalize_text(variant)), normalized):
                     found.append((subject, variant))
                     used_indexes.add(i)
-                    # Controleer op ik-vorm met andato/a of ho
-                    if re.search(r"\b(sono|ho)\s+(andat[oa]|visto|fatto|noleggiato|uscito|guardato)", normalized):
-                        ik_vorm_detected = True
                     break
+
+        # Ik-vorm detectie uitgebreid
+        if re.search(r"\b(sono|ho)\s+(andat[oa]|visto|fatto|noleggiato|uscito|guardato|visitato|noleggiato|stato|giocato)", normalized):
+            ik_vorm_detected = True
 
         return found, ik_vorm_detected
 
@@ -59,12 +63,12 @@ class AscoltoCog(commands.Cog):
             return
 
         found, ik_vorm = self.match_activities(content)
-        totaal = len(set([i for i in range(len(self.activities))]))
-        gevonden = len(found)
+        totaal = len(self.activities)
+        gevonden = len(set([self.activities.index((x, y)) for x, y in found]))
 
         # Reactie in thread
         try:
-            await message.reply(f"📬 {message.author.mention} ti ho inviato un DM con il risultato del tuo ascolto!", mention_author=False)
+            await message.reply(f"\U0001F4EC {message.author.mention} ti ho inviato un DM con il risultato del tuo ascolto!", mention_author=False)
         except:
             pass
 
@@ -74,27 +78,25 @@ class AscoltoCog(commands.Cog):
             if gevonden:
                 feedback += "\n\n✅ Le attività che hai menzionato correttamente:\n"
                 for _, act in found:
-                    feedback += f"• {act}\n"
+                    feedback += f"\u2022 {act}\n"
             if gevonden < totaal:
-                feedback += "\n📌 Altre attività presenti nel frammento erano:\n"
+                feedback += "\n\U0001F4CC Altre attività presenti nel frammento erano:\n"
                 for i, (s, vs) in enumerate(self.activities):
                     if i not in [self.activities.index((x, y)) for x, y in found]:
-                        feedback += f"• {vs[0]}\n"
+                        feedback += f"\u2022 {vs[0]}\n"
             if ik_vorm:
-                feedback += ("\n⚠️ Hai usato la **prima persona singolare** (io), ma nel frammento si parlava di **altre persone**: `lei`, `lui`, `loro`.\n"
-                             "Assicurati di usare i verbi coniugati correttamente per il soggetto."
-                )
+                feedback += ("\n\u26A0\uFE0F Hai usato la **prima persona singolare** (io), ma nel frammento si parlava di **altre persone**: `lei`, `lui`, `loro`.\n"
+                             "Assicurati di usare i verbi coniugati correttamente per il soggetto.")
 
             feedback += "\n\nPer ricevere il transcript completo con soluzioni, digita `!ascolto_coshaifatto`."
-
             await message.author.send(feedback)
         except Exception as e:
-            print(f"❌ Kan geen DM sturen: {e}")
+            print(f"\u274C Kan geen DM sturen: {e}")
 
     @commands.command(name="ascolto_coshaifatto")
     async def ascolto_transcript(self, ctx):
         transcript = (
-            "🎧 **Transcript – Cos’hai fatto?**\n\n"
+            "\U0001F3A7 **Transcript – Cos’hai fatto?**\n\n"
             "Lunedì scorso sono andata al cinema insieme a due mie amiche. Abbiamo visto un film americano, una commedia, ma ad essere sincera, non è stato tanto divertente.\n"
             "Ieri sera Luca e la sua compagnia sono andati a ballare e hanno invitato anche me. Ma io ero un po’ stanca e ho preferito stare a casa e guardare la tv.\n"
             "Un mese fa è venuta da Londra mia cugina Paola ed è rimasta un’intera settimana. Siamo usciti ogni sera, abbiamo fatto una piccola gita al mare, abbiamo anche visitato un museo; insomma un po’ di tutto!\n"
@@ -104,9 +106,9 @@ class AscoltoCog(commands.Cog):
         )
         try:
             await ctx.author.send(transcript)
-            await ctx.reply("📬 Transcript inviato in DM!", mention_author=False)
+            await ctx.reply("\U0001F4EC Transcript inviato in DM!", mention_author=False)
         except discord.Forbidden:
-            await ctx.reply("⚠️ Non posso inviarti un DM. Controlla le impostazioni della privacy.", mention_author=False)
+            await ctx.reply("\u26A0\ufe0f Non posso inviarti un DM. Controlla le impostazioni della privacy.", mention_author=False)
 
 def setup(bot):
     bot.add_cog(AscoltoCog(bot))

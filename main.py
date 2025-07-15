@@ -123,6 +123,10 @@ async def on_message(message):
     if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
         return
 
+    # Geen correctie of complimenten in specifieke thread
+    if message.channel.id == 1394796805283385454:
+        return
+
     if message.id in EXPLICIT_CORRECTION_REPLIES:
         try:
             await message.reply(EXPLICIT_CORRECTION_REPLIES[message.id], mention_author=False)
