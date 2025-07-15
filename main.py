@@ -70,7 +70,7 @@ intents.dm_messages = True
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
-        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics"]:
+        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics", "cogs.ascolto"]:
             try:
                 await self.load_extension(extension)
                 logging.info(f"✅ Extension geladen: {extension}")
