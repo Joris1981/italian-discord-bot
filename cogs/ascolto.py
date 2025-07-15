@@ -1,37 +1,47 @@
 import discord
 from discord.ext import commands
 import re
-import unicodedata
-from utils import normalize
-import asyncio
+import random
 
 class AscoltoCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.kernactiviteiten = [
-            ("lei", [
-                "è andata al cinema",
-                "ha visto un film americano",
-                "è rimasta a casa",
-                "ha guardato la tv",
-                "è venuta da Londra",
-                "ha parlato del suo lavoro",
-                "ha chiesto di te"
-            ]),
-            ("loro", [
-                "sono andati a ballare",
-                "sono usciti ogni sera",
-                "hanno fatto una piccola gita al mare",
-                "hanno visitato un museo",
-                "sono andati a giocare a calcetto",
-                "hanno fatto solo un po’ di jogging",
-                "sono stati in Sardegna",
-                "hanno noleggiato una macchina",
-                "hanno fatto il giro dell’isola",
-                "sono andati a bere un caffè"
-            ])
+        self.allowed_channels = {1394806609991598181, 1388667261761359932, 1394796805283385454}
+        self.activities = [
+            ("lei", ["sono andata al cinema", "è andata al cinema"]),
+            ("loro", ["hanno visto un film americano", "hanno visto un film"]),
+            ("loro", ["sono andati a ballare"]),
+            ("lei", ["è rimasta a casa", "ha guardato la tv", "ha preferito stare a casa"]),
+            ("lei", ["è venuta da londra"]),
+            ("loro", ["sono usciti ogni sera"]),
+            ("loro", ["hanno fatto una piccola gita al mare"]),
+            ("loro", ["hanno visitato un museo"]),
+            ("loro", ["sono andati a giocare a calcetto"]),
+            ("loro", ["hanno fatto jogging", "hanno fatto un po' di jogging"]),
+            ("loro", ["sono stati in sardegna"]),
+            ("loro", ["hanno noleggiato una macchina"]),
+            ("loro", ["hanno fatto il giro dell'isola"]),
+            ("loro", ["sono andati a bere un caff[eè]"]),
+            ("lei", ["ha parlato del suo lavoro", "ha chiesto di te"])
         ]
-        self.allowed_channels = {1388667261761359932, 1394796805283385454}
+
+    def match_activities(self, content):
+        found = []
+        used_indexes = set()
+        ik_vorm_detected = False
+
+        normalized = content.lower()
+        for i, (subject, variants) in enumerate(self.activities):
+            for variant in variants:
+                if re.search(re.escape(variant), normalized):
+                    found.append((subject, variant))
+                    used_indexes.add(i)
+                    # Controleer op ik-vorm met andato/a of ho
+                    if re.search(r"\b(sono|ho)\s+(andat[oa]|visto|fatto|noleggiato|uscito|guardato)", normalized):
+                        ik_vorm_detected = True
+                    break
+
+        return found, ik_vorm_detected
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -41,53 +51,62 @@ class AscoltoCog(commands.Cog):
         if message.channel.id not in self.allowed_channels:
             return
 
-        if len(message.content.strip()) < 10:
+        if message.content.startswith("!"):
             return
 
-        normalized_text = normalize(message.content.lower())
-        juist = set()
-        fouten = []
-        ikvorm = []
+        content = message.content.lower().strip()
+        if not content:
+            return
 
-        for subject, phrases in self.kernactiviteiten:
-            for phrase in phrases:
-                pattern = rf"\b{re.escape(phrase)}\b"
-                if re.search(pattern, normalized_text):
-                    juist.add(phrase)
-                    if subject == "loro" and re.search(r"\b(sono|abbiamo|hanno|siamo)\b.*\b(io|ho|sono andato|sono andata)\b", normalized_text):
-                        ikvorm.append(phrase)
+        found, ik_vorm = self.match_activities(content)
+        totaal = len(set([i for i in range(len(self.activities))]))
+        gevonden = len(found)
 
-        overige = [p for _, lst in self.kernactiviteiten for p in lst if p not in juist]
-        aantal_juist = len(juist)
-
+        # Reactie in thread
         try:
-            await message.author.send(
-                f"📊 Hai riconosciuto **{aantal_juist}** attività correttamente."
-                + ("\n⚠️ Alcune frasi sembrano essere nella forma 'io', ma nel testo originale si trattava di *lei* o *loro*." if ikvorm else "")
-                + f"\n\n🔎 Le attività che hai *non* menzionato:\n- " + "\n- ".join(overige)
-                + "\n\n📜 Vuoi il transcript? Digita `!ascolto_coshaifatto` qui o in DM."
-            )
-            await message.channel.send(f"✅ {message.author.mention} il tuo risultato è stato inviato in DM!", mention_author=False)
+            await message.reply(f"📬 {message.author.mention} ti ho inviato un DM con il risultato del tuo ascolto!", mention_author=False)
         except:
-            await message.channel.send(f"⚠️ {message.author.mention} non riesco a mandarti un DM. Controlla le impostazioni.", mention_author=False)
+            pass
+
+        # DM
+        try:
+            feedback = f"Hai identificato **{gevonden}** su **{totaal}** attività chiave."
+            if gevonden:
+                feedback += "\n\n✅ Le attività che hai menzionato correttamente:\n"
+                for _, act in found:
+                    feedback += f"• {act}\n"
+            if gevonden < totaal:
+                feedback += "\n📌 Altre attività presenti nel frammento erano:\n"
+                for i, (s, vs) in enumerate(self.activities):
+                    if i not in [self.activities.index((x, y)) for x, y in found]:
+                        feedback += f"• {vs[0]}\n"
+            if ik_vorm:
+                feedback += ("\n⚠️ Hai usato la **prima persona singolare** (io), ma nel frammento si parlava di **altre persone**: `lei`, `lui`, `loro`.\n"
+                             "Assicurati di usare i verbi coniugati correttamente per il soggetto."
+                )
+
+            feedback += "\n\nPer ricevere il transcript completo con soluzioni, digita `!ascolto_coshaifatto`."
+
+            await message.author.send(feedback)
+        except Exception as e:
+            print(f"❌ Kan geen DM sturen: {e}")
 
     @commands.command(name="ascolto_coshaifatto")
-    async def ascolto_coshaifatto(self, ctx):
+    async def ascolto_transcript(self, ctx):
         transcript = (
             "🎧 **Transcript – Cos’hai fatto?**\n\n"
-            "Lunedì scorso sono andata al cinema insieme a due mie amiche. Abbiamo visto un film americano, una commedia...\n"
-            "Ieri sera Luca e la sua compagnia sono andati a ballare e hanno invitato anche me. Ma io ero un po’ stanca...\n"
-            "Un mese fa è venuta da Londra mia cugina Paola ed è rimasta un’intera settimana. Siamo usciti ogni sera...\n"
-            "Domenica mattina, come ogni domenica, siamo andati a giocare a calcetto. Ma Giacomo si è dimenticato di prenotare il campo...\n"
-            "L’estate scorsa siamo stati in Sardegna in vacanza. Abbiamo noleggiato una macchina e abbiamo fatto il giro dell’isola...\n"
-            "Sai, l’altro ieri ho incontrato Mara per strada e siamo andati a bere un caffè. Mi ha parlato del suo lavoro e della sua vita."
+            "Lunedì scorso sono andata al cinema insieme a due mie amiche. Abbiamo visto un film americano, una commedia, ma ad essere sincera, non è stato tanto divertente.\n"
+            "Ieri sera Luca e la sua compagnia sono andati a ballare e hanno invitato anche me. Ma io ero un po’ stanca e ho preferito stare a casa e guardare la tv.\n"
+            "Un mese fa è venuta da Londra mia cugina Paola ed è rimasta un’intera settimana. Siamo usciti ogni sera, abbiamo fatto una piccola gita al mare, abbiamo anche visitato un museo; insomma un po’ di tutto!\n"
+            "Domenica mattina, come ogni domenica, siamo andati a giocare a calcetto. Questa volta però Giacomo si è dimenticato di prenotare il campo; così, invece di giocare, abbiamo fatto solo un po’ di jogging!\n"
+            "L’estate scorsa siamo stati in Sardegna in vacanza. Abbiamo noleggiato una macchina e abbiamo fatto il giro dell’isola. È stata una vacanza bellissima. Chi non ci è stato non sa cosa perde.\n"
+            "Sai, l’altro ieri ho incontrato Mara per strada e siamo andati a bere un caffè. Mi ha parlato un po’ del suo lavoro, della sua vita. Poi ha chiesto di te, se stai con qualche ragazza. Secondo me, è ancora innamorata di te."
         )
         try:
             await ctx.author.send(transcript)
-            if ctx.guild:
-                await ctx.reply("✅ Il transcript è stato inviato via DM!", mention_author=False)
-        except:
-            await ctx.reply("❌ Non posso inviarti un DM. Controlla le tue impostazioni.", mention_author=False)
+            await ctx.reply("📬 Transcript inviato in DM!", mention_author=False)
+        except discord.Forbidden:
+            await ctx.reply("⚠️ Non posso inviarti un DM. Controlla le impostazioni della privacy.", mention_author=False)
 
 def setup(bot):
     bot.add_cog(AscoltoCog(bot))
