@@ -82,8 +82,9 @@ class AscoltoCog(commands.Cog):
                     if keyword not in [k for k, _ in found]:
                         feedback += f"• {full}\n"
             if ik_vorm:
-                feedback += ("\n⚠️ Hai usato la **prima persona singolare** (io), ma nel frammento si parlava di **altre persone**: `lei`, `lui`, `loro`.\n"
-                             "Assicurati di usare i verbi coniugati correttamente per il soggetto.")
+                feedback += ("\n⚠️ Hai usato forme verbali legate alla **prima persona singolare**. "
+                             "Ricorda che nel frammento non si parlava di 'io', ma di **lei** o **loro**. "
+                             "Controlla bene i soggetti e adatta i verbi di conseguenza.")
 
             feedback += "\n\nPer ricevere il transcript completo con soluzioni, digita `!ascolto_coshaifatto`."
 
