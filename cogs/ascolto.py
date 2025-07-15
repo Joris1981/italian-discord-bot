@@ -12,7 +12,6 @@ class AscoltoCog(commands.Cog):
             "ballare": "Loro sono andati a ballare",
             "casa": "Lei è rimasta a casa",
             "tv": "Lei ha guardato la TV",
-            "televisione": "Lei ha guardato la TV",
             "londra": "La cugina di Paola è venuta da Londra",
             "gita al mare": "Loro hanno fatto una piccola gita al mare",
             "museo": "Loro hanno visitato un museo",
