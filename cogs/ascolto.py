@@ -1,56 +1,44 @@
 import discord
 from discord.ext import commands
 import re
-import unicodedata
 
 class AscoltoCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.allowed_channels = {
-            1394806609991598181,
-            1388667261761359932,
-            1394796805283385454
+        self.allowed_channels = {1394806609991598181, 1388667261761359932, 1394796805283385454}
+        self.keywords = {
+            "cinema": "Lei è andata al cinema insieme a sue amiche",
+            "film": "Loro hanno visto un film",
+            "ballare": "Loro sono andati a ballare",
+            "casa": "Lei è rimasta a casa",
+            "tv": "Lei ha guardato la TV",
+            "televisione": "Lei ha guardato la TV",
+            "londra": "La cugina di Paola è venuta da Londra",
+            "gita al mare": "Loro hanno fatto una piccola gita al mare",
+            "museo": "Loro hanno visitato un museo",
+            "calcetto": "Loro sono andati a giocare a calcetto",
+            "jogging": "Loro hanno fatto un po’ di jogging",
+            "sardegna": "Loro sono stati in Sardegna",
+            "vacanza": "Loro sono stati in vacanza",
+            "macchina": "Loro hanno noleggiato una macchina",
+            "giro": "Loro hanno fatto il giro dell’isola",
+            "caffè": "Loro sono andati a bere un caffè",
+            "lavoro": "Lei ha parlato un po’ del suo lavoro",
+            "vita": "Lei ha anche parlato della sua vita",
+            "chiesto": "Lei ha chiesto di te, se stai con qualche ragazza"
         }
-        self.activities = [
-            ("lei", ["\u00e8 andata al cinema"]),
-            ("loro", ["hanno visto un film americano", "hanno visto un film"]),
-            ("loro", ["sono andati a ballare"]),
-            ("lei", ["\u00e8 rimasta a casa", "ha guardato la tv", "ha preferito stare a casa"]),
-            ("lei", ["\u00e8 venuta da londra"]),
-            ("loro", ["sono usciti ogni sera"]),
-            ("loro", ["hanno fatto una piccola gita al mare"]),
-            ("loro", ["hanno visitato un museo"]),
-            ("loro", ["sono andati a giocare a calcetto"]),
-            ("loro", ["hanno fatto jogging", "hanno fatto un po' di jogging"]),
-            ("loro", ["sono stati in sardegna"]),
-            ("loro", ["hanno noleggiato una macchina"]),
-            ("loro", ["hanno fatto il giro dell'isola"]),
-            ("loro", ["sono andati a bere un caff\u00e8"]),
-            ("lei", ["ha parlato del suo lavoro", "ha chiesto di te"])
-        ]
 
-    def normalize(self, text):
-        text = text.lower()
-        text = unicodedata.normalize('NFD', text)
-        text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
-        return text
-
-    def match_activities(self, content):
+    def detect_keywords(self, content):
+        normalized = content.lower()
         found = []
-        used_indexes = set()
         ik_vorm_detected = False
 
-        normalized = self.normalize(content)
-        for i, (subject, variants) in enumerate(self.activities):
-            for variant in variants:
-                pattern = rf"\b(?:[a-z]+\s)?{re.escape(self.normalize(variant))}\b"
-                if re.search(pattern, normalized):
-                    found.append((subject, variant))
-                    used_indexes.add(i)
-                    break
+        for keyword, full_sentence in self.keywords.items():
+            if keyword in normalized:
+                found.append((keyword, full_sentence))
 
-        # Detectie van ik-vorm
-        if re.search(r"\b(io|ho|sono andat[oa])\b", normalized):
+        # detectie van ik-vorm (prima persona)
+        if re.search(r"\b(io|sono|ho)\b", normalized):
             ik_vorm_detected = True
 
         return found, ik_vorm_detected
@@ -70,31 +58,36 @@ class AscoltoCog(commands.Cog):
         if not content:
             return
 
-        found, ik_vorm = self.match_activities(content)
-        totaal = len(self.activities)
-        gevonden = len(found)
+        found, ik_vorm = self.detect_keywords(content)
+        totaal = len(set(self.keywords.keys()))
+        gevonden = len(set([k for k, _ in found]))
 
+        # Reactie in thread
         try:
-            await message.reply(f"\U0001F4EC {message.author.mention} ti ho inviato un DM con il risultato del tuo ascolto!", mention_author=False)
+            await message.reply(f"📬 {message.author.mention} ti ho inviato un DM con il risultato del tuo ascolto!", mention_author=False)
         except:
             pass
 
+        # DM
         try:
-            feedback = f"Hai identificato **{gevonden}** su **{totaal}** attivit\u00e0 chiave."
+            feedback = f"Hai identificato **{gevonden}** su **{totaal}** attività chiave."
+            if gevonden >= 6:
+                feedback += "\n\n🎉 Complimenti, hai trovato molte attività chiave!"
             if gevonden:
-                feedback += "\n\n\u2705 Le attivit\u00e0 che hai menzionato correttamente:\n"
-                for _, act in found:
-                    feedback += f"\u2022 {act}\n"
+                feedback += "\n\n✅ Le attività che hai menzionato correttamente:\n"
+                for _, full in found:
+                    feedback += f"• {full}\n"
             if gevonden < totaal:
-                feedback += "\n\U0001F4CC Altre attivit\u00e0 presenti nel frammento erano:\n"
-                for i, (s, vs) in enumerate(self.activities):
-                    if i not in [self.activities.index((x, y)) for x, y in found]:
-                        feedback += f"\u2022 {vs[0]}\n"
+                feedback += "\n📌 Attività che mancavano nel tuo ascolto:\n"
+                for keyword, full in self.keywords.items():
+                    if keyword not in [k for k, _ in found]:
+                        feedback += f"• {full}\n"
             if ik_vorm:
-                feedback += ("\n\u26A0\uFE0F Hai usato la **prima persona singolare** (io), ma nel frammento si parlava di **altre persone**: `lei`, `lui`, `loro`.\n"
+                feedback += ("\n⚠️ Hai usato la **prima persona singolare** (io), ma nel frammento si parlava di **altre persone**: `lei`, `lui`, `loro`.\n"
                              "Assicurati di usare i verbi coniugati correttamente per il soggetto.")
 
             feedback += "\n\nPer ricevere il transcript completo con soluzioni, digita `!ascolto_coshaifatto`."
+
             await message.author.send(feedback)
         except Exception as e:
             print(f"❌ Kan geen DM sturen: {e}")
@@ -102,15 +95,19 @@ class AscoltoCog(commands.Cog):
     @commands.command(name="ascolto_coshaifatto")
     async def ascolto_transcript(self, ctx):
         transcript = (
-            "\U0001F3A7 **Transcript – Cos’hai fatto?**\n\n"
-            "Luned\u00ec scorso sono andata al cinema insieme a due mie amiche. Abbiamo visto un film americano... (volledige tekst hier)."
+            "🎧 **Transcript – Cos’hai fatto?**\n\n"
+            "Lunedì scorso sono andata al cinema insieme a due mie amiche. Abbiamo visto un film americano, una commedia, ma ad essere sincera, non è stato tanto divertente.\n"
+            "Ieri sera Luca e la sua compagnia sono andati a ballare e hanno invitato anche me. Ma io ero un po’ stanca e ho preferito stare a casa e guardare la tv.\n"
+            "Un mese fa è venuta da Londra mia cugina Paola ed è rimasta un’intera settimana. Siamo usciti ogni sera, abbiamo fatto una piccola gita al mare, abbiamo anche visitato un museo; insomma un po’ di tutto!\n"
+            "Domenica mattina, come ogni domenica, siamo andati a giocare a calcetto. Questa volta però Giacomo si è dimenticato di prenotare il campo; così, invece di giocare, abbiamo fatto solo un po’ di jogging!\n"
+            "L’estate scorsa siamo stati in Sardegna in vacanza. Abbiamo noleggiato una macchina e abbiamo fatto il giro dell’isola. È stata una vacanza bellissima. Chi non ci è stato non sa cosa perde.\n"
+            "Sai, l’altro ieri ho incontrato Mara per strada e siamo andati a bere un caffè. Mi ha parlato un po’ del suo lavoro, della sua vita. Poi ha chiesto di te, se stai con qualche ragazza. Secondo me, è ancora innamorata di te."
         )
         try:
             await ctx.author.send(transcript)
-            await ctx.reply("\U0001F4EC Transcript inviato in DM!", mention_author=False)
+            await ctx.reply("📬 Transcript inviato in DM!", mention_author=False)
         except discord.Forbidden:
-            await ctx.reply("\u26A0\uFE0F Non posso inviarti un DM. Controlla le impostazioni della privacy.", mention_author=False)
-
+            await ctx.reply("⚠️ Non posso inviarti un DM. Controlla le impostazioni della privacy.", mention_author=False)
 
 async def setup(bot):
     await bot.add_cog(AscoltoCog(bot))
