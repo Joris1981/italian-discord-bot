@@ -113,6 +113,9 @@ async def on_message(message):
         await bot.process_commands(message)
         return
 
+    if len(message.content.strip()) < 10 or message.content.lower().strip() in {"quiz", "ciao", "grazie", "ok"}:
+        return
+
     if len(message.content) > MAX_CORRECTION_LENGTH:
         await message.channel.send("⚠️ Il messaggio è troppo lungo per una correzione automatica. Potresti dividerlo in parti più piccole?")
         return
