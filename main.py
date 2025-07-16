@@ -120,10 +120,17 @@ async def on_message(message):
         await message.channel.send("⚠️ Il messaggio è troppo lungo per una correzione automatica. Potresti dividerlo in parti più piccole?")
         return
 
-    if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
-        return
+    # ⛔️ GEEN correctie tijdens actieve sessie
+    if is_user_in_active_session(message.author.id):
+        if isinstance(message.channel, discord.DMChannel):
+            logging.info(f"⏸️ Geen taalreactie in DM – actieve sessie voor gebruiker {message.author.id}")
+            return
+        if message.channel.id in REACTION_CHANNELS or (
+            hasattr(message.channel, 'parent_id') and message.channel.parent_id in REACTION_THREADS
+        ):
+            logging.info(f"⏸️ Geen taalreactie in kanaal – actieve sessie voor gebruiker {message.author.id}")
+            return
 
-    # Geen correctie of complimenten in specifieke thread
     if message.channel.id == 1394796805283385454:
         return
 
@@ -134,6 +141,7 @@ async def on_message(message):
             logging.error(f"❌ Fout bij automatische uitleg-reply: {e}")
 
     try:
+        # Detectie Nederlands
         try:
             langs = detect_langs(message.content)
             is_dutch_dominant = any(l.lang == "nl" and l.prob > 0.95 for l in langs)
@@ -144,6 +152,12 @@ async def on_message(message):
             await message.reply("💬 Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
             return
 
+        # ⛔️ Geen correctie in DM tijdens actieve sessie
+        if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
+            logging.info(f"⏸️ Geen correctie/compliment in DM – actieve sessie {message.author.id}")
+            return
+
+        # GPT-correctie
         correction = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -158,6 +172,10 @@ async def on_message(message):
         reply = correction.choices[0].message.content.strip()
 
         if reply.upper() == "NO_CORRECTION_NEEDED":
+            # ⛔️ Geen compliment tijdens sessie in DM
+            if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
+                logging.info(f"⏸️ Geen compliment in DM – actieve sessie {message.author.id}")
+                return
             compliments = [
                 "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
                 "✅ Perfetto! Sei sulla strada giusta! 🚀",
@@ -171,7 +189,9 @@ async def on_message(message):
             return
         else:
             await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
-            if message.channel.id in REACTION_CHANNELS or (hasattr(message.channel, 'parent_id') and message.channel.parent_id in REACTION_THREADS):
+            if message.channel.id in REACTION_CHANNELS or (
+                hasattr(message.channel, 'parent_id') and message.channel.parent_id in REACTION_THREADS
+            ):
                 try:
                     context_reply = client.chat.completions.create(
                         model="gpt-3.5-turbo",
@@ -190,7 +210,12 @@ async def on_message(message):
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
 
+    # === GPT-chat in DM buiten sessie ===
     if isinstance(message.channel, discord.DMChannel):
+        if is_user_in_active_session(message.author.id):
+            logging.info(f"⏸️ Geen GPT-antwoord in DM – actieve sessie {message.author.id}")
+            return
+
         user_id = message.author.id
         today = datetime.datetime.utcnow().date().isoformat()
         key = f"{user_id}:{today}"
