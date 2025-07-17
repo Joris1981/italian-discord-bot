@@ -17,23 +17,18 @@ logging.basicConfig(level=logging.INFO)
 
 TIJDSLIMIET = 90
 DATA_PATH = "/persistent/data/wordle/frasi"
-SCORE_PATH = "/persistent/data/frasi_scores"
+SCORE_PATH = os.path.join(DATA_PATH, "scores")
 LEADERBOARD_THREAD_ID = 1395535498348593313
 EXTRA_KANAAL_ID = 1388667261761359932
+
 os.makedirs(DATA_PATH, exist_ok=True)
 os.makedirs(SCORE_PATH, exist_ok=True)
 
 THEMA_LIJST = [
-    "Al ristorante",
-    "La mia giornata",
-    "Parlare di emozioni",
-    "Chiedere indicazioni",
-    "Al telefono",
-    "Fare la spesa e shopping",
-    "Alla stazione / all’aeroporto",
-    "Esprimere opinioni",
-    "Invitare e rifiutare",
-    "In caso di emergenza"
+    "Al ristorante", "La mia giornata", "Parlare di emozioni",
+    "Chiedere indicazioni", "Al telefono", "Fare la spesa e shopping",
+    "Alla stazione / all’aeroporto", "Esprimere opinioni",
+    "Invitare e rifiutare", "In caso di emergenza"
 ]
 
 def weeknummer():
