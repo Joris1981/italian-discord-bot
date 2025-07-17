@@ -3,12 +3,12 @@ from discord.ext import commands
 import random
 import asyncio
 import datetime
+import re
 from session_manager import start_session, end_session, is_user_in_active_session
 
-# Tijd per zin in seconden
 TIJDSLIMIET = 90
 
-# ✅ Tijdelijke testzinnen (worden later vervangen door AI)
+# Tijdelijke testzinnen
 TEST_ZINNEN = {
     "Mag ik een tafel voor twee reserveren?": "Posso prenotare un tavolo per due?",
     "Ik zou graag willen bestellen.": "Vorrei ordinare.",
@@ -26,6 +26,11 @@ TEST_ZINNEN = {
     "Ik spreek een beetje Italiaans.": "Parlo un po' di italiano.",
     "Kunt u trager spreken?": "Può parlare più lentamente?"
 }
+
+def normalize(text):
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", "", text)  # verwijder leestekens
+    return text.strip()
 
 class Frasi(commands.Cog):
     def __init__(self, bot):
@@ -60,7 +65,7 @@ class Frasi(commands.Cog):
 
                 try:
                     reply = await self.bot.wait_for('message', timeout=TIJDSLIMIET, check=check)
-                    if reply.content.strip().lower() == it.lower():
+                    if normalize(reply.content) == normalize(it):
                         await ctx.send("✅ Corretto!")
                         score += 1
                     else:
@@ -81,7 +86,7 @@ class Frasi(commands.Cog):
 
                     try:
                         reply = await self.bot.wait_for('message', timeout=TIJDSLIMIET, check=check)
-                        if reply.content.strip().lower() == it.lower():
+                        if normalize(reply.content) == normalize(it):
                             await ctx.send("✅ Corretto!")
                             bonus_score += 1
                         else:
@@ -96,7 +101,7 @@ class Frasi(commands.Cog):
                 else:
                     await ctx.send("💡 Non hai guadagnato la stella, ma ottimo tentativo!")
 
-            await ctx.send("📚 Il gioco è terminato. Puoi riprovare domani. Grazie per aver partecipato!")
+            await ctx.send("🎯 *Il gioco è terminato.* Se vuoi migliorare il tuo punteggio, puoi sempre riprovare! Grazie per aver partecipato!")
         finally:
             end_session(ctx.author.id)
 
