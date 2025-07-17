@@ -19,6 +19,7 @@ TIJDSLIMIET = 90
 DATA_PATH = "/persistent/data/wordle/frasi"
 SCORE_PATH = "/persistent/data/frasi_scores"
 LEADERBOARD_THREAD_ID = 1395535498348593313
+EXTRA_KANAAL_ID = 1388667261761359932
 os.makedirs(DATA_PATH, exist_ok=True)
 os.makedirs(SCORE_PATH, exist_ok=True)
 
@@ -204,7 +205,7 @@ class Frasi(commands.Cog):
 
     @commands.command(name='frasi-leaderboard')
     async def toon_leaderboard(self, ctx):
-        if ctx.channel.id != LEADERBOARD_THREAD_ID:
+        if ctx.channel.id not in [LEADERBOARD_THREAD_ID, EXTRA_KANAAL_ID]:
             return
 
         current_week = weeknummer()
