@@ -14,7 +14,7 @@ client = OpenAI()
 logging.basicConfig(level=logging.INFO)
 
 TIJDSLIMIET = 90
-DATA_PATH = "./data/frasi"
+DATA_PATH = "/persistent/data/frasi"
 os.makedirs(DATA_PATH, exist_ok=True)
 
 THEMA_LIJST = [
@@ -39,15 +39,15 @@ def weeknummer():
 def laad_zinnen(week: int):
     pad = f"{DATA_PATH}/week_{week}.json"
     if os.path.exists(pad):
-        logging.info(f"Zinnenbestand geladen voor week {week}")
+        logging.info(f"✅ Zinnenbestand geladen voor week {week}")
         with open(pad, "r", encoding="utf-8") as f:
             return json.load(f)
-    logging.info(f"Geen bestaand zinnenbestand gevonden voor week {week}")
+    logging.info(f"🟡 Geen bestaand zinnenbestand gevonden voor week {week}")
     return None
 
 async def genereer_zinnen(week: int):
     thema = THEMA_LIJST[week % len(THEMA_LIJST)]
-    logging.info(f"Zinnen worden gegenereerd voor thema: {thema}")
+    logging.info(f"🧠 Zinnen worden gegenereerd voor thema: {thema}")
 
     prompt = f"""Crea una lista per studenti di livello B1 con:
 - 25 frasi italiane corte e utili da usare nel contesto del tema "{thema}".
@@ -67,20 +67,15 @@ Rispondi solo con JSON.
 
     response = client.chat.completions.create(
         model="gpt-4",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role": "user", "content": prompt}],
+        response_format="json"
     )
 
     data = json.loads(response.choices[0].message.content)
-
-    # 🔍 Debug JSON voor week 29 (eenmalige inspectie)
-    if week == 29:
-        logging.info("✅ DEBUG: Gecontroleerde zinnen en varianten voor frasi:")
-        logging.info(json.dumps(data, ensure_ascii=False, indent=2))
-
     with open(f"{DATA_PATH}/week_{week}.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    logging.info(f"Zinnen opgeslagen in week_{week}.json")
+    logging.info(f"💾 Zinnen opgeslagen in week_{week}.json")
     return data
 
 class Frasi(commands.Cog):
@@ -106,7 +101,7 @@ class Frasi(commands.Cog):
             data = laad_zinnen(current_week)
             if not data:
                 await ctx.send("🧠 Sto preparando le frasi per questa settimana... Attendi un momento.")
-                logging.info("Start met genereren van nieuwe zinnen via OpenAI")
+                logging.info("🔁 Start met genereren van nieuwe zinnen via OpenAI")
                 data = await genereer_zinnen(current_week)
 
             zinnen = data["standard"]
@@ -134,7 +129,7 @@ class Frasi(commands.Cog):
                     await ctx.send(f"⏱️ Tempo scaduto! La risposta corretta era:\n**{zin['it']}**")
 
             await ctx.send(f"🧮 Hai ottenuto {score}/10 punti.")
-            logging.info(f"Score basisronde: {score}/10 voor gebruiker {ctx.author}")
+            logging.info(f"📊 Score basisronde: {score}/10 voor gebruiker {ctx.author}")
 
             if score >= 8:
                 await ctx.send("🎉 Bravo! Hai diritto al **bonus round**!")
@@ -165,7 +160,7 @@ class Frasi(commands.Cog):
 
             await ctx.send("📚 Il gioco è terminato. Vuoi migliorare il tuo punteggio? Prova di nuovo domani!")
         except Exception as e:
-            logging.exception("Er is een fout opgetreden tijdens het frasi-spel:")
+            logging.exception("❌ Er is een fout opgetreden tijdens het frasi-spel:")
             await ctx.send("❌ Er is iets misgegaan. Probeer het later opnieuw.")
         finally:
             end_session(ctx.author.id)
