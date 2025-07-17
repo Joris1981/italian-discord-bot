@@ -67,8 +67,7 @@ Rispondi solo con JSON.
 
     response = await client.chat.completions.create(
         model="gpt-4",
-        messages=[{"role": "user", "content": prompt}],
-        response_format="json"
+        messages=[{"role": "user", "content": prompt}]
     )
 
     data = json.loads(response.choices[0].message.content)
