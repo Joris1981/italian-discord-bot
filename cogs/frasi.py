@@ -2,120 +2,103 @@ import discord
 from discord.ext import commands
 import random
 import asyncio
+import datetime
 from session_manager import start_session, end_session, is_user_in_active_session
 
-TEST_NL_ZINNEN = [
-    ("Waar is het station?", "Dov’è la stazione?"),
-    ("Ik zou graag een tafel reserveren.", "Vorrei prenotare un tavolo."),
-    ("Mag ik de rekening alstublieft?", "Il conto, per favore."),
-    ("Ik heb een kamer gereserveerd.", "Ho prenotato una camera."),
-    ("Hoeveel kost het?", "Quanto costa?"),
-    ("Wat raad je aan?", "Cosa consigli?"),
-    ("Ik begrijp het niet.", "Non capisco."),
-    ("Kan je dat herhalen?", "Puoi ripetere?"),
-    ("Ik ben allergisch voor melk.", "Sono allergico al latte."),
-    ("Ik ben op zoek naar een apotheek.", "Sto cercando una farmacia."),
-    ("Ik bel later terug.", "Richiamo più tardi."),
-    ("Neem plaats, alstublieft.", "Si accomodi, per favore."),
-    ("Dat is een goed idee.", "È una buona idea."),
-    ("Sorry, ik kan niet komen.", "Mi dispiace, non posso venire."),
-    ("Waar kan ik een taxi nemen?", "Dove posso prendere un taxi?"),
-    ("Wilt u iets drinken?", "Vuole qualcosa da bere?"),
-    ("Ik kom uit België.", "Vengo dal Belgio."),
-    ("Hoe gaat het met u?", "Come sta?"),
-    ("Gaat u zitten.", "Si sieda."),
-    ("Welkom in Italië!", "Benvenuto in Italia!"),
-    ("Bedankt voor de uitnodiging.", "Grazie per l’invito."),
-    ("Kunt u mij helpen?", "Può aiutarmi?"),
-    ("Ik spreek een beetje Italiaans.", "Parlo un po’ di italiano."),
-    ("Ik zou graag iets bestellen.", "Vorrei ordinare qualcosa."),
-    ("Tot ziens!", "Arrivederci!")
-]
+# Tijd per zin in seconden
+TIJDSLIMIET = 90
 
-class FrasiIdiomatiche(commands.Cog):
+# ✅ Tijdelijke testzinnen (worden later vervangen door AI)
+TEST_ZINNEN = {
+    "Mag ik een tafel voor twee reserveren?": "Posso prenotare un tavolo per due?",
+    "Ik zou graag willen bestellen.": "Vorrei ordinare.",
+    "Hoeveel kost dit gerecht?": "Quanto costa questo piatto?",
+    "De rekening alstublieft.": "Il conto, per favore.",
+    "Waar is het dichtstbijzijnde metrostation?": "Dove si trova la stazione della metropolitana più vicina?",
+    "Ik ben mijn sleutels kwijt.": "Ho perso le chiavi.",
+    "Kan ik u iets vragen?": "Posso chiederle qualcosa?",
+    "Ik wil graag een glas water.": "Vorrei un bicchiere d'acqua.",
+    "Kunt u dat herhalen, alstublieft?": "Può ripetere, per favore?",
+    "Ik begrijp het niet goed.": "Non capisco bene.",
+    "Wat raadt u aan?": "Cosa consiglia?",
+    "Ik heb een tafel gereserveerd.": "Ho prenotato un tavolo.",
+    "Ik ben allergisch voor noten.": "Sono allergico alle noci.",
+    "Ik spreek een beetje Italiaans.": "Parlo un po' di italiano.",
+    "Kunt u trager spreken?": "Può parlare più lentamente?"
+}
+
+class Frasi(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.active_users = {}
 
-    @commands.command(name="frasi")
+    @commands.command(name='frasi')
     async def start_frasi_game(self, ctx):
         if not isinstance(ctx.channel, discord.DMChannel) and ctx.channel.id != 123456789013345:
+            await ctx.send("❗ Puoi usare questo comando solo in DM o nel thread designato.")
             return
 
         if is_user_in_active_session(ctx.author.id):
-            await ctx.reply("⏳ Hai già una sessione attiva. Finiscila prima di iniziarne una nuova.", mention_author=False)
+            await ctx.send("⏳ Hai già una sessione attiva.")
             return
 
-        await start_session(ctx.author.id, "frasi")
+        if not start_session(ctx.author.id, "frasi"):
+            await ctx.send("⏳ Hai già una sessione attiva.")
+            return
 
         try:
-            await ctx.reply("📩 Il gioco è stato avviato nella tua DM! Controlla i tuoi messaggi privati.") if not isinstance(ctx.channel, discord.DMChannel) else None
-            dm = ctx.author if isinstance(ctx.channel, discord.DMChannel) else await ctx.author.create_dm()
-            await self.run_game(dm, ctx.author)
-        except Exception as e:
-            print(f"Fout bij starten frasi-spel: {e}")
-            await end_session(ctx.author.id)
+            await ctx.send("🎯 Benvenuto/a al gioco *Frasi idiomatiche*! Prova a tradurre in italiano le seguenti frasi. Hai 90 secondi per ogni frase. Se ne traduci correttamente 8 su 10, avrai accesso a un bonus round! Iniziamo!\n")
 
-    async def run_game(self, dm, user):
-        await dm.send("🎯 Benvenuto/a al gioco **Frasi idiomatiche**! Ti darò 10 frasi in olandese, tu dovrai tradurle in italiano. Hai 90 secondi per ogni frase.\nSe fai almeno 8 su 10, sblocchi un bonus round!")
+            zinnen = list(TEST_ZINNEN.items())
+            random.shuffle(zinnen)
+            score = 0
 
-        selected = random.sample(TEST_NL_ZINNEN, 10)
-        score = 0
+            for i, (nl, it) in enumerate(zinnen[:10]):
+                await ctx.send(f"📝 Frase {i+1}/10:\n**{nl}**")
 
-        for i, (nl, it) in enumerate(selected, 1):
-            await dm.send(f"📝 Frase {i}/10:\n**{nl}**\n✍️ Scrivi la traduzione in italiano:")
+                def check(m):
+                    return m.author == ctx.author and m.channel == ctx.channel
 
-            try:
-                def check(m): return m.author == user and m.channel == dm
-                msg = await self.bot.wait_for('message', timeout=90.0, check=check)
-            except asyncio.TimeoutError:
-                await dm.send("⏰ Tempo scaduto! Nessuna risposta registrata.")
-                continue
+                try:
+                    reply = await self.bot.wait_for('message', timeout=TIJDSLIMIET, check=check)
+                    if reply.content.strip().lower() == it.lower():
+                        await ctx.send("✅ Corretto!")
+                        score += 1
+                    else:
+                        await ctx.send(f"❌ Risposta sbagliata.\nLa risposta corretta era:\n**{it}**")
+                except asyncio.TimeoutError:
+                    await ctx.send(f"⏱️ Tempo scaduto! La risposta corretta era:\n**{it}**")
 
-            if normalize(msg.content) == normalize(it):
-                score += 1
-                await dm.send("✅ Corretto!")
-            else:
-                await dm.send(f"❌ Non esatto. La risposta giusta era: **{it}**")
+            await ctx.send(f"🧮 Hai ottenuto {score}/10 punti.")
 
-        await dm.send(f"\n📊 Hai ottenuto **{score}/10** risposte corrette.")
+            if score >= 8:
+                await ctx.send("🎉 Complimenti! Hai diritto al **bonus round**! Prova a tradurre altre 5 frasi!")
 
-        if score >= 8:
-            await self.run_bonus_round(dm, user)
-        else:
-            await dm.send("💡 Riprova la prossima settimana per ottenere una ⭐!")
+                bonus_zinnen = zinnen[10:15]
+                bonus_score = 0
 
-        await end_session(user.id)
+                for i, (nl, it) in enumerate(bonus_zinnen):
+                    await ctx.send(f"\n🌟 Bonus frase {i+1}/5:\n**{nl}**")
 
-    async def run_bonus_round(self, dm, user):
-        await dm.send("\n🌟 Bonus round! Hai sbloccato 5 frasi extra. Se ne traduci almeno 3, guadagni una ⭐!")
+                    try:
+                        reply = await self.bot.wait_for('message', timeout=TIJDSLIMIET, check=check)
+                        if reply.content.strip().lower() == it.lower():
+                            await ctx.send("✅ Corretto!")
+                            bonus_score += 1
+                        else:
+                            await ctx.send(f"❌ Risposta sbagliata.\nLa risposta corretta era:\n**{it}**")
+                    except asyncio.TimeoutError:
+                        await ctx.send(f"⏱️ Tempo scaduto! La risposta corretta era:\n**{it}**")
 
-        bonus = random.sample([p for p in TEST_NL_ZINNEN if p not in []], 5)
-        bonus_score = 0
+                await ctx.send(f"⭐ Hai ottenuto {bonus_score}/5 nel bonus round.")
 
-        for i, (nl, it) in enumerate(bonus, 1):
-            await dm.send(f"💬 Bonus {i}/5:\n**{nl}**\n✍️ Traduci in italiano:")
+                if bonus_score >= 3:
+                    await ctx.send("🏅 Bravo! Hai guadagnato una **stella** per questa settimana!")
+                else:
+                    await ctx.send("💡 Non hai guadagnato la stella, ma ottimo tentativo!")
 
-            try:
-                def check(m): return m.author == user and m.channel == dm
-                msg = await self.bot.wait_for('message', timeout=90.0, check=check)
-            except asyncio.TimeoutError:
-                await dm.send("⏰ Tempo scaduto!")
-                continue
+            await ctx.send("📚 Il gioco è terminato. Puoi riprovare domani. Grazie per aver partecipato!")
+        finally:
+            end_session(ctx.author.id)
 
-            if normalize(msg.content) == normalize(it):
-                bonus_score += 1
-                await dm.send("✅ Corretto!")
-            else:
-                await dm.send(f"❌ Risposta giusta: **{it}**")
-
-        if bonus_score >= 3:
-            await dm.send("🏆 Complimenti! Hai ottenuto una ⭐!")
-        else:
-            await dm.send("✨ Bravo/a per aver completato il bonus round!")
-
-def normalize(text):
-    return ''.join(c.lower() for c in text if c.isalnum())
-        
 async def setup(bot):
-    await bot.add_cog(FrasiIdiomatiche(bot))
+    await bot.add_cog(Frasi(bot))
