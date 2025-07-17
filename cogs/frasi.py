@@ -1,3 +1,4 @@
+# frasi.py (aangepast)
 import discord
 from discord.ext import commands
 import random
@@ -8,6 +9,7 @@ import os
 import logging
 from openai import OpenAI
 from session_manager import start_session, end_session, is_user_in_active_session
+from utils import normalize
 
 client = OpenAI()
 logging.basicConfig(level=logging.INFO)
@@ -28,9 +30,6 @@ THEMA_LIJST = [
     "Invitare e rifiutare",
     "In caso di emergenza"
 ]
-
-def normaliseer(zin):
-    return ''.join(c.lower() for c in zin if c.isalnum() or c.isspace()).strip()
 
 def weeknummer():
     return datetime.datetime.utcnow().isocalendar()[1]
@@ -120,13 +119,17 @@ class Frasi(commands.Cog):
 
                 try:
                     reply = await self.bot.wait_for('message', timeout=TIJDSLIMIET, check=check)
-                    antwoord = normaliseer(reply.content)
-                    correcte = [normaliseer(zin["it"])] + [normaliseer(v) for v in zin.get("varianti", [])]
+                    antwoord = normalize(reply.content)
+                    correcte = [normalize(zin["it"])] + [normalize(v) for v in zin.get("varianti", [])]
                     if antwoord in correcte:
                         await ctx.send("✅ Corretto!")
                         score += 1
                     else:
-                        await ctx.send(f"❌ Risposta sbagliata.\nLa risposta corretta era:\n**{zin['it']}**")
+                        msg = f"❌ Risposta sbagliata.\nLa risposta corretta era:\n**{zin['it']}**"
+                        varianten = zin.get("varianti", [])
+                        if varianten:
+                            msg += "\nAltri possibili modi per dirlo:\n" + "\n".join(f"➡️ {v}" for v in varianten)
+                        await ctx.send(msg)
                 except asyncio.TimeoutError:
                     await ctx.send(f"⏱️ Tempo scaduto! La risposta corretta era:\n**{zin['it']}**")
 
@@ -144,13 +147,17 @@ class Frasi(commands.Cog):
 
                     try:
                         reply = await self.bot.wait_for('message', timeout=TIJDSLIMIET, check=check)
-                        antwoord = normaliseer(reply.content)
-                        correcte = [normaliseer(zin["it"])] + [normaliseer(v) for v in zin.get("varianti", [])]
+                        antwoord = normalize(reply.content)
+                        correcte = [normalize(zin["it"])] + [normalize(v) for v in zin.get("varianti", [])]
                         if antwoord in correcte:
                             await ctx.send("✅ Corretto!")
                             bonus_score += 1
                         else:
-                            await ctx.send(f"❌ Risposta sbagliata.\nLa risposta corretta era:\n**{zin['it']}**")
+                            msg = f"❌ Risposta sbagliata.\nLa risposta corretta era:\n**{zin['it']}**"
+                            varianten = zin.get("varianti", [])
+                            if varianten:
+                                msg += "\nAltri possibili modi per dirlo:\n" + "\n".join(f"➡️ {v}" for v in varianten)
+                            await ctx.send(msg)
                     except asyncio.TimeoutError:
                         await ctx.send(f"⏱️ Tempo scaduto! La risposta corretta era:\n**{zin['it']}**")
 
