@@ -13,7 +13,7 @@ client = OpenAI()
 logging.basicConfig(level=logging.INFO)
 
 TIJDSLIMIET = 90
-DATA_PATH = "/persistent/data/wordle/frasi"  # ✅ aangepaste en toegestane map
+DATA_PATH = "/persistent/data/wordle/frasi"
 os.makedirs(DATA_PATH, exist_ok=True)
 
 THEMA_LIJST = [
@@ -44,6 +44,10 @@ def laad_zinnen(week: int):
     logging.info(f"🟡 Geen bestaand zinnenbestand gevonden voor week {week}")
     return None
 
+def schrijf_zinnen(data, week):
+    with open(f"{DATA_PATH}/week_{week}.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
 async def genereer_zinnen(week: int):
     thema = THEMA_LIJST[week % len(THEMA_LIJST)]
     logging.info(f"🧠 Zinnen worden gegenereerd voor thema: {thema}")
@@ -64,14 +68,14 @@ Rispondi in JSON con due chiavi:
 Rispondi solo con JSON.
 """
 
-    response = client.chat.completions.create(
+    response = await asyncio.to_thread(
+        client.chat.completions.create,
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}]
     )
 
     data = json.loads(response.choices[0].message.content)
-    with open(f"{DATA_PATH}/week_{week}.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    await asyncio.to_thread(schrijf_zinnen, data, week)
 
     logging.info(f"💾 Zinnen opgeslagen in week_{week}.json")
     return data

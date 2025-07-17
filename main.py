@@ -19,8 +19,9 @@ from langdetect import detect_langs
 if not load_dotenv():
     logging.warning("⚠️ Kon .env-bestand niet laden.")
 
-# === 📂 Zorg dat wordle-map bestaat ===
+# === 📂 Zorg dat wordle-map en frasi-map bestaan ===
 os.makedirs("/persistent/data/wordle", exist_ok=True)
+os.makedirs("/persistent/data/wordle/frasi", exist_ok=True)
 
 # === 🦥 Logging ===
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
@@ -120,15 +121,13 @@ async def on_message(message):
         await message.channel.send("⚠️ Il messaggio è troppo lungo per una correzione automatica. Potresti dividerlo in parti più piccole?")
         return
 
-    # ⛔️ GEEN correctie tijdens actieve sessie
+    # Geen correctie tijdens actieve sessie
     if is_user_in_active_session(message.author.id):
         if isinstance(message.channel, discord.DMChannel):
-            logging.info(f"⏸️ Geen taalreactie in DM – actieve sessie voor gebruiker {message.author.id}")
             return
         if message.channel.id in REACTION_CHANNELS or (
             hasattr(message.channel, 'parent_id') and message.channel.parent_id in REACTION_THREADS
         ):
-            logging.info(f"⏸️ Geen taalreactie in kanaal – actieve sessie voor gebruiker {message.author.id}")
             return
 
     if message.channel.id == 1394796805283385454:
@@ -141,23 +140,19 @@ async def on_message(message):
             logging.error(f"❌ Fout bij automatische uitleg-reply: {e}")
 
     try:
-        # Detectie Nederlands
-        try:
-            langs = detect_langs(message.content)
-            is_dutch_dominant = any(l.lang == "nl" and l.prob > 0.95 for l in langs)
-        except:
-            is_dutch_dominant = False
+        langs = detect_langs(message.content)
+        is_dutch_dominant = any(l.lang == "nl" and l.prob > 0.95 for l in langs)
+    except:
+        is_dutch_dominant = False
 
-        if is_dutch_dominant:
-            await message.reply("💬 Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
-            return
+    if is_dutch_dominant:
+        await message.reply("💬 Prova a scrivere in italiano, così posso aiutarti a migliorare e imparare di più! 🇮🇹", suppress_embeds=True)
+        return
 
-        # ⛔️ Geen correctie in DM tijdens actieve sessie
-        if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
-            logging.info(f"⏸️ Geen correctie/compliment in DM – actieve sessie {message.author.id}")
-            return
+    if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
+        return
 
-        # GPT-correctie
+    try:
         correction = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -172,9 +167,7 @@ async def on_message(message):
         reply = correction.choices[0].message.content.strip()
 
         if reply.upper() == "NO_CORRECTION_NEEDED":
-            # ⛔️ Geen compliment tijdens sessie in DM
             if isinstance(message.channel, discord.DMChannel) and is_user_in_active_session(message.author.id):
-                logging.info(f"⏸️ Geen compliment in DM – actieve sessie {message.author.id}")
                 return
             compliments = [
                 "✅ Ottimo lavoro! Continua così! 🇮🇹👏",
@@ -206,14 +199,12 @@ async def on_message(message):
                     await message.reply(context_reply.choices[0].message.content.strip(), mention_author=False)
                 except Exception as e:
                     logging.error(f"❌ Fout bij contextuele reactie: {e}")
-
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
 
-    # === GPT-chat in DM buiten sessie ===
+    # GPT DM Chat
     if isinstance(message.channel, discord.DMChannel):
         if is_user_in_active_session(message.author.id):
-            logging.info(f"⏸️ Geen GPT-antwoord in DM – actieve sessie {message.author.id}")
             return
 
         user_id = message.author.id
@@ -239,7 +230,7 @@ async def on_message(message):
             logging.error(f"GPT DM fout: {e}")
             await message.channel.send("⚠️ Er ging iets mis bij het ophalen van uw antwoord.")
 
-# === 🆘 Handmatig corrigeren op basis van Message ID ===
+# === ⛑️ Handmatige correctie ===
 @bot.command(name='correggi_id')
 @commands.has_permissions(manage_messages=True)
 async def correggi_id(ctx, message_id: int):
@@ -273,7 +264,6 @@ async def correggi_id(ctx, message_id: int):
         logging.error(f"Fout bij !correggi_id: {e}")
         await ctx.reply("⚠️ Er ging iets mis bij het ophalen van het bericht.", mention_author=False)
 
-# === 🆘 Handmatig hertriggeren laatste bericht ===
 @bot.command(name='correggi_ultimo')
 async def correggi_ultimo(ctx, member: discord.Member = None):
     target_id = member.id if member and ctx.author.guild_permissions.manage_messages else ctx.author.id
