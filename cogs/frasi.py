@@ -14,8 +14,13 @@ client = OpenAI()
 logging.basicConfig(level=logging.INFO)
 
 TIJDSLIMIET = 90
-DATA_PATH = "/persistent/data/frasi"
-os.makedirs(DATA_PATH, exist_ok=True)
+FRASI_PATH = "/persistent/data/frasi"
+
+# Zorg dat de directory zeker bestaat
+try:
+    os.makedirs(FRASI_PATH, exist_ok=True)
+except Exception as e:
+    logging.error(f"❌ Kan map {FRASI_PATH} niet aanmaken: {e}")
 
 THEMA_LIJST = [
     "Al ristorante",
@@ -37,7 +42,7 @@ def weeknummer():
     return datetime.datetime.utcnow().isocalendar()[1]
 
 def laad_zinnen(week: int):
-    pad = f"{DATA_PATH}/week_{week}.json"
+    pad = os.path.join(FRASI_PATH, f"week_{week}.json")
     if os.path.exists(pad):
         logging.info(f"✅ Zinnenbestand geladen voor week {week}")
         with open(pad, "r", encoding="utf-8") as f:
@@ -72,10 +77,11 @@ Rispondi solo con JSON.
     )
 
     data = json.loads(response.choices[0].message.content)
-    with open(f"{DATA_PATH}/week_{week}.json", "w", encoding="utf-8") as f:
+    pad = os.path.join(FRASI_PATH, f"week_{week}.json")
+    with open(pad, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    logging.info(f"💾 Zinnen opgeslagen in week_{week}.json")
+    logging.info(f"💾 Zinnen opgeslagen in {pad}")
     return data
 
 class Frasi(commands.Cog):
