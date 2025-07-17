@@ -9,18 +9,12 @@ import logging
 from openai import OpenAI
 from session_manager import start_session, end_session, is_user_in_active_session
 
-# OpenAI client en logging setup
 client = OpenAI()
 logging.basicConfig(level=logging.INFO)
 
 TIJDSLIMIET = 90
-FRASI_PATH = "/persistent/data/frasi"
-
-# Zorg dat de directory zeker bestaat
-try:
-    os.makedirs(FRASI_PATH, exist_ok=True)
-except Exception as e:
-    logging.error(f"❌ Kan map {FRASI_PATH} niet aanmaken: {e}")
+DATA_PATH = "/persistent/data/wordle/frasi"  # ✅ aangepaste en toegestane map
+os.makedirs(DATA_PATH, exist_ok=True)
 
 THEMA_LIJST = [
     "Al ristorante",
@@ -42,7 +36,7 @@ def weeknummer():
     return datetime.datetime.utcnow().isocalendar()[1]
 
 def laad_zinnen(week: int):
-    pad = os.path.join(FRASI_PATH, f"week_{week}.json")
+    pad = f"{DATA_PATH}/week_{week}.json"
     if os.path.exists(pad):
         logging.info(f"✅ Zinnenbestand geladen voor week {week}")
         with open(pad, "r", encoding="utf-8") as f:
@@ -72,16 +66,14 @@ Rispondi solo con JSON.
 
     response = client.chat.completions.create(
         model="gpt-4",
-        messages=[{"role": "user", "content": prompt}],
-        response_format="json"
+        messages=[{"role": "user", "content": prompt}]
     )
 
     data = json.loads(response.choices[0].message.content)
-    pad = os.path.join(FRASI_PATH, f"week_{week}.json")
-    with open(pad, "w", encoding="utf-8") as f:
+    with open(f"{DATA_PATH}/week_{week}.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    logging.info(f"💾 Zinnen opgeslagen in {pad}")
+    logging.info(f"💾 Zinnen opgeslagen in week_{week}.json")
     return data
 
 class Frasi(commands.Cog):
@@ -135,7 +127,7 @@ class Frasi(commands.Cog):
                     await ctx.send(f"⏱️ Tempo scaduto! La risposta corretta era:\n**{zin['it']}**")
 
             await ctx.send(f"🧮 Hai ottenuto {score}/10 punti.")
-            logging.info(f"📊 Score basisronde: {score}/10 voor gebruiker {ctx.author}")
+            logging.info(f"📊 Score basisronde: {score}/10 per {ctx.author}")
 
             if score >= 8:
                 await ctx.send("🎉 Bravo! Hai diritto al **bonus round**!")
