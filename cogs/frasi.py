@@ -1,4 +1,4 @@
-# frasi.py (aangepast)
+# frasi.py
 import discord
 from discord.ext import commands
 import random
@@ -10,13 +10,17 @@ import logging
 from openai import OpenAI
 from session_manager import start_session, end_session, is_user_in_active_session
 from utils import normalize
+import time
 
 client = OpenAI()
 logging.basicConfig(level=logging.INFO)
 
 TIJDSLIMIET = 90
 DATA_PATH = "/persistent/data/wordle/frasi"
+SCORE_PATH = "/persistent/data/frasi_scores"
+LEADERBOARD_THREAD_ID = 1395535498348593313
 os.makedirs(DATA_PATH, exist_ok=True)
+os.makedirs(SCORE_PATH, exist_ok=True)
 
 THEMA_LIJST = [
     "Al ristorante",
@@ -37,20 +41,45 @@ def weeknummer():
 def laad_zinnen(week: int):
     pad = f"{DATA_PATH}/week_{week}.json"
     if os.path.exists(pad):
-        logging.info(f"✅ Zinnenbestand geladen voor week {week}")
         with open(pad, "r", encoding="utf-8") as f:
             return json.load(f)
-    logging.info(f"🟡 Geen bestaand zinnenbestand gevonden voor week {week}")
     return None
 
 def schrijf_zinnen(data, week):
     with open(f"{DATA_PATH}/week_{week}.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+def schrijf_score(user_id, username, score, duration, week):
+    pad = f"{SCORE_PATH}/week_{week}.json"
+    scores = {}
+    if os.path.exists(pad):
+        with open(pad, "r", encoding="utf-8") as f:
+            scores = json.load(f)
+
+    existing = scores.get(str(user_id))
+    if not existing or (score > existing["score"] or (score == existing["score"] and duration < existing["duration"])):
+        scores[str(user_id)] = {
+            "username": username,
+            "score": score,
+            "duration": duration
+        }
+        with open(pad, "w", encoding="utf-8") as f:
+            json.dump(scores, f, ensure_ascii=False, indent=2)
+
+def laad_leaderboard(week):
+    pad = f"{SCORE_PATH}/week_{week}.json"
+    if not os.path.exists(pad):
+        return []
+
+    with open(pad, "r", encoding="utf-8") as f:
+        scores = json.load(f)
+
+    lijst = list(scores.values())
+    lijst.sort(key=lambda x: (-x["score"], x["duration"]))
+    return lijst
+
 async def genereer_zinnen(week: int):
     thema = THEMA_LIJST[week % len(THEMA_LIJST)]
-    logging.info(f"🧠 Zinnen worden gegenereerd voor thema: {thema}")
-
     prompt = f"""Crea una lista per studenti di livello B1 con:
 - 25 frasi italiane corte e utili da usare nel contesto del tema "{thema}".
 - Per ogni frase, fornisci:
@@ -75,8 +104,6 @@ Rispondi solo con JSON.
 
     data = json.loads(response.choices[0].message.content)
     await asyncio.to_thread(schrijf_zinnen, data, week)
-
-    logging.info(f"💾 Zinnen opgeslagen in week_{week}.json")
     return data
 
 class Frasi(commands.Cog):
@@ -98,11 +125,11 @@ class Frasi(commands.Cog):
             return
 
         try:
+            start_time = time.time()
             current_week = weeknummer()
             data = laad_zinnen(current_week)
             if not data:
                 await ctx.send("🧠 Sto preparando le frasi per questa settimana... Attendi un momento.")
-                logging.info("🔁 Start met genereren van nieuwe zinnen via OpenAI")
                 data = await genereer_zinnen(current_week)
 
             zinnen = data["standard"]
@@ -134,17 +161,13 @@ class Frasi(commands.Cog):
                     await ctx.send(f"⏱️ Tempo scaduto! La risposta corretta era:\n**{zin['it']}**")
 
             await ctx.send(f"🧮 Hai ottenuto {score}/10 punti.")
-            logging.info(f"📊 Score basisronde: {score}/10 per {ctx.author}")
 
+            bonus_score = 0
             if score >= 8:
                 await ctx.send("🎉 Bravo! Hai diritto al **bonus round**!")
-
                 random.shuffle(bonus)
-                bonus_score = 0
-
                 for i, zin in enumerate(bonus[:5]):
                     await ctx.send(f"\n🌟 Bonus frase {i+1}/5:\n**{zin['nl']}**")
-
                     try:
                         reply = await self.bot.wait_for('message', timeout=TIJDSLIMIET, check=check)
                         antwoord = normalize(reply.content)
@@ -168,11 +191,33 @@ class Frasi(commands.Cog):
                     await ctx.send("💡 Non hai guadagnato la stella, ma ottimo tentativo!")
 
             await ctx.send("📚 Il gioco è terminato. Vuoi migliorare il tuo punteggio? Prova di nuovo domani!")
+
+            end_time = time.time()
+            duration = int(end_time - start_time)
+            schrijf_score(ctx.author.id, ctx.author.name, score, duration, current_week)
+
         except Exception as e:
-            logging.exception("❌ Er is een fout opgetreden tijdens het frasi-spel:")
+            logging.exception("❌ Fout tijdens frasi-spel:")
             await ctx.send("❌ Er is iets misgegaan. Probeer het later opnieuw.")
         finally:
             end_session(ctx.author.id)
+
+    @commands.command(name='frasi-leaderboard')
+    async def toon_leaderboard(self, ctx):
+        if ctx.channel.id != LEADERBOARD_THREAD_ID:
+            return
+
+        current_week = weeknummer()
+        scores = laad_leaderboard(current_week)
+        if not scores:
+            await ctx.send("📭 Er zijn nog geen scores voor deze week.")
+            return
+
+        lines = [f"🏆 **Frasi idiomatiche – Leaderboard week {current_week}**"]
+        for i, entry in enumerate(scores[:10], 1):
+            lines.append(f"{i}. **{entry['username']}** – {entry['score']}/10")
+
+        await ctx.send("\n".join(lines))
 
 async def setup(bot):
     await bot.add_cog(Frasi(bot))
