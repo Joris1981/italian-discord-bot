@@ -71,6 +71,12 @@ Rispondi solo con JSON.
     )
 
     data = json.loads(response.choices[0].message.content)
+
+    # 🔍 Debug JSON voor week 29 (eenmalige inspectie)
+    if week == 29:
+        logging.info("✅ DEBUG: Gecontroleerde zinnen en varianten voor frasi:")
+        logging.info(json.dumps(data, ensure_ascii=False, indent=2))
+
     with open(f"{DATA_PATH}/week_{week}.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
