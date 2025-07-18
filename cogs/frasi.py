@@ -232,7 +232,7 @@ class Frasi(commands.Cog):
         lines = [f"🏆 **Frasi idiomatiche – Leaderboard {titel}**"]
         for i, entry in enumerate(scores[:10], 1):
             ster = " ⭐" if entry['score'] >= 8 else ""
-            lines.append(f"{i}. **{entry['username']}** – {entry['score']}/10{ster}")
+            lines.append(f"{i}. **{entry['member.display_name']}** – {entry['score']}/10{ster}")
         try:
             thread = await self.bot.fetch_channel(LEADERBOARD_THREAD_ID)
             await thread.send("\n".join(lines))
