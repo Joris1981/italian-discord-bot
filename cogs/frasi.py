@@ -20,7 +20,7 @@ DATA_PATH = "/persistent/data/wordle/frasi"
 SCORE_PATH = "/persistent/data/wordle/frasi_scores"
 SPEELDATA_PATH = "/persistent/data/wordle/frasi_played.json"
 LEADERBOARD_THREAD_ID = 1395557049269747887
-TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932, 1395771435632431104,1389552706783543307]
+TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932, 1395771435632431104, 1389552706783543307]
 
 os.makedirs(DATA_PATH, exist_ok=True)
 os.makedirs(SCORE_PATH, exist_ok=True)
@@ -93,9 +93,10 @@ def laad_scores():
             with open(os.path.join(SCORE_PATH, bestand), "r", encoding="utf-8") as f:
                 data = json.load(f)
                 for uid, inhoud in data.items():
-                    alles.setdefault(inhoud["username"], {"tijd": 0, "beurten": 0})
-                    alles[inhoud["username"]]["tijd"] += inhoud["duration"]
-                    alles[inhoud["username"]]["beurten"] += 1
+                    naam = inhoud.get("username", uid)
+                    alles.setdefault(naam, {"tijd": 0, "beurten": 0})
+                    alles[naam]["tijd"] += inhoud["duration"]
+                    alles[naam]["beurten"] += 1
     return alles
 
 def laad_leaderboard(week):
@@ -133,10 +134,6 @@ class Frasi(commands.Cog):
 
     @commands.command(name="frasi")
     async def start_frasi_game(self, ctx):
-        if not isinstance(ctx.channel, discord.DMChannel) and ctx.channel.id not in TOEGESTANE_KANALEN:
-            await ctx.send("❗ Puoi usare questo comando solo in DM o nei canali autorizzati.")
-            return
-
         if is_user_in_active_session(ctx.author.id):
             await ctx.send("⏳ Hai già una sessione attiva.")
             return
@@ -146,16 +143,19 @@ class Frasi(commands.Cog):
             return
 
         try:
+            await ctx.send("📬 Il gioco è stato avviato nella tua inbox. Controlla i tuoi messaggi privati!")
+            dm = await ctx.author.create_dm()
+
             current_week = weeknummer()
             if aantal_keer_gespeeld(ctx.author.id, current_week) >= 10:
-                await ctx.send("⛔ Hai raggiunto il numero massimo di tentativi per questa settimana. Riprova la prossima settimana!")
+                await dm.send("⛔ Hai raggiunto il numero massimo di tentativi per questa settimana. Riprova la prossima settimana!")
                 return
 
             verhoog_speelbeurt(ctx.author.id, current_week)
             start_time = time.time()
             data = laad_zinnen(current_week)
             if not data:
-                await ctx.send("🧠 Sto preparando le frasi per questa settimana...")
+                await dm.send("🧠 Sto preparando le frasi per questa settimana...")
                 data = await genereer_zinnen(current_week)
 
             zinnen = data["standard"]
@@ -163,62 +163,66 @@ class Frasi(commands.Cog):
             random.shuffle(zinnen)
 
             score = 0
-            await ctx.send("🎯 Traduci in italiano le seguenti 10 frasi:")
+            await dm.send("🎯 Traduci in italiano le seguenti 10 frasi:")
 
             for i, zin in enumerate(zinnen[:10]):
-                await ctx.send(f"📝 Frase {i+1}/10:\n**{zin['nl']}**")
-                def check(m): return m.author == ctx.author and m.channel == ctx.channel
+                await dm.send(f"📝 Frase {i+1}/10:\n**{zin['nl']}**")
+                def check(m): return m.author == ctx.author and isinstance(m.channel, discord.DMChannel)
                 try:
                     reply = await self.bot.wait_for('message', timeout=TIJDSLIMIET, check=check)
                     antwoord = normalize(reply.content)
                     correcte = [normalize(zin["it"])] + [normalize(v) for v in zin.get("varianti", [])]
                     if antwoord in correcte:
-                        await ctx.send("✅ Corretto!")
+                        await dm.send("✅ Corretto!")
                         score += 1
                     else:
                         msg = f"❌ Risposta sbagliata.\n**{zin['it']}**"
                         if zin.get("varianti"):
                             msg += "\nAltri possibili modi per dirlo:\n" + "\n".join(f"➡️ {v}" for v in zin["varianti"])
-                        await ctx.send(msg)
+                        await dm.send(msg)
                 except asyncio.TimeoutError:
-                    await ctx.send(f"⏱️ Tempo scaduto! **{zin['it']}**")
+                    await dm.send(f"⏱️ Tempo scaduto! **{zin['it']}**")
 
-            await ctx.send(f"🧮 Punteggio: {score}/10")
+            await dm.send(f"🧮 Punteggio: {score}/10")
 
             bonus_score = 0
             if score >= 8:
-                await ctx.send("🎉 Bonus round!")
+                await dm.send("🎉 Bonus round!")
                 random.shuffle(bonus)
                 for i, zin in enumerate(bonus[:5]):
-                    await ctx.send(f"🌟 Bonus {i+1}/5:\n**{zin['nl']}**")
+                    await dm.send(f"🌟 Bonus {i+1}/5:\n**{zin['nl']}**")
                     try:
                         reply = await self.bot.wait_for('message', timeout=TIJDSLIMIET, check=check)
                         antwoord = normalize(reply.content)
                         correcte = [normalize(zin["it"])] + [normalize(v) for v in zin.get("varianti", [])]
                         if antwoord in correcte:
-                            await ctx.send("✅ Corretto!")
+                            await dm.send("✅ Corretto!")
                             bonus_score += 1
                         else:
                             msg = f"❌ Risposta sbagliata.\n**{zin['it']}**"
                             if zin.get("varianti"):
                                 msg += "\nAltri possibili modi per dirlo:\n" + "\n".join(f"➡️ {v}" for v in zin["varianti"])
-                            await ctx.send(msg)
+                            await dm.send(msg)
                     except asyncio.TimeoutError:
-                        await ctx.send(f"⏱️ Tempo scaduto! **{zin['it']}**")
+                        await dm.send(f"⏱️ Tempo scaduto! **{zin['it']}**")
 
-                await ctx.send(f"⭐ Bonus score: {bonus_score}/5")
+                await dm.send(f"⭐ Bonus score: {bonus_score}/5")
                 if bonus_score >= 3:
-                    await ctx.send("🏅 Hai guadagnato una **stella**!")
+                    await dm.send("🏅 Hai guadagnato una **stella**!")
 
-            await ctx.send("📚 Il gioco è finito. Puoi riprovare domani!")
+            await dm.send("📚 Il gioco è finito. Puoi riprovare domani!")
             end_time = time.time()
-            schrijf_score(ctx.author.id, ctx.author.name, score, int(end_time - start_time), current_week)
+            schrijf_score(ctx.author.id, ctx.author.display_name, score, int(end_time - start_time), current_week)
+
         except Exception as e:
             logging.exception("Fout tijdens frasi-spel")
-            await ctx.send("❌ Er is iets fout gegaan.")
+            try:
+                await ctx.author.send("❌ Er is iets fout gegaan.")
+            except:
+                pass
         finally:
             end_session(ctx.author.id)
-
+    
     @commands.command(name="frasi-leaderboard")
     async def toon_leaderboard(self, ctx):
         data = laad_leaderboard(weeknummer())
@@ -235,7 +239,7 @@ class Frasi(commands.Cog):
         lines = [f"🏆 **Frasi idiomatiche – Leaderboard {titel}**"]
         for i, (uid, entry) in enumerate(scores[:10], 1):
             member = members.get(uid)
-            naam = member.display_name if member and hasattr(member, "display_name") else uid
+            naam = member.display_name if member and hasattr(member, "display_name") else entry.get("username", uid)
             ster = " ⭐" if entry["score"] >= 8 else ""
             lines.append(f"{i}. **{naam}** – {entry['score']}/10{ster}")
         try:
