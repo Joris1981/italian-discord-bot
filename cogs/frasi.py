@@ -1,3 +1,4 @@
+# frasi.py
 import discord
 from discord.ext import commands, tasks
 import random
@@ -50,7 +51,7 @@ def schrijf_zinnen(data, week):
     with open(f"{DATA_PATH}/week_{week}.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def schrijf_score(user_id, display_name, score, duration, week):
+def schrijf_score(user_id, username, score, duration, week):
     pad = f"{SCORE_PATH}/week_{week}.json"
     scores = {}
     if os.path.exists(pad):
@@ -60,7 +61,7 @@ def schrijf_score(user_id, display_name, score, duration, week):
     existing = scores.get(str(user_id))
     if not existing or (score > existing["score"] or (score == existing["score"] and duration < existing["duration"])):
         scores[str(user_id)] = {
-            "display_name": display_name,
+            "username": username,
             "score": score,
             "duration": duration
         }
@@ -92,21 +93,17 @@ def laad_scores():
             with open(os.path.join(SCORE_PATH, bestand), "r", encoding="utf-8") as f:
                 data = json.load(f)
                 for uid, inhoud in data.items():
-                    naam = inhoud.get("display_name", f"ID:{uid}")
-                    alles.setdefault(naam, {"tijd": 0, "beurten": 0})
-                    alles[naam]["tijd"] += inhoud["duration"]
-                    alles[naam]["beurten"] += 1
+                    alles.setdefault(inhoud["username"], {"tijd": 0, "beurten": 0})
+                    alles[inhoud["username"]]["tijd"] += inhoud["duration"]
+                    alles[inhoud["username"]]["beurten"] += 1
     return alles
 
 def laad_leaderboard(week):
     pad = f"{SCORE_PATH}/week_{week}.json"
     if not os.path.exists(pad):
-        return []
+        return {}
     with open(pad, "r", encoding="utf-8") as f:
-        scores = json.load(f)
-    lijst = list(scores.values())
-    lijst.sort(key=lambda x: (-x["score"], x["duration"]))
-    return lijst
+        return json.load(f)
 
 async def genereer_zinnen(week: int):
     thema = THEMA_LIJST[(week - 29) % len(THEMA_LIJST)]
@@ -215,7 +212,7 @@ class Frasi(commands.Cog):
 
             await ctx.send("📚 Il gioco è finito. Puoi riprovare domani!")
             end_time = time.time()
-            schrijf_score(ctx.author.id, ctx.author.display_name, score, int(end_time - start_time), current_week)
+            schrijf_score(ctx.author.id, ctx.author.name, score, int(end_time - start_time), current_week)
         except Exception as e:
             logging.exception("Fout tijdens frasi-spel")
             await ctx.send("❌ Er is iets fout gegaan.")
@@ -224,15 +221,22 @@ class Frasi(commands.Cog):
 
     @commands.command(name="frasi-leaderboard")
     async def toon_leaderboard(self, ctx):
-        scores = laad_leaderboard(weeknummer())
-        if not scores:
+        data = laad_leaderboard(weeknummer())
+        if not data:
             await ctx.send("📭 Nessun punteggio per questa settimana.")
             return
         titel = get_frasi_week_label()
+        scores = list(data.items())
+        scores.sort(key=lambda x: (-x[1]["score"], x[1]["duration"]))
+
+        guild = discord.utils.get(self.bot.guilds)
+        members = {str(m.id): m for m in guild.members} if guild else {}
+
         lines = [f"🏆 **Frasi idiomatiche – Leaderboard {titel}**"]
-        for i, entry in enumerate(scores[:10], 1):
-            ster = " ⭐" if entry['score'] >= 8 else ""
-            naam = entry.get("display_name", "???")
+        for i, (uid, entry) in enumerate(scores[:10], 1):
+            member = members.get(uid)
+            naam = member.display_name if member and hasattr(member, "display_name") else uid
+            ster = " ⭐" if entry["score"] >= 8 else ""
             lines.append(f"{i}. **{naam}** – {entry['score']}/10{ster}")
         try:
             thread = await self.bot.fetch_channel(LEADERBOARD_THREAD_ID)
@@ -251,8 +255,7 @@ class Frasi(commands.Cog):
             data = json.load(f)
         tekst = "🎮 **Partecipazioni questa settimana:**\n"
         for entry in data.values():
-            naam = entry.get("display_name", "???")
-            tekst += f"• {naam}: 1 volta\n"
+            tekst += f"• {entry['username']}: 1 volta\n"
         await ctx.send(tekst)
 
     @commands.command(name="frasi-gemiddelde")
