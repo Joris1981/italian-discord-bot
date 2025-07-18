@@ -1,4 +1,3 @@
-# frasi.py
 import discord
 from discord.ext import commands, tasks
 import random
@@ -51,7 +50,7 @@ def schrijf_zinnen(data, week):
     with open(f"{DATA_PATH}/week_{week}.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def schrijf_score(user_id, username, score, duration, week):
+def schrijf_score(user_id, display_name, score, duration, week):
     pad = f"{SCORE_PATH}/week_{week}.json"
     scores = {}
     if os.path.exists(pad):
@@ -61,7 +60,7 @@ def schrijf_score(user_id, username, score, duration, week):
     existing = scores.get(str(user_id))
     if not existing or (score > existing["score"] or (score == existing["score"] and duration < existing["duration"])):
         scores[str(user_id)] = {
-            "username": username,
+            "display_name": display_name,
             "score": score,
             "duration": duration
         }
@@ -93,9 +92,10 @@ def laad_scores():
             with open(os.path.join(SCORE_PATH, bestand), "r", encoding="utf-8") as f:
                 data = json.load(f)
                 for uid, inhoud in data.items():
-                    alles.setdefault(inhoud["username"], {"tijd": 0, "beurten": 0})
-                    alles[inhoud["username"]]["tijd"] += inhoud["duration"]
-                    alles[inhoud["username"]]["beurten"] += 1
+                    naam = inhoud.get("display_name", f"ID:{uid}")
+                    alles.setdefault(naam, {"tijd": 0, "beurten": 0})
+                    alles[naam]["tijd"] += inhoud["duration"]
+                    alles[naam]["beurten"] += 1
     return alles
 
 def laad_leaderboard(week):
@@ -104,14 +104,7 @@ def laad_leaderboard(week):
         return []
     with open(pad, "r", encoding="utf-8") as f:
         scores = json.load(f)
-    lijst = []
-    for user_id, entry in scores.items():
-        lijst.append({
-            "user_id": user_id,
-            "username": entry["username"],
-            "score": entry["score"],
-            "duration": entry["duration"]
-        })
+    lijst = list(scores.values())
     lijst.sort(key=lambda x: (-x["score"], x["duration"]))
     return lijst
 
@@ -222,7 +215,7 @@ class Frasi(commands.Cog):
 
             await ctx.send("📚 Il gioco è finito. Puoi riprovare domani!")
             end_time = time.time()
-            schrijf_score(ctx.author.id, ctx.author.name, score, int(end_time - start_time), current_week)
+            schrijf_score(ctx.author.id, ctx.author.display_name, score, int(end_time - start_time), current_week)
         except Exception as e:
             logging.exception("Fout tijdens frasi-spel")
             await ctx.send("❌ Er is iets fout gegaan.")
@@ -239,12 +232,12 @@ class Frasi(commands.Cog):
         lines = [f"🏆 **Frasi idiomatiche – Leaderboard {titel}**"]
         for i, entry in enumerate(scores[:10], 1):
             ster = " ⭐" if entry['score'] >= 8 else ""
-            lines.append(f"{i}. **{entry['username']}** – {entry['score']}/10{ster}")
+            naam = entry.get("display_name", "???")
+            lines.append(f"{i}. **{naam}** – {entry['score']}/10{ster}")
         try:
             thread = await self.bot.fetch_channel(LEADERBOARD_THREAD_ID)
             await thread.send("\n".join(lines))
         except Exception:
-            logging.exception("Fout bij posten leaderboard")
             await ctx.send("⚠️ Er is iets misgegaan bij het posten van het leaderboard.")
 
     @commands.command(name="frasi-speelstatistiek")
@@ -258,7 +251,8 @@ class Frasi(commands.Cog):
             data = json.load(f)
         tekst = "🎮 **Partecipazioni questa settimana:**\n"
         for entry in data.values():
-            tekst += f"• {entry['username']}: 1 volta\n"
+            naam = entry.get("display_name", "???")
+            tekst += f"• {naam}: 1 volta\n"
         await ctx.send(tekst)
 
     @commands.command(name="frasi-gemiddelde")
@@ -286,7 +280,7 @@ class Frasi(commands.Cog):
             with open(pad, "r", encoding="utf-8") as f:
                 gespeelden = set(json.load(f).keys())
         for lid in guild.members:
-            if lid.bot or lid.dm_channel is None:
+            if lid.bot:
                 continue
             try:
                 await lid.create_dm()
