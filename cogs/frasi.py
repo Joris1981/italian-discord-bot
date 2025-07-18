@@ -104,7 +104,14 @@ def laad_leaderboard(week):
         return []
     with open(pad, "r", encoding="utf-8") as f:
         scores = json.load(f)
-    lijst = list(scores.values())
+    lijst = []
+    for user_id, entry in scores.items():
+        lijst.append({
+            "user_id": user_id,
+            "username": entry["username"],
+            "score": entry["score"],
+            "duration": entry["duration"]
+        })
     lijst.sort(key=lambda x: (-x["score"], x["duration"]))
     return lijst
 
@@ -232,11 +239,12 @@ class Frasi(commands.Cog):
         lines = [f"🏆 **Frasi idiomatiche – Leaderboard {titel}**"]
         for i, entry in enumerate(scores[:10], 1):
             ster = " ⭐" if entry['score'] >= 8 else ""
-            lines.append(f"{i}. **{entry['member.display_name']}** – {entry['score']}/10{ster}")
+            lines.append(f"{i}. **{entry['username']}** – {entry['score']}/10{ster}")
         try:
             thread = await self.bot.fetch_channel(LEADERBOARD_THREAD_ID)
             await thread.send("\n".join(lines))
         except Exception:
+            logging.exception("Fout bij posten leaderboard")
             await ctx.send("⚠️ Er is iets misgegaan bij het posten van het leaderboard.")
 
     @commands.command(name="frasi-speelstatistiek")
