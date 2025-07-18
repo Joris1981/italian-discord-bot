@@ -17,8 +17,8 @@ logging.basicConfig(level=logging.INFO)
 
 TIJDSLIMIET = 90
 DATA_PATH = "/persistent/data/wordle/frasi"
-SCORE_PATH = "/persistent/data/frasi_scores"
-SPEELDATA_PATH = "/persistent/data/frasi_played.json"
+SCORE_PATH = "/persistent/data/wordle/frasi_scores"
+SPEELDATA_PATH = "/persistent/data/wordle/frasi_played.json"
 LEADERBOARD_THREAD_ID = 1395557049269747887
 TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932]
 
