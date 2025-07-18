@@ -1,4 +1,3 @@
-# frasi.py
 import discord
 from discord.ext import commands, tasks
 import random
@@ -16,10 +15,13 @@ client = OpenAI()
 logging.basicConfig(level=logging.INFO)
 
 TIJDSLIMIET = 90
-DATA_PATH = "./data/wordle/frasi"
-SCORE_PATH = "./data/frasi_scores"
-LEADERBOARD_THREAD_ID = 1395535498348593313
+BASE_PATH = "/persistent/data"
+DATA_PATH = f"{BASE_PATH}/wordle/frasi"
+SCORE_PATH = f"{BASE_PATH}/frasi_scores"
+SPEELDATA_PATH = f"{BASE_PATH}/frasi_played.json"
+LEADERBOARD_THREAD_ID = 1395557049269747887
 TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932]
+
 os.makedirs(DATA_PATH, exist_ok=True)
 os.makedirs(SCORE_PATH, exist_ok=True)
 
@@ -29,6 +31,8 @@ THEMA_LIJST = [
     "Alla stazione / all’aeroporto", "Esprimere opinioni", "Invitare e rifiutare",
     "Al ristorante"
 ]
+
+MAX_SPEELBEURTEN_PER_WEEK = 10
 
 def weeknummer():
     return datetime.datetime.utcnow().isocalendar()[1]
@@ -66,6 +70,26 @@ def schrijf_score(user_id, username, score, duration, week):
         with open(pad, "w", encoding="utf-8") as f:
             json.dump(scores, f, ensure_ascii=False, indent=2)
 
+def laad_speelbeurten():
+    if os.path.exists(SPEELDATA_PATH):
+        with open(SPEELDATA_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def schrijf_speelbeurten(data):
+    with open(SPEELDATA_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def verhoog_speelbeurt(user_id, week):
+    data = laad_speelbeurten()
+    key = f"{user_id}_{week}"
+    data[key] = data.get(key, 0) + 1
+    schrijf_speelbeurten(data)
+
+def aantal_speelbeurten(user_id, week):
+    data = laad_speelbeurten()
+    return data.get(f"{user_id}_{week}", 0)
+
 def laad_scores():
     alles = {}
     for bestand in os.listdir(SCORE_PATH):
@@ -82,10 +106,8 @@ def laad_leaderboard(week):
     pad = f"{SCORE_PATH}/week_{week}.json"
     if not os.path.exists(pad):
         return []
-
     with open(pad, "r", encoding="utf-8") as f:
         scores = json.load(f)
-
     lijst = list(scores.values())
     lijst.sort(key=lambda x: (-x["score"], x["duration"]))
     return lijst
@@ -134,8 +156,13 @@ class Frasi(commands.Cog):
             return
 
         try:
-            start_time = time.time()
             current_week = weeknummer()
+            beurten = aantal_speelbeurten(ctx.author.id, current_week)
+            if beurten >= MAX_SPEELBEURTEN_PER_WEEK:
+                await ctx.send("⛔ Hai raggiunto il numero massimo di tentativi per questa settimana. Riprova la prossima settimana!")
+                return
+
+            start_time = time.time()
             data = laad_zinnen(current_week)
             if not data:
                 await ctx.send("🧠 Sto preparando le frasi per questa settimana...")
@@ -147,7 +174,6 @@ class Frasi(commands.Cog):
 
             score = 0
             await ctx.send("🎯 Traduci in italiano le seguenti 10 frasi:")
-
             for i, zin in enumerate(zinnen[:10]):
                 await ctx.send(f"📝 Frase {i+1}/10:\n**{zin['nl']}**")
                 def check(m): return m.author == ctx.author and m.channel == ctx.channel
@@ -162,7 +188,7 @@ class Frasi(commands.Cog):
                         msg = f"❌ Risposta sbagliata.\n**{zin['it']}**"
                         varianten = zin.get("varianti", [])
                         if varianten:
-                            msg += "\nAltri possibili modi per dirlo:\n" + "\n".join(f"➡️ {v}" for v in varianten)
+                            msg += "\nAltri modi possibili:\n" + "\n".join(f"➡️ {v}" for v in varianten)
                         await ctx.send(msg)
                 except asyncio.TimeoutError:
                     await ctx.send(f"⏱️ Tempo scaduto! **{zin['it']}**")
@@ -186,7 +212,7 @@ class Frasi(commands.Cog):
                             msg = f"❌ Risposta sbagliata.\n**{zin['it']}**"
                             varianten = zin.get("varianti", [])
                             if varianten:
-                                msg += "\nAltri possibili modi per dirlo:\n" + "\n".join(f"➡️ {v}" for v in varianten)
+                                msg += "\nAltri modi possibili:\n" + "\n".join(f"➡️ {v}" for v in varianten)
                             await ctx.send(msg)
                     except asyncio.TimeoutError:
                         await ctx.send(f"⏱️ Tempo scaduto! **{zin['it']}**")
@@ -196,9 +222,9 @@ class Frasi(commands.Cog):
                     await ctx.send("🏅 Hai guadagnato una **stella**!")
 
             await ctx.send("📚 Il gioco è finito. Puoi riprovare domani!")
-
             end_time = time.time()
             schrijf_score(ctx.author.id, ctx.author.name, score, int(end_time - start_time), current_week)
+            verhoog_speelbeurt(ctx.author.id, current_week)
         except Exception as e:
             logging.exception("Fout tijdens frasi-spel")
             await ctx.send("❌ Er is iets fout gegaan.")
@@ -220,7 +246,7 @@ class Frasi(commands.Cog):
             thread = await self.bot.fetch_channel(LEADERBOARD_THREAD_ID)
             await thread.send("\n".join(lines))
         except:
-            await ctx.send("⚠️ Er is iets misgegaan bij het posten van het leaderboard.")
+            await ctx.send("⚠️ Problema con la pubblicazione del leaderboard.")
 
     @commands.command(name="frasi-speelstatistiek")
     async def speelstatistiek(self, ctx):
@@ -260,7 +286,6 @@ class Frasi(commands.Cog):
         if os.path.exists(pad):
             with open(pad, "r", encoding="utf-8") as f:
                 gespeelden = set(json.load(f).keys())
-
         for lid in guild.members:
             if lid.bot or lid.dm_channel is None:
                 continue
