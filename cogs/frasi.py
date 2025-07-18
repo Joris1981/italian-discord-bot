@@ -14,7 +14,7 @@ client = openai.OpenAI()
 logging.basicConfig(level=logging.INFO)
 
 DATA_PATH = "/persistent/data/wordle/frasi"
-SCORE_PATH = "/persistent/data/wordle/frasi_scores"
+SCORE_PATH = "/persistent/data/wordle/frasi_scores/scores.json"
 SPEELDATA_PATH = "/persistent/data/wordle/frasi_played.json"
 LEADERBOARD_THREAD = 1395557049269747887
 MAX_SPEEL_PER_WEEK = 10
@@ -26,12 +26,15 @@ THEMAS = [
     "Invitare e rifiutare", "Al ristorante"
 ]
 
-STARTDATUM = datetime.datetime(2025, 7, 12, 9, 0)  # vrijdag 12 juli = week 1
+STARTDATUM = datetime.datetime(2025, 7, 12, 9, 0)  # vrijdag = week 1
 
 class Frasi(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.weekelijks_leaderboard.start()
+        os.makedirs(os.path.dirname(SCORE_PATH), exist_ok=True)
+        os.makedirs(os.path.dirname(SPEELDATA_PATH), exist_ok=True)
+        os.makedirs(DATA_PATH, exist_ok=True)
+        self.weekelijkse_leaderboard.start()
         self.weekelijkse_reminder.start()
 
     def get_huidige_week(self):
@@ -43,28 +46,29 @@ class Frasi(commands.Cog):
         return THEMAS[week]
 
     def laad_scores(self):
-        if not os.path.exists(SCORE_PATH): return {}
+        if not os.path.exists(SCORE_PATH):
+            return {}
         with open(SCORE_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def bewaar_scores(self, scores):
-        os.makedirs(SCORE_PATH, exist_ok=True)
         with open(SCORE_PATH, "w", encoding="utf-8") as f:
             json.dump(scores, f, indent=2, ensure_ascii=False)
 
     def laad_played(self):
-        if not os.path.exists(SPEELDATA_PATH): return {}
+        if not os.path.exists(SPEELDATA_PATH):
+            return {}
         with open(SPEELDATA_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def bewaar_played(self, played):
-        os.makedirs(SPEELDATA_PATH, exist_ok=True)
         with open(SPEELDATA_PATH, "w", encoding="utf-8") as f:
             json.dump(played, f, indent=2, ensure_ascii=False)
 
     def laad_zinnen(self, week):
         path = f"{DATA_PATH}/week_{week}.json"
-        if not os.path.exists(path): return None
+        if not os.path.exists(path):
+            return None
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
@@ -172,24 +176,6 @@ class Frasi(commands.Cog):
 
         await user.send("\nGrazie per aver giocato!")
 
-    def laad_scores(self):
-        if not os.path.exists(SCORE_FILE): return {}
-        with open(SCORE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-
-    def bewaar_scores(self, scores):
-        with open(SCORE_FILE, "w", encoding="utf-8") as f:
-            json.dump(scores, f, indent=2, ensure_ascii=False)
-
-    def laad_played(self):
-        if not os.path.exists(SPEELDATA_PATH): return {}
-        with open(SPEELDATA_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-
-    def bewaar_played(self, data):
-        with open(SPEELDATA_PATH, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-
     @commands.command(name="frasi-leaderboard")
     async def frasi_leaderboard(self, ctx):
         await self.weekelijkse_leaderboard()
@@ -206,6 +192,7 @@ class Frasi(commands.Cog):
                 stats[uid] = aantal
 
         if not stats:
+            logging.info("Geen speeldata beschikbaar voor deze week.")
             await ctx.send("📊 Geen speeldata beschikbaar voor deze week.")
             return
 
@@ -231,6 +218,7 @@ class Frasi(commands.Cog):
                 tijden.setdefault(naam, []).append(tijd)
 
         if not tijden:
+            logging.info("Geen tijdsdata beschikbaar.")
             await ctx.send("⏱️ Geen tijdsdata beschikbaar.")
             return
 
@@ -254,6 +242,7 @@ class Frasi(commands.Cog):
         data = {k: v for k, v in scores.items() if v.get("week") == week}
 
         if not data:
+            logging.info("Geen Frasi-scores deze week.")
             await kanaal.send("📊 Er zijn deze week nog geen Frasi-scores.")
             return
 
@@ -266,7 +255,7 @@ class Frasi(commands.Cog):
         tekst = f"🏆 **Leaderboard – Week {week + 1}: {thema}**\n"
         for i, s in enumerate(top, start=1):
             ster = " ⭐" if s.get("sterren", 0) else ""
-            naam = s.get("naam") or str(i)
+            naam = s.get("naam", str(i))
             tekst += f"{i}. **{naam}** – {s['score']}/10{ster}\n"
 
         try:
