@@ -376,35 +376,35 @@ class Quiz(commands.Cog):
                     logger.error(f"Error starting CHI/CHE quiz for user {user_id}: {e}")
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro):
-    try:
-        session_manager.start_session(user.id, "quiz")
-        dm = await user.create_dm()
-        await dm.send(intro)  # ✅ aangepast startbericht hier
-        correcte = 0
-        for i, vraag in enumerate(vragen, 1):
-            await dm.send(f"{i}. {vraag['zin']}")
-            try:
-                msg = await self.bot.wait_for(
-                    "message",
-                    timeout=60,
-                    check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel),
-                )
-                antwoord = normalize(msg.content)
-                if antwoord == normalize(vraag[verwacht]):
-                    await dm.send("✅ Corretto!")
-                    correcte += 1
-                else:
-                    await dm.send(f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**")
-            except asyncio.TimeoutError:
-                await dm.send("⏰ Tempo scaduto per questa domanda.")
+        try:
+            session_manager.start_session(user.id, "quiz")
+            dm = await user.create_dm()
+            await dm.send(intro)  # ✅ aangepast startbericht hier
+            correcte = 0
+            for i, vraag in enumerate(vragen, 1):
+                await dm.send(f"{i}. {vraag['zin']}")
+                try:
+                    msg = await self.bot.wait_for(
+                        "message",
+                        timeout=60,
+                        check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel),
+                    )
+                    antwoord = normalize(msg.content)
+                    if antwoord == normalize(vraag[verwacht]):
+                        await dm.send("✅ Corretto!")
+                        correcte += 1
+                    else:
+                        await dm.send(f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**")
+                except asyncio.TimeoutError:
+                    await dm.send("⏰ Tempo scaduto per questa domanda.")
 
-        await dm.send(f"\n📊 Hai risposto correttamente a **{correcte}** domande su **{len(vragen)}**.")
-        await dm.send(f"✉️ Per vedere tutte le risposte corrette, scrivi il comando **{oplossingscommando}** qui in DM.")
-    except discord.Forbidden:
-        channel = await user.guild.fetch_channel(self.bello_thread)
-        await channel.send(f"{user.mention}, non posso inviarti un messaggio privato. Controlla le impostazioni della tua privacy.")
-    finally:
-        session_manager.end_session(user.id)
+            await dm.send(f"\n📊 Hai risposto correttamente a **{correcte}** domande su **{len(vragen)}**.")
+            await dm.send(f"✉️ Per vedere tutte le risposte corrette, scrivi il comando **{oplossingscommando}** qui in DM.")
+        except discord.Forbidden:
+            channel = await user.guild.fetch_channel(self.bello_thread)
+            await channel.send(f"{user.mention}, non posso inviarti un messaggio privato. Controlla le impostazioni della tua privacy.")
+        finally:
+            session_manager.end_session(user.id)
 
     async def start_di_da_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
