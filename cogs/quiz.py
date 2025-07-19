@@ -65,6 +65,11 @@ class Quiz(commands.Cog):
                 session_manager.start_session(user_id, "quiz")
                 await confirm_quiz_start(message.channel)
                 await self.start_ci_quiz(message.author)
+            elif message.channel.id == 1396072250221920276:
+                session_manager.start_session(user_id, "quiz")
+                await confirm_quiz_start(message.channel)
+                await self.start_bello_quiz(message.author)
+                return
 
     async def start_pronomi_quiz(self, user):
         questions = [
