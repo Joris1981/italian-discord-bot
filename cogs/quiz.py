@@ -414,37 +414,37 @@ class Quiz(commands.Cog):
     async def start_per_in_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con PER o IN alle seguenti frasi."
-        await self.start_quiz(message.author, self.per_in_zinnen, "antwoord", "!perin-soluzioni")
+        await self.start_quiz(message.author, self.per_in_zinnen, "antwoord", "!perin-soluzioni", intro)
 
     async def start_qualche_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con QUALCHE, ALCUNI o NESSUNO alle seguenti frasi. Hai 60 secondi per ogni frase"
-        await self.start_quiz(message.author, self.qualche_zinnen, "antwoord", "!qualche-soluzioni")
+        await self.start_quiz(message.author, self.qualche_zinnen, "antwoord", "!qualche-soluzioni", intro)
 
     async def start_bello_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con BELLO, BELLA, BEI, BEGLI o BELL' alle seguenti frasi. Hai 60 secondi per ogni frase"
-        await self.start_quiz(message.author, self.bello_zinnen, "antwoord", "!bello-soluzioni")
+        await self.start_quiz(message.author, self.bello_zinnen, "antwoord", "!bello-soluzioni", intro)
 
     async def start_chi_che_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con CHI o CHE alle seguenti frasi. Hai 60 secondi per ogni frase."
-        await self.start_quiz(message.author, self.chi_che_zinnen, "antwoord", "!chiche-soluzioni")
+        await self.start_quiz(message.author, self.chi_che_zinnen, "antwoord", "!chiche-soluzioni", intro)
 
     async def start_comparativi_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con DI, CHE, PIÙ, MENO o DELLE seguenti frasi. Hai 60 secondi per ogni frase."
-        await self.start_quiz(message.author, self.comparativi_zinnen, "antwoord", "!comparativi-soluzioni")
+        await self.start_quiz(message.author, self.comparativi_zinnen, "antwoord", "!comparativi-soluzioni", intro)
 
     async def start_ci_di_ne_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con CI, DI o NE alle seguenti frasi. Hai 60 secondi per ogni frase."
-        await self.start_quiz(message.author, self.ci_di_ne_zinnen, "antwoord", "!cidine-soluzioni")
+        await self.start_quiz(message.author, self.ci_di_ne_zinnen, "antwoord", "!cidine-soluzioni", intro)
 
     async def start_pronomi_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con il pronome corretto per ogni frase. Hai 60 secondi per ogni frase."
-        await self.start_quiz(message.author, self.pronomi_zinnen, "antwoord", "!pronomi-soluzioni")
+        await self.start_quiz(message.author, self.pronomi_zinnen, "antwoord", "!pronomi-soluzioni", intro)
 
     async def start_ci_quiz(self, message):
         user = message.author
