@@ -210,7 +210,7 @@ class Frasi(commands.Cog):
                 if bonus_score >= 3:
                     await dm.send("🏅 Hai guadagnato una **stella**!")
 
-            await dm.send("📚 Il gioco è finito. Puoi riprovare domani!")
+            await dm.send("📚 Il gioco è finito. Puoi riprovare con il commando !frasi")
             end_time = time.time()
             schrijf_score(ctx.author.id, ctx.author.display_name, score, int(end_time - start_time), current_week)
 
