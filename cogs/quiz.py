@@ -322,7 +322,7 @@ class Quiz(commands.Cog):
         thread_id = message.channel.id
         content = normalize(message.content)
 
-        if content == "quiz" and not session_manager.has_active_session(user_id):
+        if content == "quiz" and not session_manager.is_user_in_active_session(user_id):
             if thread_id == self.di_da_thread:
                 await self.start_di_da_quiz(message)
             elif thread_id == self.per_in_thread:
