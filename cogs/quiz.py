@@ -1,10 +1,14 @@
 import discord
 from discord.ext import commands
 import unicodedata
-import re
 import asyncio
+import re
 import session_manager
+import logging
 
+# Loggingconfiguratie
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def normalize(text):
     text = unicodedata.normalize("NFKD", text).lower().strip()
@@ -12,15 +16,302 @@ def normalize(text):
     text = re.sub(r'[\s’‘`"^\u0300\u0301]', "", text)
     return text
 
-
-async def confirm_quiz_start(channel):
-    await channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
-
-
 class Quiz(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.active_quizzes = {}
+
+        self.di_da_thread = 1388866025679880256
+        self.per_in_thread = 1390080013533052949
+        self.qualche_thread = 1390371003414216805
+        self.ci_thread = 1388241920790237347
+        self.pronomi_thread = 1394735397824758031
+        self.bello_thread = 1396072250221920276
+        self.comparativi_thread = 1393289069009830038
+        self.chi_che_thread = 1393269447094960209
+        self.ci_di_ne_thread = 1393280441221644328
+
+        # DI o DA
+        self.di_da_zinnen = [
+            {"zin": "Vengo ___ Milano.", "antwoord": "da"},
+            {"zin": "Sono ___ Napoli.", "antwoord": "di"},
+            {"zin": "Vado ___ dentista.", "antwoord": "dal"},
+            {"zin": "La chiave ___ macchina.", "antwoord": "della"},
+            {"zin": "Parto ___ casa alle otto.", "antwoord": "da"},
+            {"zin": "Un amico ___ università.", "antwoord": "dell'"},
+            {"zin": "Il profumo ___ mia madre.", "antwoord": "di"},
+            {"zin": "Torno ___ Roma domani.", "antwoord": "da"},
+            {"zin": "Il libro ___ professore.", "antwoord": "del"},
+            {"zin": "La finestra ___ cucina.", "antwoord": "della"},
+            {"zin": "La penna ___ Giulia.", "antwoord": "di"},
+            {"zin": "Vado ___ Giulia più tardi.", "antwoord": "da"},
+            {"zin": "Il cane ___ vicino.", "antwoord": "del"},
+            {"zin": "Uscita ___ scuola alle tre.", "antwoord": "da"},
+            {"zin": "Il computer ___ ragazzo è rotto.", "antwoord": "del"},
+            {"zin": "Questo è il diario ___ Maria", "antwoord": "di"},
+            {"zin": "Ho ricevuto una lettera ___ mia cugina", "antwoord": "da"},
+            {"zin": "Tornano ___ vacanza domani", "antwoord": "dalla"},
+            {"zin": "Torno ___ lavoro alle sei", "antwoord": "dal"},
+            {"zin": "La macchina ___ Marco è rossa", "antwoord": "di"}
+        ] 
+        
+        # PER o IN
+        self.per_in_zinnen = [
+            {"zin": "Studio italiano ___ passione.", "antwoord": "per"},
+            {"zin": "Parto ___ Roma domani.", "antwoord": "per"},
+            {"zin": "Ho comprato un regalo ___ te.", "antwoord": "per"},
+            {"zin": "Vado ___ palestra tre volte a settimana.", "antwoord": "in"},
+            {"zin": "Lavoro ___ un’azienda italiana.", "antwoord": "per"},
+            {"zin": "Andiamo ___ centro domani?", "antwoord": "in"},
+            {"zin": "Questo treno è ___ Milano.", "antwoord": "per"},
+            {"zin": "Mi piace viaggiare ___ treno.", "antwoord": "in"},
+            {"zin": "Sono ___ ritardo come sempre!", "antwoord": "in"},
+            {"zin": "Questa lettera è ___ te.", "antwoord": "per"},
+            {"zin": "Ci vediamo ___ classe!", "antwoord": "in"},
+            {"zin": "Questo è un corso ___ principianti.", "antwoord": "per"},
+            {"zin": "Lui lavora ___ banca.", "antwoord": "in"},
+            {"zin": "Ho una sorpresa ___ te!", "antwoord": "per"},
+            {"zin": "Sono ___ vacanza in Italia.", "antwoord": "in"},
+            {"zin": "È ___ crisi per il lavoro.", "antwoord": "in"},
+            {"zin": "Vado a scuola ___ piedi.", "antwoord": "a"},
+            {"zin": "Vado al lavoro ___ bicicletta.", "antwoord": "in"},
+            {"zin": "Il treno parte ___ Milano alle 8.", "antwoord": "per"},
+            {"zin": "Sono ___ piedi da due ore!", "antwoord": "in"}
+        ]
+
+        # QUALCHE / ALCUNI / NESSUNO
+        self.qualche_zinnen = [
+            {"zin": "Ho letto ___ libro interessante.", "antwoord": "qualche"},
+            {"zin": "Hai ___ domanda?", "antwoord": "qualche"},
+            {"zin": "Ci sono ___ studenti in classe.", "antwoord": "alcuni"},
+            {"zin": "Non vedo ___ persona in giardino.", "antwoord": "nessuna"},
+            {"zin": "Conosci ___ ragazzo simpatico?", "antwoord": "qualche"},
+            {"zin": "Non ho ___ voglia di uscire.", "antwoord": "alcuna"},
+            {"zin": "Hai ricevuto ___ notizia?", "antwoord": "qualche"},
+            {"zin": "Abbiamo invitato ___ amici alla festa.", "antwoord": "alcuni"},
+            {"zin": "Non c’è ___ speranza.", "antwoord": "alcuna"},
+            {"zin": "___ volta vado al mare.", "antwoord": "qualche"},
+            {"zin": "Non ho incontrato ___ amico lì.", "antwoord": "nessun"},
+            {"zin": "Hai ___ minuto per me?", "antwoord": "qualche"},
+            {"zin": "Ci sono ___ possibilità di vincere.", "antwoord": "alcune"},
+            {"zin": "Non c’è ___ soluzione facile.", "antwoord": "nessuna"},
+            {"zin": "___ studenti hanno superato l'esame.", "antwoord": "alcuni"},
+            {"zin": "Non ho ___ idea di cosa fare.", "antwoord": "alcuna"},
+            {"zin": "Hai visto ___ film interessante?", "antwoord": "qualche"},
+            {"zin": "Non c’è ___ motivo di preoccuparsi.", "antwoord": "nessun"},
+            {"zin": "___ amici sono partiti in anticipo.", "antwoord": "alcuni"},
+            {"zin": "Non c’è ___ problema, tutto è sotto controllo.", "antwoord": "nessun"},
+            {"zin": "___ idea è stata accettata.", "antwoord": "qualche"},
+            {"zin": "Non conosco ___ con quel nome.", "antwoord": "nessuno"}  
+        ]
+
+        # BELLO
+        self.bello_zinnen = [
+            {"zin": "___ studente ha fatto una presentazione fantastica.", "antwoord": "bello", "oplossing": "bello studente"},
+            {"zin": "Hai visto che ___ idea ha avuto Giulia?", "antwoord": "bell'", "oplossing": "bell'idea"},
+            {"zin": "Che ___ ragazza!", "antwoord": "bella", "oplossing": "bella ragazza"},
+            {"zin": "Sono andato in vacanza in un ___ albergo a cinque stelle.", "antwoord": "bell'", "oplossing": "bell'albergo"},
+            {"zin": "Hai comprato dei ___ occhiali da sole.", "antwoord": "begli", "oplossing": "begli occhiali"},
+            {"zin": "Che ___ amici che hai!", "antwoord": "begli", "oplossing": "begli amici"},
+            {"zin": "Quella è una ___ macchina sportiva.", "antwoord": "bella", "oplossing": "bella macchina"},
+            {"zin": "Quel ___ uomo è un attore famoso.", "antwoord": "bell'", "oplossing": "bell'uomo"},
+            {"zin": "Questi sono dei ___ regali, grazie!", "antwoord": "bei", "oplossing": "bei regali"},
+            {"zin": "Che ___ giornata oggi!", "antwoord": "bella", "oplossing": "bella giornata"},
+            {"zin": "Abbiamo visitato un ___ museo in centro.", "antwoord": "bel", "oplossing": "bel museo"},
+            {"zin": "Lui ha un ___ sorriso.", "antwoord": "bel", "oplossing": "bel sorriso"},
+            {"zin": "Quelle sono delle ___ case antiche.", "antwoord": "belle", "oplossing": "belle case"},
+            {"zin": "Guarda che ___ occhi ha!", "antwoord": "begli", "oplossing": "begli occhi"},
+            {"zin": "È stato un ___ viaggio.", "antwoord": "bel", "oplossing": "bel viaggio"},
+            {"zin": "Hai visto che ___ film interessante?", "antwoord": "bel", "oplossing": "bel film"},
+            {"zin": "Quella ___ fontana è davvero bella.", "antwoord": "bella", "oplossing": "bella fontana"},
+            {"zin": "Abbiamo fatto una ___ passeggiata al parco.", "antwoord": "bella", "oplossing": "bella passeggiata"},
+            {"zin": "Che ___ canzone stai ascoltando?", "antwoord": "bella", "oplossing": "bella canzone"},
+            {"zin": "Questo è un ___ libro che ti consiglio di leggere.", "antwoord": "bel", "oplossing": "bel libro"},
+            {"zin": "Hai visto che ___ tramonto oggi?", "antwoord": "bel", "oplossing": "bel tramonto"}
+        ]
+
+        # CHI o CHE
+        self.chi_che_zinnen = [
+            {"zin": "Non so ___ ha telefonato.", "antwoord": "chi"},
+            {"zin": "Hai visto ___ ha fatto questo disegno?", "antwoord": "chi"},
+            {"zin": "Mi chiedo ___ sarà arrivato per primo.", "antwoord": "chi"},
+            {"zin": "Non capisco ___ vuoi dire.", "antwoord": "che"},
+            {"zin": "So ___ ti piace quel film.", "antwoord": "che"},
+            {"zin": "Sai ___ viene alla festa?", "antwoord": "chi"},
+            {"zin": "Guarda ___ bel vestito!", "antwoord": "che"},
+            {"zin": "Mi domando ___ succederà domani.", "antwoord": "che"},
+            {"zin": "Hai scoperto ___ ha scritto quel messaggio?", "antwoord": "chi"},
+            {"zin": "È una cosa ___ non si dimentica.", "antwoord": "che"},
+            {"zin": "Non so ___ ha lasciato la porta aperta.", "antwoord": "chi"},
+            {"zin": "Il ragazzo ___ hai visto ieri è mio cugino.", "antwoord": "che"},
+            {"zin": "___ arriva tardi deve spiegare il motivo.", "antwoord": "chi"},
+            {"zin": "È un film ___ mi ha fatto piangere.", "antwoord": "che"},
+            {"zin": "Non so ___ mi ha mandato quel messaggio.", "antwoord": "chi"},
+            {"zin": "La persona ___ ha parlato con te è molto gentile.", "antwoord": "che"},
+            {"zin": "Non capisco ___ stai cercando di dire.", "antwoord": "che"},
+            {"zin": "Sai ___ ha vinto la gara?", "antwoord": "chi"},
+            {"zin": "Non so ___ mi ha rubato il portafoglio.", "antwoord": "chi"},
+            {"zin": "Il libro ___ sto leggendo è molto interessante.", "antwoord": "che"},
+            {"zin": "Non so ___ mi ha consigliato quel ristorante.", "antwoord": "chi"}
+        ]
+
+        # CI
+        self.ci_domande = [
+            {
+                "domanda": "— Quale frase usa CI correttamente per indicare un luogo?",
+                "opzioni": {"A": "Ci vado spesso in palestra", "B": "Ne vado spesso", "C": "Lo vado spesso in palestra"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— Quale frase usa CI correttamente per indicare un'azione?",
+                "opzioni": {"A": "Ci penso spesso", "B": "Ne penso spesso", "C": "Lo penso spesso"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— Quale frase contiene un errore nell'uso di CI?",
+                "opzioni": {"A": "Ci vado spesso in palestra", "B": "Ne vado spesso", "C": "Lo vado spesso in palestra"},
+                "corretta": "C"
+            },
+            {
+                "domanda": "— Quale frase è corretta?",
+                "opzioni": {"A": "Non penso più a ci", "B": "Non ci penso più", "C": "Non penso ci"},
+                "corretta": "B"
+            },
+            {
+                "domanda": "— Quale frase usa CI correttamente per indicare un'azione futura?",
+                "opzioni": {"A": "Ci andrò domani", "B": "Ne andrò domani", "C": "Lo andrò domani"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— Quale frase contiene un errore nell'uso di CI?",
+                "opzioni": {"A": "Ci credo davvero", "B": "Ne credo davvero", "C": "Lo credo davvero"},
+                "corretta": "B"
+            },
+            {
+                "domanda": "— Quale frase usa CI correttamente per indicare un luogo?",
+                "opzioni": {"A": "Ci sono stato ieri", "B": "Ne sono stato ieri", "C": "Lo sono stato ieri"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— Quale frase è corretta?",
+                "opzioni": {"A": "Ci penso spesso a lei", "B": "Ne penso spesso a lei", "C": "Lo penso spesso a lei"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— Quale frase contiene un errore nell'uso di CI?",
+                "opzioni": {"A": "Ci voglio bene", "B": "Ne voglio bene", "C": "Lo voglio bene"},
+                "corretta": "B"
+            },
+            {
+                "domanda": "- Quale frase usa CI correttamente per indicare un'azione passata?",
+                "opzioni": {"A": "Ci ho pensato ieri", "B": "Ne ho pensato ieri", "C": "Lo ho pensato ieri"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— Quale frase è corretta?",
+                "opzioni": {"A": "Ci riesco di solito", "B": "Ne riesco di solito", "C": "Lo riesco di solito"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— Quale frase contiene un errore nell'uso di CI?",
+                "opzioni": {"A": "Pensaci bene", "B": "Ne pensi bene", "C": "Lo pensi bene"},
+                "corretta": "B"
+            },
+            {
+                "domanda": "- Quale frase usa CI correttamente per indicare un'azione futura?",
+                "opzioni": {"A": "Ci torno domani", "B": "Ne torno domani", "C": "Lo torno domani"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "- Quale frase è corretta?",
+                "opzioni": {"A": "Ci provo sempre", "B": "Ne provo sempre", "C": "Lo provo sempre"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "- Individua l'uso corretto di CI",
+                "opzioni": {"A": "Ci credo", "B": "Credo a ci", "C": "Credo ci"},
+                "corretta": "A"
+            }
+        ]
+
+        # CI, DI, NE
+        self.ci_di_ne_zinnen = [
+            {"zin": "Vado spesso al cinema, ___ vado anche stasera.", "antwoord": "ci"},
+            {"zin": "Quanti libri hai letto quest’anno? ___ ho letti cinque.", "antwoord": "ne"},
+            {"zin": "Penso spesso ___ quel giorno.", "antwoord": "di"},
+            {"zin": "Hai bisogno ___ aiuto?", "antwoord": "di"},
+            {"zin": "È una situazione complicata, ___ parleremo domani.", "antwoord": "ne"},
+            {"zin": "Questo gelato è buonissimo! Hai già sentito parlare ___?", "antwoord": "di"},
+            {"zin": "È molto difficile, ma ___ provo lo stesso.", "antwoord": "ci"},
+            {"zin": "Vado spesso in quel ristorante, ___ vado anche stasera.", "antwoord": "ci"},
+            {"zin": "Quante bottiglie d’acqua vuoi? ___ prendo due.", "antwoord": "ne"},
+            {"zin": "Hai voglia ___ uscire stasera?", "antwoord": "di"},
+            {"zin": "Mi fido ___ te.", "antwoord": "di"},
+            {"zin": "Vorrei cambiare lavoro. Che ___ pensi?", "antwoord": "ne"},
+            {"zin": "Sono sicuro ___ aver chiuso la porta.", "antwoord": "di"},
+            {"zin": "Non c’è bisogno di spiegare tutto, ___ hai già parlato ieri.", "antwoord": "ne"},
+            {"zin": "Non voglio parlare ancora ___ quel problema, è troppo delicato.", "antwoord": "di"},
+            {"zin": "Domani vado a Milano, vuoi venire ___?", "antwoord": "ci"},
+            {"zin": "Non ho mai visto un film così bello, ___ hai visto?", "antwoord": "ne"},
+            {"zin": "Mi piace molto questo libro, ___ hai letto?", "antwoord": "ne"},
+            {"zin": "Non ho mai pensato ___ trasferirmi all’estero.", "antwoord": "di"},
+            {"zin": "Hai già deciso cosa fare domani? Io non ___ ho ancora deciso.", "antwoord": "ne"}
+        ]
+
+        # PRONOMI
+        self.pronomi_zinnen = [
+            {"zin": "Hai telefonato a Maria? No, non ________ ho ancora telefonto", "antwoord": "le"},
+            {"zin": "Puoi chiamare il medico e prendere un appuntamento per domani? Si certo, ________ chiamo tra un secondo.", "antwoord": "lo"},
+            {"zin": "Devi portare i libri a tua zia? Si, ________ porto io.", "antwoord": "le"},
+            {"zin": "Ho preso una pizza e ________ ho mangiata tutta.", "antwoord": "l'ho"},
+            {"zin": "Hai visto il film che ti ho consigliato? Si, ________ visto ieri, ma non mi è piaciuto molto.", "antwoord": "l'ho"},
+            {"zin": "Non riesco a trovare le chiavi! ________ sto cercando da due ore!", "antwoord": "le"},
+            {"zin": "Hai ascoltato la nuova canzone di Taylor Swift? Si, ________ sto ascoltando da due ore!", "antwoord": "la"},
+            {"zin": "Luca e Paolo ________ hanno invitato a casa loro. Andiamo?", "antwoord": "ci"},
+            {"zin": "Ho provato a chiamare Marianna ma non ________ ha risposto.", "antwoord": "mi"},
+            {"zin": "Stavi parlando con Roberto? Si, ________ stavo chiedendo un favore", "antwoord": "gli"},
+            {"zin": "Ho comprato i pasticcini. ________ porto io alla festa.", "antwoord": "li"},       
+            {"zin": "Dove sono i tuoi amici? Non so, ________ sto aspettando da 5 minuti.", "antwoord": "li"},
+            {"zin": "Il cane porta la palla al suo padrone. Il cane ________ porta la palla.", "antwoord": "gli"},
+            {"zin": "I miei zii hanno regalato una vacanza ai miei cugini. I miei zii ________ hanno regalato una vacanza.", "antwoord": "gli"},
+            {"zin": "Vai da Carlo, ________ serve una mano a portare i pacchi!", "antwoord": "gli"},
+            {"zin": "Hai visto il gatto di Sara? No, non ________ ho visto.", "antwoord": "lo"},
+            {"zin": "Hai comprato le uova? Si, ________ ho comprate al mercato.", "antwoord": "le"},
+            {"zin": "Hai raccontato la storia ai bambini? Si, ________ l'ho raccontata ieri.", "antwoord": "gliela"},
+            {"zin": "Hai dato il regalo a tua sorella? Si, ________ l'ho dato ieri.", "antwoord": "glielo"},
+            {"zin": "Hai portato i documenti al tuo capo? Si, ________ li ho portati stamattina.", "antwoord": "glieli"},
+            {"zin": "Hai scritto il messaggio a Marco? Si, ________ l'ho scritto ieri sera.", "antwoord": "gli"},
+            {"zin": "Hai comprato il biglietto per il concerto? Si, ________ comprato online.", "antwoord": "l'ho"}
+        ]
+
+        # COMPARATIVI
+        self.comparativi_zinnen = [
+            {"zin": "Milano è più grande ___ Bologna.", "antwoord": "di"},
+            {"zin": "Lei è meno simpatica ___ sua sorella.", "antwoord": "di"},
+            {"zin": "Mi piace più la pasta ___ la pizza.", "antwoord": "che"},
+            {"zin": "Correre è più faticoso ___ camminare.", "antwoord": "che"},
+            {"zin": "Il treno è meno veloce ___ l’aereo.", "antwoord": "di"},
+            {"zin": "Preferisco dormire ___ lavorare.", "antwoord": "che"},
+            {"zin": "Il caffè è più amaro ___ tè.", "antwoord": "del"},
+            {"zin": "Lui è più alto ___ tutti.", "antwoord": "di"},
+            {"zin": "Studiare è più importante ___ uscire.", "antwoord": "che"},
+            {"zin": "Questa strada è meno pericolosa ___ quella.", "antwoord": "di"},
+            {"zin": "Questo film è meno interessante ___ quello che abbiamo visto ieri.", "antwoord": "di"},
+            {"zin": "Luca è più simpatico ___ Paolo.", "antwoord": "di"},
+            {"zin": "Il caffè è più forte ___ amaro.", "antwoord": "che"},
+            {"zin": "Questo libro è più interessante ___ noioso.", "antwoord": "che"},
+            {"zin": "La pasta è meno calorica ___ il pane.", "antwoord": "di"},
+            {"zin": "Questo problema è più urgente ___ complicato.", "antwoord": "che"},
+            {"zin": "Lei è più sportiva ___ me.", "antwoord": "di"},
+            {"zin": "Andare al mare è meglio ___ restare in città.", "antwoord": "che"},
+            {"zin": "Ho meno tempo ___ te.", "antwoord": "di"},
+            {"zin": "Questo film è il ___ che abbia mai visto.", "antwoord": "peggiore"},
+            {"zin": "Marta cucina ___ di tutti.", "antwoord": "meglio"},
+            {"zin": "La birra è ___ del vino, secondo me.", "antwoord": "migliore"},
+            {"zin": "Hai un fratello ___ o sei figlio unico?", "antwoord": "maggiore"},
+            {"zin": "Giulia è la sorella ___ .", "antwoord": "minore"},
+            {"zin": "In questo lavoro, l’esperienza è ___ importante dello stipendio.", "antwoord": "più"},
+            {"zin": "Questo esercizio è ___ difficile di quello di ieri.", "antwoord": "più"}
+        ]
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -28,507 +319,182 @@ class Quiz(commands.Cog):
             return
 
         user_id = message.author.id
-        if normalize(message.content) == "quiz":
-            if session_manager.is_busy(user_id):
-                await message.channel.send("\u274C Hai già una quiz attiva. Completa prima quella prima di iniziarne un'altra.")
-                return
+        thread_id = message.channel.id
+        content = normalize(message.content)
 
-            if message.channel.id == 1394735397824758031:
-                session_manager.start_session(user_id, "quiz")
-                await confirm_quiz_start(message.channel)
-                await self.start_pronomi_quiz(message.author)
-            elif message.channel.id == 1388866025679880256:
-                session_manager.start_session(user_id, "quiz")
-                await confirm_quiz_start(message.channel)
-                await self.start_di_da_quiz(message.author)
-            elif message.channel.id == 1390080013533052949:
-                session_manager.start_session(user_id, "quiz")
-                await confirm_quiz_start(message.channel)
-                await self.start_in_per_quiz(message.author)
-            elif message.channel.id == 1390371003414216805:
-                session_manager.start_session(user_id, "quiz")
-                await confirm_quiz_start(message.channel)
-                await self.start_qualche_quiz(message.author)
-            elif message.channel.id == 1393269447094960209:
-                session_manager.start_session(user_id, "quiz")
-                await confirm_quiz_start(message.channel)
-                await self.start_che_chi_quiz(message.author)
-            elif message.channel.id == 1393280441221644328:
-                session_manager.start_session(user_id, "quiz")
-                await confirm_quiz_start(message.channel)
-                await self.start_ci_di_ne_quiz(message.author)
-            elif message.channel.id == 1393289069009830038:
-                session_manager.start_session(user_id, "quiz")
-                await confirm_quiz_start(message.channel)
-                await self.start_comparativi_quiz(message.author)
-            elif message.channel.id == 1388241920790237347:
-                session_manager.start_session(user_id, "quiz")
-                await confirm_quiz_start(message.channel)
-                await self.start_ci_quiz(message.author)
-            elif message.channel.id == 1396072250221920276:
-                session_manager.start_session(user_id, "quiz")
-                await confirm_quiz_start(message.channel)
-                await self.start_bello_quiz(message.author)
+        if content == "quiz" and not session_manager.has_active_session(user_id):
+            if thread_id == self.di_da_thread:
+                await self.start_di_da_quiz(message)
+            elif thread_id == self.per_in_thread:
+                await self.start_per_in_quiz(message)
+            elif thread_id == self.qualche_thread:
+                await self.start_qualche_quiz(message)
+            elif thread_id == self.ci_thread:
+                await self.start_ci_quiz(message)
+            elif thread_id == self.ci_di_ne_thread:
+                await self.start_ci_di_ne_quiz(message)
+            elif thread_id == self.pronomi_thread:
+                await self.start_pronomi_quiz(message)
+            elif thread_id == self.bello_thread:
+                await self.start_bello_quiz(message)
+            elif thread_id == self.comparativi_thread:
+                await self.start_comparativi_quiz(message)
+            elif thread_id == self.chi_che_thread:
+                await self.start_chi_che_quiz(message)
 
-    async def start_pronomi_quiz(self, user):
-        questions = [
-            ("Hai telefonato a Maria? No, non ________ ho ancora telefonto", "le"),
-            ("Puoi chiamare il medico e prendere un appuntamento per domani? Si certo, ________ chiamo tra un secondo.", "lo"),
-            ("Devi portare i libri a tua zia? Si, ________ porto io.", "le"),
-            ("Ho preso una pizza e ________ ho mangiata tutta", "l'ho"),
-            ("Hai visto il film che ti ho consigliato? Si, ________ visto ieri, ma non mi è piacuto molto.", "l'ho"),
-            ("Non riesco a trovare le chiavi! ________ sto cercando da due ore!", "le"),
-            ("Hai ascoltato la nuova canzone di Taylor Swift? Si, ________ sto ascoltando da due ore!", "la"),
-            ("Luca e Paolo ________ hanno invitato a casa loro. Andiamo?", "ci"),
-            ("Ho provato a chiamare Marianna ma non ________ ha risposto.", "mi"),
-            ("Stavi parlando con Roberto? Si, ________ stavo chiedendo un favore", "gli"),
-            ("Ho comprato i pasticcini. ________ porto io alla festa.", "li"),
-            ("Dove sono i tuoi amici? Non so, ________ sto aspettando da 5 minuti.", "li"),
-            ("Il cane porta la palla al suo padrone. Il cane ________ porta la palla.", "gli"),
-            ("I miei zii hanno regalato una vacanza ai miei cugini. I miei zii ________ hanno regalato una vacanza.", "gli"),
-            ("Vai da Carlo, ________ serve una mano a portare i pacchi!", "gli")
-        ]
-
+    async def start_quiz(self, user, vragen, verwacht, oplossingscommando):
         try:
+            session_manager.start_session(user.id)
             dm = await user.create_dm()
-            await dm.send("\U0001F4DA **Quiz: Pronomi diretti e indiretti**\nScrivi il pronome corretto per ogni frase. Hai 60 secondi per ogni frase. In bocca al lupo!")
-            score = 0
-            for i, (question, correct) in enumerate(questions, 1):
-                await dm.send(f"{i}. {question}")
+            await dm.send("🎯 Iniziamo il quiz! Rispondi a ciascuna frase inserendo la parola corretta.")
+            correcte = 0
+            for i, vraag in enumerate(vragen, 1):
+                await dm.send(f"{i}. {vraag['zin']}")
                 try:
-                    reply = await self.bot.wait_for("message", timeout=60.0, check=lambda m: m.author == user and m.channel == dm)
-                    if normalize(reply.content) == normalize(correct):
+                    msg = await self.bot.wait_for("message", timeout=60, check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel))
+                    antwoord = normalize(msg.content)
+                    if antwoord == normalize(vraag[verwacht]):
                         await dm.send("✅ Corretto!")
-                        score += 1
+                        correcte += 1
                     else:
-                        await dm.send(f"❌ Sbagliato! La risposta giusta era **{correct}**")
+                        await dm.send(f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**")
                 except asyncio.TimeoutError:
-                    await dm.send(f"⏰ Tempo scaduto! La risposta giusta era **{correct}**")
-            await dm.send(f"\n🏁 Fine del quiz! Risposte corrette: **{score}/{len(questions)}**.\nScrivi `!pronomi-soluzioni` per vedere le soluzioni con spiegazione.")
+                    await dm.send("⏰ Tempo scaduto per questa domanda.")
+
+            await dm.send(f"\n📊 Hai risposto correttamente a **{correcte}** domande su **{len(vragen)}**.")
+            await dm.send(f"✉️ Per vedere tutte le risposte corrette, scrivi il comando **{oplossingscommando}** qui in DM.")
         except discord.Forbidden:
-            await user.send("❌ Non posso mandarti un messaggio privato. Controlla le impostazioni di privacy.")
+            channel = await user.guild.fetch_channel(self.bello_thread)
+            await channel.send(f"{user.mention}, non posso inviarti un messaggio privato. Controlla le impostazioni della tua privacy.")
         finally:
             session_manager.end_session(user.id)
 
-    @commands.command(name="pronomi-soluzioni")
-    async def pronome_soluzioni(self, ctx):
-        try:
-            await ctx.author.send(
-                "**🧠 Soluzioni del quiz: Pronomi diretti e indiretti**\n"
-                "1. Hai telefonato a Maria? - No, non **le** ho ancora telefonato. *(indiretto: a Maria → le)*\n"
-                "2. Puoi chiamare il medico e prendere un appuntamento per domani? - Sì certo, **lo** chiamo tra un secondo. *(diretto: il medico → lo)*\n"
-                "3. Devi portare i libri a tua zia? - Sì, **le** do i libri domani. *(indiretto: a tua zia → le)*\n"
-                "4. Ho preso una pizza e **l’ho** mangiata tutta. *(diretto: la pizza → la)*\n"
-                "5. Hai visto il film? **L’ho** visto ieri. **L’**ho trovato noioso. *(diretto: il film → lo/l’)*\n"
-                "6. Non riesco a trovare le chiavi! **Le** sto cercando da due ore! *(diretto: le chiavi → le)*\n"
-                "7. Hai ascoltato la nuova canzone? **La** sto ascoltando ora. *(diretto: la canzone → la)*\n"
-                "8. Luca e Paolo **ci** hanno invitato a casa loro. *(indiretto plurale: a noi → ci)*\n"
-                "9. Ho provato a chiamare Marianna ma non **mi** ha risposto. *(indiretto: a me → mi)*\n"
-                "10. Stavi parlando con Roberto? - Sì, **gli** stavo chiedendo un favore. *(indiretto: a lui → gli)*\n"
-                "11. Ho comprato i pasticcini. **Li** porto io alla festa. *(diretto: i pasticcini → li)*\n"
-                "12. Dove sono i tuoi amici? Non so, **li** sto aspettando. *(diretto: i tuoi amici → li)*\n"
-                "13. Il cane porta la palla al suo padrone. - Il cane **gli** porta la palla. *(indiretto: al suo padrone → gli)*\n"
-                "14. I miei zii hanno regalato una vacanza ai miei cugini. - I miei zii **gli** hanno regalato una vacanza. *(indiretto: ai miei cugini → gli)*\n"
-                "15. Vai da Carlo, **gli** serve una mano a portare i pacchi! *(indiretto: a Carlo → gli)*\n\n"
-                "Per rivedere le regole sui pronomi diretti e indiretti, consulta il canale **#grammatica-aiuto**.\n"
-                "📝 Wil je deze grammatica nog eens herhalen? Kijk dan in **#grammatica-aiuto** 💪🇮🇹"
-            )
-            await ctx.send("\U0001F4E9 Le soluzioni sono state inviate nei tuoi DM!")
-        except discord.Forbidden:
-            await ctx.send("❌ Non riesco a mandarti un DM. Controlla le impostazioni di privacy.")
+    async def start_di_da_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        await self.start_quiz(message.author, self.di_da_zinnen, "antwoord", "!di-soluzioni")
 
-    async def start_ci_quiz(self, user):
-        questions = [
-            ("Quale frase usa CI correttamente per indicare un luogo?\nA) Ci vado spesso in palestra\nB) Vado spesso ci\nC) Vado spesso lì", "A"),
-            ("Quale frase è corretta?\nA) Non penso più a ci\nB) Non ci penso più\nC) Non penso ci", "B"),
-            ("Quale frase è corretta?\nA) Ci credo\nB) Credo ci\nC) Credo a ci", "A"),
-            ("Quale frase contiene un errore?\nA) Ci provo sempre\nB) Provo ci sempre\nC) Provo sempre a farlo", "B"),
-            ("Scegli l'opzione corretta.\nA) A Roma ci sono stato\nB) Ci Roma sono stato\nC) Ci sono stato a Roma", "C"),
-            ("CI può sostituire 'a qualcosa'?\nA) Sì, ci penso spesso\nB) No, mai\nC) Solo con i verbi di moto", "A"),
-            ("Qual è la frase corretta?\nA) Penso ci spesso\nB) Ci penso spesso a lei\nC) Ci penso spesso", "C"),
-            ("Dove si usa CI correttamente?\nA) Ci voglio bene\nB) Ci credo davvero\nC) Credo ci molto", "B"),
-            ("Individua l'uso corretto di CI.\nA) Non ci ho pensato\nB) Non ho pensato ci\nC) Non pensato ci ho", "A"),
-            ("Quale frase è corretta?\nA) Ci riesco di solito\nB) Di solito ci riesco\nC) Riesco ci di solito", "B"),
-            ("Quale frase contiene un errore?\nA) Pensaci bene\nB) Ci pensi bene\nC) Bene pensaci", "C"),
-            ("CI può essere usato con 'pensare'?\nA) Sì, ci penso spesso\nB) No, mai\nC) Solo con nomi propri", "A"),
-            ("Qual è la forma corretta?\nA) Non ci faccio caso\nB) Ci non faccio caso\nC) Non faccio caso ci", "A"),
-            ("Scegli la frase con CI usato correttamente.\nA) Non ci torno più\nB) Ci torno non più\nC) Torno ci non più", "A"),
-            ("Qual è la risposta corretta?\nA) Ci provo sempre\nB) Provo ci sempre\nC) Sempre provo ci", "A")
-        ]
+    async def start_per_in_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        await self.start_quiz(message.author, self.per_in_zinnen, "antwoord", "!perin-soluzioni")
 
+    async def start_qualche_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        await self.start_quiz(message.author, self.qualche_zinnen, "antwoord", "!qualche-soluzioni")
+
+    async def start_bello_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        await self.start_quiz(message.author, self.bello_zinnen, "antwoord", "!bello-soluzioni")
+
+    async def start_chi_che_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        await self.start_quiz(message.author, self.chi_che_zinnen, "antwoord", "!chiche-soluzioni")
+
+    async def start_comparativi_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        await self.start_quiz(message.author, self.comparativi_zinnen, "antwoord", "!comparativi-soluzioni")
+
+    async def start_ci_di_ne_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        await self.start_quiz(message.author, self.ci_di_ne_zinnen, "antwoord", "!cidine-soluzioni")
+
+    async def start_pronomi_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        await self.start_quiz(message.author, self.pronomi_zinnen, "antwoord", "!pronomi-soluzioni")
+
+    async def start_ci_quiz(self, message):
+        user = message.author
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         try:
+            session_manager.start_session(user.id)
             dm = await user.create_dm()
-            await dm.send("\U0001F4DA **Quiz: Uso di CI**\nRispondi con A, B o C. Hai 60 secondi per ogni domanda. In bocca al lupo!")
-            score = 0
-            for i, (question, correct) in enumerate(questions, 1):
-                await dm.send(f"{i}. {question}")
+            await dm.send("🎯 Iniziamo il quiz! Scegli la risposta corretta: A, B o C.")
+
+            corrette = 0
+            for i, domanda in enumerate(self.ci_domande, 1):
+                testo = domanda["domanda"]
+                await dm.send(f"{i}. {testo}")
                 try:
-                    reply = await self.bot.wait_for("message", timeout=60.0, check=lambda m: m.author == user and m.channel == dm and normalize(m.content) in {"a", "b", "c"})
-                    if normalize(reply.content) == normalize(correct.lower()):
+                    msg = await self.bot.wait_for("message", timeout=60, check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel))
+                    risposta = msg.content.strip().upper()
+                    if risposta == domanda["corretta"]:
                         await dm.send("✅ Corretto!")
-                        score += 1
+                        corrette += 1
                     else:
-                        await dm.send(f"❌ Sbagliato! La risposta giusta era **{correct.upper()}**")
+                        await dm.send(f"❌ Sbagliato! La risposta giusta era: **{domanda['corretta']}**")
                 except asyncio.TimeoutError:
-                    await dm.send(f"⏰ Tempo scaduto! La risposta giusta era **{correct.upper()}**")
-            await dm.send(f"🏁 Hai completato il quiz! Risposte corrette: **{score}/15**. Scrivi `!ci_soluzioni` per vedere le risposte spiegate.")
+                    await dm.send("⏰ Tempo scaduto per questa domanda.")
+
+            await dm.send(f"\n📊 Hai risposto correttamente a **{corrette}** domande su **{len(self.ci_domande)}**.")
+            await dm.send("✉️ Per rivedere le domande, scrivi **!ci-soluzioni**.")
         except discord.Forbidden:
-            await user.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+            await message.channel.send(f"{user.mention}, non posso inviarti un DM. Controlla le tue impostazioni di privacy.")
         finally:
             session_manager.end_session(user.id)
 
-    @commands.command(name="ci_soluzioni")
-    async def ci_soluzioni(self, ctx):
-        solutions = [
-            "1. ❌ C) *Vado spesso lì* → 'lì' è corretto ma non con ci ✅ **A) Ci vado spesso in palestra** è corretta.",
-            "2. ✅ B) *Non ci penso più* → 'ci' sostituisce 'a qualcosa'.",
-            "3. ✅ A) *Ci credo* → uso corretto con 'credere a qualcosa'.",
-            "4. ❌ B) *Provo ci sempre* → 'ci' va prima del verbo. ✅ A) *Ci provo sempre* è corretta.",
-            "5. ✅ C) *Ci sono stato a Roma* → struttura corretta con 'ci'.",
-            "6. ✅ A) *Sì, ci penso spesso* → uso corretto di 'ci' per sostituire 'a qualcosa'.",
-            "7. ✅ C) *Ci penso spesso* → ordine corretto delle parole.",
-            "8. ✅ B) *Ci credo davvero* → 'ci' come sostituto di 'a qualcosa'.",
-            "9. ✅ A) *Non ci ho pensato* → 'ci' prima dell'ausiliare.",
-            "10. ✅ B) *Di solito ci riesco* → posizione corretta di 'ci'.",
-            "11. ✅ A) *Pensaci bene* → forma imperativa corretta con 'ci'.",
-            "12. ✅ A) *Sì, ci penso spesso* → uso corretto con 'pensare'.",
-            "13. ✅ A) *Non ci faccio caso* → espressione fissa corretta.",
-            "14. ✅ A) *Non ci torno più* → 'ci' indica luogo, posizione corretta.",
-            "15. ✅ A) *Ci provo sempre* → 'ci' sostituisce 'a qualcosa'."
-        ]
-        try:
-            for s in solutions:
-                await ctx.author.send(s)
-        except discord.Forbidden:
-            await ctx.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+    @commands.command(name="di-soluzioni")
+    async def di_soluzioni(self, ctx):
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *DI o DA*:")
+            for i, z in enumerate(self.di_da_zinnen, 1):
+                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    async def start_comparativi_quiz(self, user):
-        questions = [
-            ("Luca è più simpatico ___ Paolo.", "di"),
-            ("Il caffè è più forte ___ amaro.", "che"),
-            ("Questo libro è più interessante ___ noioso.", "che"),
-            ("La pasta è meno calorica ___ il pane.", "di"),
-            ("Questo problema è più urgente ___ complicato.", "che"),
-            ("Lei è più sportiva ___ me.", "di"),
-            ("Andare al mare è meglio ___ restare in città.", "che"),
-            ("Ho meno tempo ___ te.", "di"),
-            ("Questo film è il ___ che abbia mai visto.", "peggiore"),
-            ("Marta cucina ___ di tutti.", "meglio"),
-            ("La birra è ___ del vino, secondo me.", "migliore"),
-            ("Hai un fratello ___ o sei figlio unico?", "maggiore"),
-            ("Giulia è la sorella ___ .", "minore"),
-            ("In questo lavoro, l’esperienza è ___ importante dello stipendio.", "piu"),
-            ("Questo esercizio è ___ difficile di quello di ieri.", "piu")
-        ]
-        await self.run_custom_quiz(user, questions, "I COMPARATIVI", [normalize(a) for a in ["che", "di", "piu", "meno", "meglio", "migliore", "peggiore", "maggiore", "minore"]])
-
-    async def start_che_chi_quiz(self, user):
-        questions = [
-            ("Non so ______ ha lasciato la porta aperta.", "chi"),
-            ("Il ragazzo ______ hai visto ieri è mio cugino.", "che"),
-            ("______ arriva tardi deve spiegare il motivo.", "chi"),
-            ("È un film ______ mi ha fatto piangere.", "che"),
-            ("Non ho capito bene ______ hai invitato.", "chi"),
-            ("La ragazza con ______ esco è molto simpatica.", "che"),
-            ("______ lavora sodo ottiene risultati.", "chi"),
-            ("La canzone ______ stai ascoltando è nuova?", "che"),
-            ("Conosco uno ______ parla cinque lingue.", "che"),
-            ("C’è qualcuno ______ vuole un caffè?", "chi"),
-            ("L’uomo ______ abita qui è un artista.", "che"),
-            ("Non ricordo ______ ha detto quella frase.", "chi"),
-            ("È una persona ______ non si arrende mai.", "che"),
-            ("Non so ______ ha scritto questo libro.", "chi"),
-            ("Gli studenti ______ studiano passano l’esame.", "che")
-        ]
-        await self.run_custom_quiz(user, questions, "CHE o CHI", ["che", "chi"])
-
-    async def start_ci_di_ne_quiz(self, user):
-        questions = [
-            ("Domani vado a Milano, vuoi venire ___?", "ci"),
-            ("Quanti libri hai letto quest’anno? ___ ho letti cinque.", "ne"),
-            ("Penso spesso ___ quel giorno.", "di"),
-            ("Hai bisogno ___ aiuto?", "di"),
-            ("È una situazione complicata, ___ parleremo domani.", "ne"),
-            ("Questo gelato è buonissimo! Hai già sentito parlare ___?", "di"),
-            ("È molto difficile, ma ___ provo lo stesso.", "ci"),
-            ("Vado spesso in quel ristorante, ___ vado anche stasera.", "ci"),
-            ("Quante bottiglie d’acqua vuoi? ___ prendo due.", "ne"),
-            ("Hai voglia ___ uscire stasera?", "di"),
-            ("Mi fido ___ te.", "di"),
-            ("Vorrei cambiare lavoro. Che ___ pensi?", "ne"),
-            ("Sono sicuro ___ aver chiuso la porta.", "di"),
-            ("Non c’è bisogno di spiegare tutto, ___ hai già parlato ieri.", "ne"),
-            ("Non voglio parlare ancora ___ quel problema, è troppo delicato.", "di")
-        ]
-        await self.run_custom_quiz(user, questions, "CI, NE o DI", ["ci", "ne", "di"])
-
-    async def run_custom_quiz(self, user, questions, title, valid_answers):
-        try:
-            dm = await user.create_dm()
-            if title == "I COMPARATIVI":
-                istruzioni = "Scrivi la parola corretta tra: **che, di, piu, meno, meglio, migliore, peggiore, maggiore, minore**. Hai 60 secondi per ogni frase. In bocca al lupo!"
-            elif title == "CHE o CHI":
-                istruzioni = "Scrivi **che** o **chi** secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
-            elif title == "CI, NE o DI":
-                istruzioni = "Scrivi **ci**, **ne** o **di** secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
-            else:
-                istruzioni = "Scrivi la parola corretta secondo il contesto. Hai 60 secondi per ogni frase. In bocca al lupo!"
-
-            await dm.send(f"\U0001F4DA **Quiz: {title}**\n{istruzioni}")
-            score = 0
-            for idx, (question, answer) in enumerate(questions, start=1):
-                await dm.send(f"{idx}/{len(questions)}: {question}")
-                try:
-                    reply = await self.bot.wait_for(
-                        "message",
-                        timeout=60.0,
-                        check=lambda m: m.author == user and m.channel == dm and normalize(m.content) in valid_answers
-                    )
-                    if normalize(reply.content) == normalize(answer):
-                        await dm.send("\u2705 Corretto!")
-                        score += 1
-                    else:
-                        await dm.send(f"\u274C Sbagliato! Risposta corretta: **{answer}**")
-                except asyncio.TimeoutError:
-                    await dm.send(f"\u23F0 Tempo scaduto! La risposta giusta era **{answer}**.")
-            await dm.send(f"\n\U0001F3C1 Fine del quiz **{title}**! Hai totalizzato **{score}/{len(questions)}** risposte corrette. \U0001F389")
-        except discord.Forbidden:
-            for thread_id in [
-                1388866025679880256,
-                1390080013533052949,
-                1390371003414216805,
-                1393269447094960209,
-                1393280441221644328,
-                1393289069009830038
-            ]:
-                channel = self.bot.get_channel(thread_id)
-                if channel:
-                    await channel.send(f"{user.mention} \u274C Non posso mandarti un messaggio privato. Controlla le impostazioni di privacy.")
-                    break
-        finally:
-            session_manager.end_session(user.id)
-
-    async def start_qualche_quiz(self, user):
-        questions = [
-            ("Non c’è ___ problema, tutto è sotto controllo.", "nessun"),
-            ("Ho conosciuto ___ ragazze simpatiche ieri sera.", "alcune"),
-            ("Non ho ricevuto ___ risposta alla mia mail.", "nessuna"),
-            ("___ volta andiamo in bici al lavoro.", "qualche"),
-            ("Non c’era ___ alla festa, era deserta.", "nessuno"),
-            ("Hai letto ___ libro interessante ultimamente?", "qualche"),
-            ("Non ho ___ voglia di studiare oggi.", "alcuna"),
-            ("___ studenti sono partiti in anticipo.", "alcuni"),
-            ("Non c’è ___ motivo di preoccuparsi.", "alcun"),
-            ("Non conosco ___ con quel nome.", "nessuno"),
-            ("___ idea è stata accettata.", "qualche"),
-            ("Non ho trovato ___ soluzione.", "nessuna"),
-            ("C’erano ___ problemi tecnici.", "alcuni"),
-            ("Non c’è ___ persona che lo sappia.", "nessuna")
-        ]
-        try:
-            await user.send(
-                "📘 **Quiz: Qualche, Alcuni, Nessuno, Alcuno**\n"
-                "Rispondi con la parola corretta: *qualche, alcuni, alcune, alcuno, alcuna, nessuno, nessuna, nessun, alcun*.\n"
-                "Hai 14 frasi. Hai 60 secondi per ogni frase. Iniziamo!"
-            )
-            score = 0
-            for index, (question, correct) in enumerate(questions):
-                await user.send(f"{index + 1}/14: {question}")
-                try:
-                    reply = await self.bot.wait_for(
-                        "message",
-                        timeout=60,
-                        check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel)
-                    )
-                    if normalize(reply.content) == normalize(correct):
-                        await user.send("✅ Corretto!")
-                        score += 1
-                    else:
-                        await user.send(f"❌ Sbagliato! Risposta corretta: **{correct}**")
-                except asyncio.TimeoutError:
-                    await user.send("⏰ Tempo scaduto per questa frase!")
-
-            await user.send(
-                f"🏁 **Quiz completata!**\nHai totalizzato **{score}/14** risposte corrette. 🎉\n"
-                "Se vuoi controllare tutte le risposte corrette, scrivi qui in DM:\n`!qualche-soluzioni` 📚\n"
-                "➡️ **Opnieuw proberen? Typ gewoon opnieuw quiz in dezelfde thread.**"
-            )
-        except discord.Forbidden:
-            await user.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
-        finally:
-            session_manager.end_session(user.id)
+    @commands.command(name="perin-soluzioni")
+    async def perin_soluzioni(self, ctx):
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *PER o IN*:")
+            for i, z in enumerate(self.per_in_zinnen, 1):
+                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
     @commands.command(name="qualche-soluzioni")
     async def qualche_soluzioni(self, ctx):
-        solutions = [
-            "**1.** Non c’è **nessun** problema, tutto è sotto controllo.",
-            "**2.** Ho conosciuto **alcune** ragazze simpatiche ieri sera.",
-            "**3.** Non ho ricevuto **nessuna** risposta alla mia mail.",
-            "**4.** **Qualche** volta andiamo in bici al lavoro.",
-            "**5.** Non c’era **nessuno** alla festa, era deserta.",
-            "**6.** Hai letto **qualche** libro interessante ultimamente?",
-            "**7.** Non ho **alcuna** voglia di studiare oggi.",
-            "**8.** **Alcuni** studenti sono partiti in anticipo.",
-            "**9.** Non c’è **alcun** motivo di preoccuparsi.",
-            "**10.** Non conosco **nessuno** con quel nome.",
-            "**11.** **Qualche** idea è stata accettata.",
-            "**12.** Non ho trovato **nessuna** soluzione.",
-            "**13.** C’erano **alcuni** problemi tecnici.",
-            "**14.** Non c’è **nessuna** persona che lo sappia."
-        ]
-        try:
-            for s in solutions:
-                await ctx.author.send(s + "\n")
-        except discord.Forbidden:
-            await ctx.send("❌ Non posso inviarti un messaggio privato. Controlla le impostazioni di privacy.")
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *Qualche / Alcuni / Nessuno*:")
+            for i, z in enumerate(self.qualche_zinnen, 1):
+                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    # ================================
-    # === DI / DA QUIZ ===
-    # ================================
+    @commands.command(name="bello-soluzioni")
+    async def bello_soluzioni(self, ctx):
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *Bello*:")
+            for i, z in enumerate(self.bello_zinnen, 1):
+                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    async def start_di_da_quiz(self, user):
-        questions = [
-            {"question": "1. Vengo ___ Milano.", "answer": "da"},
-            {"question": "2. Sono ___ Napoli.", "answer": "di"},
-            {"question": "3. Vado ___ dentista.", "answer": "dal"},
-            {"question": "4. La chiave ___ macchina.", "answer": "della"},
-            {"question": "5. Parto ___ casa alle otto.", "answer": "da"},
-            {"question": "6. Un amico ___ università.", "answer": "dell'"},
-            {"question": "7. Il profumo ___ mia madre.", "answer": "di"},
-            {"question": "8. Torno ___ Roma domani.", "answer": "da"},
-            {"question": "9. Il libro ___ professore.", "answer": "del"},
-            {"question": "10. La finestra ___ cucina.", "answer": "della"},
-            {"question": "11. La penna ___ Giulia.", "answer": "di"},
-            {"question": "12. Vado ___ Giulia più tardi.", "answer": "da"},
-            {"question": "13. Il cane ___ vicino.", "answer": "del"},
-            {"question": "14. Uscita ___ scuola alle tre.", "answer": "da"},
-            {"question": "15. Il computer ___ ragazzo è rotto.", "answer": "del"}
-        ]
-        await self.run_quiz(user, questions, "DI o DA")
+    @commands.command(name="chiche-soluzioni")
+    async def chiche_soluzioni(self, ctx):
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *Chi o Che*:")
+            for i, z in enumerate(self.chi_che_zinnen, 1):
+                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    # ================================
-    # === PER / IN QUIZ ===
-    # ================================
+    @commands.command(name="comparativi-soluzioni")
+    async def comparativi_soluzioni(self, ctx):
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *Comparativi*:")
+            for i, z in enumerate(self.comparativi_zinnen, 1):
+                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    async def start_in_per_quiz(self, user):
-        questions = [
-            {"question": "1. ___ estate vado spesso al mare.", "answer": "in"},
-            {"question": "2. Ho studiato ___ due ore.", "answer": "per"},
-            {"question": "3. Abitiamo ___ via Dante.", "answer": "in"},
-            {"question": "4. Passiamo ___ Milano per andare a Roma.", "answer": "per"},
-            {"question": "5. Vado al lavoro ___ bicicletta.", "answer": "in"},
-            {"question": "6. Il treno parte ___ Milano alle 8.", "answer": "per"},
-            {"question": "7. È ___ crisi per il lavoro.", "answer": "in"},
-            {"question": "8. Studio ___ migliorare il mio italiano.", "answer": "per"},
-            {"question": "9. Vado a scuola ___ piedi.", "answer": "a"},
-            {"question": "10. Sono ___ piedi da due ore!", "answer": "in"}
-        ]
-        await self.run_quiz(user, questions, "IN o PER")
+    @commands.command(name="cidine-soluzioni")
+    async def cidine_soluzioni(self, ctx):
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *CI / DI / NE*:")
+            for i, z in enumerate(self.ci_di_ne_zinnen, 1):
+                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    async def run_quiz(self, user, questions, title):
-        try:
-            dm = await user.create_dm()
-            await dm.send(
-                f"📚 **Quiz: {title}**\n"
-                "Rispondi scrivendo solo la preposizione corretta (es: `di`, `da`, `in`, `per`, `a`). Hai 60 secondi per ogni frase. Buona fortuna!"
-            )
+    @commands.command(name="pronomi-soluzioni")
+    async def pronomi_soluzioni(self, ctx):
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *Pronomi diretti e indiretti*:")
+            for i, z in enumerate(self.pronomi_zinnen, 1):
+                await ctx.send(f"{i}. {z['zin']} → **{z['antwoord']}**")
 
-            score = 0
-            for q in questions:
-                await dm.send(q["question"])
-                try:
-                    reply = await self.bot.wait_for(
-                        "message",
-                        timeout=180,
-                        check=lambda m: m.author == user and m.channel == dm
-                    )
-                    if normalize(reply.content) == normalize(q["answer"]):
-                        await dm.send("✅ Corretto!")
-                        score += 1
-                    else:
-                        await dm.send(f"❌ Sbagliato! La risposta giusta era **{q['answer']}**.")
-                except asyncio.TimeoutError:
-                    await dm.send("⏰ Tempo scaduto! La sessione è stata chiusa per inattività.")
-                    return
-
-            await dm.send(f"\n🏁 **Quiz finita!** Hai risposto correttamente a **{score} su {len(questions)}** frasi.")
-            await dm.send("Vuoi riprovare? Torna nella thread e scrivi di nuovo `quiz`.")
-        except Exception as e:
-            print(f"❌ Errore nella quiz ({title}): {e}")
-        finally:
-            session_manager.end_session(user.id)
-
-# -------------------- BELLO QUIZ --------------------
-BELLO_THREAD_ID = 1396072250221920276  # ID del thread per il quiz "bello
-
-def __init__(self, bot):
-    self.bot = bot
-    self.active_quizzes = {}
-
-    self.bello_zinnen = [
-        {"zin": "___ studente ha fatto una presentazione fantastica.", "antwoord": "bello", "oplossing": "bello studente"},
-        {"zin": "Hai visto che ___ idea ha avuto Giulia?", "antwoord": "bell'", "oplossing": "bell'idea"},
-        {"zin": "Abbiamo visitato una ___ città in Toscana.", "antwoord": "bella", "oplossing": "bella città"},
-        {"zin": "___ amici che hai!", "antwoord": "begli", "oplossing": "begli amici"},
-        {"zin": "Quella è una ___ occasione da non perdere.", "antwoord": "bella", "oplossing": "bella occasione"},
-        {"zin": "È un ___ hotel vicino al mare.", "antwoord": "bell'", "oplossing": "bell'hotel"},
-        {"zin": "Abbiamo letto un ___ libro ieri.", "antwoord": "bel", "oplossing": "bel libro"},
-        {"zin": "Conosco dei ___ studenti in quella scuola.", "antwoord": "begli", "oplossing": "begli studenti"},
-        {"zin": "Che ___ spettacolo abbiamo visto ieri!", "antwoord": "bel", "oplossing": "bel spettacolo"},
-        {"zin": "I paesaggi di quella regione sono ___", "antwoord": "belli", "oplossing": "paesaggi belli"},
-        {"zin": "È stata una serata davvero ___", "antwoord": "bella", "oplossing": "serata bella"},
-        {"zin": "Hanno comprato due ___ orologi italiani.", "antwoord": "begli", "oplossing": "begli orologi"},
-        {"zin": "Hai preparato una ___ cena!", "antwoord": "bella", "oplossing": "bella cena"},
-        {"zin": "Che ___ zaino hai!", "antwoord": "bello", "oplossing": "bello zaino"},
-        {"zin": "Sono dei ___ esempi da seguire.", "antwoord": "begli", "oplossing": "begli esempi"}
-    ]
-
-async def start_bello_quiz(self, user):
-    thread_channel = self.bot.get_channel(1396072250221920276)  # of message.channel
-
-    try:
-        dm = await user.create_dm()
-        await dm.send("🧠 Iniziamo il quiz su **“bello”**! Completa le frasi scegliendo la forma corretta dell’aggettivo.\n"
-                      "Rispondi con una sola parola (es: `bel`, `bello`, `bella`, `begli`, `bell'`, `belli`, ...).")
-
-        score = 0
-        for i, item in enumerate(self.bello_zinnen, 1):
-            await dm.send(f"**{i}.** {item['zin']}")
-            def check(m): return m.author == user and isinstance(m.channel, discord.DMChannel)
-            try:
-                reply = await self.bot.wait_for("message", check=check, timeout=60)
-                if normalize(reply.content) == normalize(item["antwoord"]):
-                    await dm.send("✅ Corretto!")
-                    score += 1
-                else:
-                    await dm.send(f"❌ Sbagliato! Risposta corretta: **{item['oplossing']}**")
-            except asyncio.TimeoutError:
-                await dm.send(f"⏱ Tempo scaduto! Risposta corretta: **{item['oplossing']}**")
-
-        await dm.send(f"\n📊 Hai risposto correttamente a **{score}** frasi su 15.")
-        await dm.send("👉 Per vedere tutte le soluzioni digita `!bello-soluzioni` qui.")
-
-    except discord.Forbidden:
-        await thread_channel.send(f"❌ Non posso inviarti messaggi in DM, {user.mention}. Controlla le tue impostazioni di privacy.")
-    except Exception as e:
-        await thread_channel.send(f"⚠️ Si è verificato un errore inaspettato per {user.mention}: `{e}`")
-
-    finally:
-        session_manager.end_session(user.id)
-
-# -------------------- BELLO SOLUZIONI --------------------
-
-@commands.command(name="bello-soluzioni")
-async def bello_soluzioni(self, ctx):
-    try:
-        dm = await ctx.author.create_dm()
-        msg = "📘 **Soluzioni del quiz su “bello”**\n\n"
-        for i, item in enumerate(self.bello_zinnen, 1):
-            msg += f"**{i}.** {item['oplossing']}\n"
-        await dm.send(msg)
-        await ctx.send("📩 Le soluzioni ti sono state inviate in DM.")
-    except discord.Forbidden:
-        await ctx.send("❌ Impossibile inviare il messaggio in DM.")
+    @commands.command(name="ci-soluzioni")
+    async def ci_soluzioni(self, ctx):
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *CI*:")
+            for i, domanda in enumerate(self.ci_domande, 1):
+                opzioni = domanda["opzioni"]
+                risposta = domanda["corretta"]
+                await ctx.send(f"{i}. {domanda['domanda']}\nRisposta corretta: **{risposta}**) {opzioni[risposta]}")
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))
