@@ -324,22 +324,31 @@ class Quiz(commands.Cog):
 
         if content == "quiz" and not session_manager.is_user_in_active_session(user_id):
             if thread_id == self.di_da_thread:
+                logger.info(f"Starting DI/DA quiz for user {user_id}")
                 await self.start_di_da_quiz(message)
             elif thread_id == self.per_in_thread:
+                logger.info(f"Starting PER/IN quiz for user {user_id}")
                 await self.start_per_in_quiz(message)
             elif thread_id == self.qualche_thread:
+                logger.info(f"Starting QUALCHE quiz for user {user_id}")
                 await self.start_qualche_quiz(message)
             elif thread_id == self.ci_thread:
+                logger.info(f"Starting CI quiz for user {user_id}")
                 await self.start_ci_quiz(message)
             elif thread_id == self.ci_di_ne_thread:
+                logger.info(f"Starting CI/DI/NE quiz for user {user_id}")
                 await self.start_ci_di_ne_quiz(message)
             elif thread_id == self.pronomi_thread:
+                logger.info(f"Starting PRONOMI quiz for user {user_id}")
                 await self.start_pronomi_quiz(message)
             elif thread_id == self.bello_thread:
+                logger.info(f"Starting BELLO quiz for user {user_id}")
                 await self.start_bello_quiz(message)
             elif thread_id == self.comparativi_thread:
+                logger.info(f"Starting COMPARATIVI quiz for user {user_id}")
                 await self.start_comparativi_quiz(message)
             elif thread_id == self.chi_che_thread:
+                logger.info(f"Starting CHI/CEH quiz for user {user_id}")
                 await self.start_chi_che_quiz(message)
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando):
