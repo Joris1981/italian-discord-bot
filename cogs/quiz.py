@@ -484,9 +484,12 @@ def __init__(self, bot):
     ]
 
 async def start_bello_quiz(self, user):
+    thread_channel = self.bot.get_channel(1396072250221920276)  # of message.channel
+
     try:
         dm = await user.create_dm()
-        await dm.send("🧠 Iniziamo il quiz su **“bello”**! Completa le frasi scegliendo la forma corretta dell’aggettivo.\nRispondi con una sola parola (es: `bel`, `bello`, `bella`, `begli`, `bell'`, `belli`, ...).")
+        await dm.send("🧠 Iniziamo il quiz su **“bello”**! Completa le frasi scegliendo la forma corretta dell’aggettivo.\n"
+                      "Rispondi con una sola parola (es: `bel`, `bello`, `bella`, `begli`, `bell'`, `belli`, ...).")
 
         score = 0
         for i, item in enumerate(self.bello_zinnen, 1):
@@ -504,8 +507,12 @@ async def start_bello_quiz(self, user):
 
         await dm.send(f"\n📊 Hai risposto correttamente a **{score}** frasi su 15.")
         await dm.send("👉 Per vedere tutte le soluzioni digita `!bello-soluzioni` qui.")
-    except Exception:
-        pass
+
+    except discord.Forbidden:
+        await thread_channel.send(f"❌ Non posso inviarti messaggi in DM, {user.mention}. Controlla le tue impostazioni di privacy.")
+    except Exception as e:
+        await thread_channel.send(f"⚠️ Si è verificato un errore inaspettato per {user.mention}: `{e}`")
+
     finally:
         session_manager.end_session(user.id)
 
