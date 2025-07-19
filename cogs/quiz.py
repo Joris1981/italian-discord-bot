@@ -380,7 +380,7 @@ class Quiz(commands.Cog):
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando):
         try:
-            session_manager.start_session(user.id)
+            session_manager.start_session(user.id, "quiz")
             dm = await user.create_dm()
             await dm.send("🎯 Iniziamo il quiz! Rispondi a ciascuna frase inserendo la parola corretta.")
             correcte = 0
@@ -441,7 +441,7 @@ class Quiz(commands.Cog):
         user = message.author
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         try:
-            session_manager.start_session(user.id)
+            session_manager.start_session(user.id, "quiz")
             dm = await user.create_dm()
             await dm.send("🎯 Iniziamo il quiz! Scegli la risposta corretta: A, B o C.")
 
