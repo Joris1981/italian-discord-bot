@@ -476,7 +476,14 @@ class Quiz(commands.Cog):
     async def start_tra_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con TRA, FRA o DOPO alle seguenti frasi. Hai 60 secondi per ogni frase."
-        await self.start_quiz(message.author, self.tra_zinnen, "antwoord", "!tra-soluzioni", intro)
+        await self.start_quiz(
+            user=message.author,
+            zinnen=self.tra_zinnen,
+            antwoord_key="antwoord",
+            soluzioni_cmd="!tra-soluzioni",
+            intro=intro,
+            check_func=self.check_tra_risposta  # 👈 heel belangrijk!
+            )
         
 async def check_tra_risposta(self, dm, domanda, risposta):
     corretta = False
