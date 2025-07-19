@@ -69,7 +69,6 @@ class Quiz(commands.Cog):
                 session_manager.start_session(user_id, "quiz")
                 await confirm_quiz_start(message.channel)
                 await self.start_bello_quiz(message.author)
-                return
 
     async def start_pronomi_quiz(self, user):
         questions = [
@@ -460,71 +459,68 @@ class Quiz(commands.Cog):
             session_manager.end_session(user.id)
 
 # -------------------- BELLO QUIZ --------------------
-BELLO_THREAD_ID = 1395790269350281227
+BELLO_THREAD_ID = 1396072250221920276  # ID del thread per il quiz "bello
 
-bello_zinnen = [
-    {"zin": "___ studente ha fatto una presentazione fantastica.", "antwoord": "bello", "oplossing": "bello studente"},
-    {"zin": "Hai visto che ___ idea ha avuto Giulia?", "antwoord": "bell'", "oplossing": "bell'idea"},
-    {"zin": "Abbiamo visitato una ___ città in Toscana.", "antwoord": "bella", "oplossing": "bella città"},
-    {"zin": "___ amici che hai!", "antwoord": "Begli", "oplossing": "Begli amici"},
-    {"zin": "Quella è una ___ occasione da non perdere.", "antwoord": "bella", "oplossing": "bella occasione"},
-    {"zin": "È un ___ hotel vicino al mare.", "antwoord": "bell'", "oplossing": "bell'hotel"},
-    {"zin": "Abbiamo letto un ___ libro ieri.", "antwoord": "bel", "oplossing": "bel libro"},
-    {"zin": "Conosco dei ___ studenti in quella scuola.", "antwoord": "begli", "oplossing": "begli studenti"},
-    {"zin": "Che ___ spettacolo abbiamo visto ieri!", "antwoord": "bel", "oplossing": "bel spettacolo"},
-    {"zin": "I paesaggi di quella regione sono ___", "antwoord": "belli", "oplossing": "paesaggi belli"},
-    {"zin": "È stata una serata davvero ___", "antwoord": "bella", "oplossing": "serata bella"},
-    {"zin": "Hanno comprato due ___ orologi italiani.", "antwoord": "begli", "oplossing": "begli orologi"},
-    {"zin": "Hai preparato una ___ cena!", "antwoord": "bella", "oplossing": "bella cena"},
-    {"zin": "Che ___ zaino hai!", "antwoord": "bello", "oplossing": "bello zaino"},
-    {"zin": "Sono dei ___ esempi da seguire.", "antwoord": "begli", "oplossing": "begli esempi"},
-]
+def __init__(self, bot):
+    self.bot = bot
+    self.active_quizzes = {}
 
-@bot.event
-async def on_message(message):
-    if message.channel.id == BELLO_THREAD_ID and message.content.lower().strip() == "quiz":
-        if is_user_in_active_session(message.author.id):
-            return
-        if not start_session(message.author.id, "bello_quiz"):
-            return
-        try:
-            dm = await message.author.create_dm()
-            await dm.send("🧠 Iniziamo il quiz su **“bello”**! Completa le frasi scegliendo la forma corretta dell’aggettivo.\nRispondi con una sola parola (es: `bel`, `bello`, `bella`, `begli`, `bell'`, `belli`, ...).")
+    self.bello_zinnen = [
+        {"zin": "___ studente ha fatto una presentazione fantastica.", "antwoord": "bello", "oplossing": "bello studente"},
+        {"zin": "Hai visto che ___ idea ha avuto Giulia?", "antwoord": "bell'", "oplossing": "bell'idea"},
+        {"zin": "Abbiamo visitato una ___ città in Toscana.", "antwoord": "bella", "oplossing": "bella città"},
+        {"zin": "___ amici che hai!", "antwoord": "begli", "oplossing": "begli amici"},
+        {"zin": "Quella è una ___ occasione da non perdere.", "antwoord": "bella", "oplossing": "bella occasione"},
+        {"zin": "È un ___ hotel vicino al mare.", "antwoord": "bell'", "oplossing": "bell'hotel"},
+        {"zin": "Abbiamo letto un ___ libro ieri.", "antwoord": "bel", "oplossing": "bel libro"},
+        {"zin": "Conosco dei ___ studenti in quella scuola.", "antwoord": "begli", "oplossing": "begli studenti"},
+        {"zin": "Che ___ spettacolo abbiamo visto ieri!", "antwoord": "bel", "oplossing": "bel spettacolo"},
+        {"zin": "I paesaggi di quella regione sono ___", "antwoord": "belli", "oplossing": "paesaggi belli"},
+        {"zin": "È stata una serata davvero ___", "antwoord": "bella", "oplossing": "serata bella"},
+        {"zin": "Hanno comprato due ___ orologi italiani.", "antwoord": "begli", "oplossing": "begli orologi"},
+        {"zin": "Hai preparato una ___ cena!", "antwoord": "bella", "oplossing": "bella cena"},
+        {"zin": "Che ___ zaino hai!", "antwoord": "bello", "oplossing": "bello zaino"},
+        {"zin": "Sono dei ___ esempi da seguire.", "antwoord": "begli", "oplossing": "begli esempi"}
+    ]
 
-            score = 0
-            for i, item in enumerate(bello_zinnen, 1):
-                await dm.send(f"**{i}.** {item['zin']}")
-                def check(m): return m.author == message.author and isinstance(m.channel, discord.DMChannel)
-                try:
-                    reply = await bot.wait_for("message", check=check, timeout=60)
-                    if reply.content.strip().lower() == item["antwoord"].lower():
-                        await dm.send("✅ Corretto!")
-                        score += 1
-                    else:
-                        await dm.send(f"❌ Sbagliato! Risposta corretta: **{item['oplossing']}**")
-                except asyncio.TimeoutError:
-                    await dm.send(f"⏱ Tempo scaduto! Risposta corretta: **{item['oplossing']}**")
+async def start_bello_quiz(self, user):
+    try:
+        dm = await user.create_dm()
+        await dm.send("🧠 Iniziamo il quiz su **“bello”**! Completa le frasi scegliendo la forma corretta dell’aggettivo.\nRispondi con una sola parola (es: `bel`, `bello`, `bella`, `begli`, `bell'`, `belli`, ...).")
 
-            await dm.send(f"\n📊 Hai risposto correttamente a **{score}** frasi su 15.")
-            await dm.send("👉 Per vedere tutte le soluzioni digita `!bello-soluzioni` qui.")
+        score = 0
+        for i, item in enumerate(self.bello_zinnen, 1):
+            await dm.send(f"**{i}.** {item['zin']}")
+            def check(m): return m.author == user and isinstance(m.channel, discord.DMChannel)
+            try:
+                reply = await self.bot.wait_for("message", check=check, timeout=60)
+                if normalize(reply.content) == normalize(item["antwoord"]):
+                    await dm.send("✅ Corretto!")
+                    score += 1
+                else:
+                    await dm.send(f"❌ Sbagliato! Risposta corretta: **{item['oplossing']}**")
+            except asyncio.TimeoutError:
+                await dm.send(f"⏱ Tempo scaduto! Risposta corretta: **{item['oplossing']}**")
 
-        except Exception as e:
-            await message.channel.send("❌ Si è verificato un errore durante il quiz.")
-        finally:
-            end_session(message.author.id)
+        await dm.send(f"\n📊 Hai risposto correttamente a **{score}** frasi su 15.")
+        await dm.send("👉 Per vedere tutte le soluzioni digita `!bello-soluzioni` qui.")
+    except Exception:
+        pass
+    finally:
+        session_manager.end_session(user.id)
 
 # -------------------- BELLO SOLUZIONI --------------------
 
-@bot.command(name="bello-soluzioni")
-async def bello_soluzioni(ctx):
+@commands.command(name="bello-soluzioni")
+async def bello_soluzioni(self, ctx):
     try:
         dm = await ctx.author.create_dm()
         msg = "📘 **Soluzioni del quiz su “bello”**\n\n"
-        for i, item in enumerate(bello_zinnen, 1):
+        for i, item in enumerate(self.bello_zinnen, 1):
             msg += f"**{i}.** {item['oplossing']}\n"
         await dm.send(msg)
         await ctx.send("📩 Le soluzioni ti sono state inviate in DM.")
-    except:
+    except discord.Forbidden:
         await ctx.send("❌ Impossibile inviare il messaggio in DM.")
 
 async def setup(bot):
