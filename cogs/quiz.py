@@ -448,7 +448,9 @@ class Quiz(commands.Cog):
             corrette = 0
             for i, domanda in enumerate(self.ci_domande, 1):
                 testo = domanda["domanda"]
-                await dm.send(f"{i}. {testo}")
+                opzioni = domanda["opzioni"]
+                await dm.send(f"{i}. {testo}"
+                               f"\nA) {opzioni['A']}\nB) {opzioni['B']}\nC) {opzioni['C']}")
                 try:
                     msg = await self.bot.wait_for("message", timeout=60, check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel))
                     risposta = msg.content.strip().upper()
