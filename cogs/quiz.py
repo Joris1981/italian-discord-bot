@@ -309,26 +309,26 @@ class Quiz(commands.Cog):
 
         # TRA/FRA o DOPO
         self.tra_zinnen = [
-            {"zin": "Ci vediamo ___ due settimane.", "antwoord": "fra"},
-            {"zin": "Il gatto è nascosto ___ i cuscini.", "antwoord": "tra"},
+            {"zin": "Ci vediamo ___ due settimane.", "antwoord": "fra", "alternatieven": ["tra"]},
+            {"zin": "Il gatto è nascosto ___ i cuscini.", "antwoord": "tra", "alternatieven": ["fra"]},
             {"zin": "Andremo in vacanza ___ l’esame finale.", "antwoord": "dopo"},
-            {"zin": "La festa inizierà ___ 20 minuti.", "antwoord": "fra"},
-            {"zin": "L’appuntamento è ___ il medico.", "antwoord": "alle"},
+            {"zin": "La festa inizierà ___ 20 minuti.", "antwoord": "fra", "alternatieven": ["tra"]},
+            {"zin": "Torniamo a casa ___ il film.", "antwoord": "dopo"},
             {"zin": "Partiremo ___ aver finito di lavorare.", "antwoord": "dopo"},
-            {"zin": "C'è un parcheggio ___ la banca e il supermercato.", "antwoord": "tra"},
+            {"zin": "C'è un parcheggio ___ la banca e il supermercato.", "antwoord": "tra", "alternatieven": ["fra"]},
             {"zin": "Ci sentiamo ___ cena.", "antwoord": "dopo"},
-            {"zin": "L’autobus parte ___ 10 minuti.", "antwoord": "fra"},
+            {"zin": "L’autobus parte ___ 10 minuti.", "antwoord": "fra", "alternatieven": ["tra"]},
             {"zin": "Devi essere a scuola ___ 8.", "antwoord": "alle"},
-            {"zin": "Il libro è ___ quelli che preferisco.", "antwoord": "tra"},
+            {"zin": "Il libro è ___ quelli che preferisco.", "antwoord": "tra", "alternatieven": ["fra"]},
             {"zin": "Andiamo al cinema ___ cena?", "antwoord": "dopo"},
-            {"zin": "Ho un colloquio ___ due giorni.", "antwoord": "fra"},
-            {"zin": "Non so scegliere ___ queste opzioni.", "antwoord": "tra"},
+            {"zin": "Ho un colloquio ___ due giorni.", "antwoord": "fra", "alternatieven": ["tra"]},
+            {"zin": "Non so scegliere ___ queste opzioni.", "antwoord": "tra", "alternatieven": ["fra"]},
             {"zin": "Sono arrivato ___ la pioggia.", "antwoord": "dopo"},
-            {"zin": "La riunione comincia ___ 5 minuti.", "antwoord": "fra"},
-            {"zin": "Dividi la torta ___ i bambini.", "antwoord": "tra"},
+            {"zin": "La riunione comincia ___ 5 minuti.", "antwoord": "fra", "alternatieven": ["tra"]},
+            {"zin": "Dividi la torta ___ i bambini.", "antwoord": "tra", "alternatieven": ["fra"]},
             {"zin": "Riposati ___ il lavoro.", "antwoord": "dopo"},
             {"zin": "Ci vediamo ___ il concerto?", "antwoord": "dopo"},
-            {"zin": "Ha parcheggiato ___ due alberi.", "antwoord": "fra"}
+            {"zin": "Ha parcheggiato ___ due alberi.", "antwoord": "fra", "alternatieven": ["tra"]}
         ]
     
     @commands.Cog.listener()
@@ -477,6 +477,25 @@ class Quiz(commands.Cog):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con TRA, FRA o DOPO alle seguenti frasi. Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.tra_zinnen, "antwoord", "!tra-soluzioni", intro)
+        
+async def check_tra_risposta(self, dm, domanda, risposta):
+    corretta = False
+    risposta = risposta.strip().lower()
+
+    # Voeg alle correcte antwoorden samen: hoofdantwoord + alternatieven
+    alle_juist = [domanda["antwoord"]]
+    if "alternatieven" in domanda:
+        alle_juist += domanda["alternatieven"]
+
+    if risposta in alle_juist:
+        corretta = True
+        if risposta != domanda["antwoord"]:
+            await dm.send(f"✅ Corretto! Anche '{risposta}' va bene, ma di solito si dice '{domanda['antwoord']}' per motivi di suono.")
+        else:
+            await dm.send("✅ Corretto!")
+    else:
+        await dm.send(f"❌ Sbagliato! La risposta corretta era: **{domanda['antwoord']}**")
+    return corretta
 
     async def start_ci_quiz(self, message):
         user = message.author
