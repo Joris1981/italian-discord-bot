@@ -487,9 +487,12 @@ async def check_tra_risposta(self, dm, domanda, risposta):
     if "alternatieven" in domanda:
         alle_juist += domanda["alternatieven"]
 
-    if risposta in alle_juist:
+    # Maak alles lowercase voor veilige vergelijking
+    alle_juist_lower = [a.lower() for a in alle_juist]
+
+    if risposta in alle_juist_lower:
         corretta = True
-        if risposta != domanda["antwoord"]:
+        if risposta != domanda["antwoord"].lower():
             await dm.send(f"✅ Corretto! Anche '{risposta}' va bene, ma di solito si dice '{domanda['antwoord']}' per motivi di suono.")
         else:
             await dm.send("✅ Corretto!")
