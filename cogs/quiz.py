@@ -402,12 +402,13 @@ class Quiz(commands.Cog):
                 except Exception as e:
                     logger.error(f"Error starting CHI/CHE quiz for user {user_id}: {e}")
 
-    async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro):
+    async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None):
         try:
             session_manager.start_session(user.id, "quiz")
             dm = await user.create_dm()
-            await dm.send(intro)  # ✅ aangepast startbericht hier
+            await dm.send(intro)
             correcte = 0
+
             for i, vraag in enumerate(vragen, 1):
                 await dm.send(f"{i}. {vraag['zin']}")
                 try:
@@ -417,17 +418,26 @@ class Quiz(commands.Cog):
                         check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel),
                     )
                     antwoord = normalize(msg.content)
-                    if antwoord == normalize(vraag[verwacht]):
-                        await dm.send("✅ Corretto!")
-                        correcte += 1
+
+                    if check_func:
+                        # Gebruik aangepaste check-functie (zoals check_tra_risposta)
+                        if await check_func(dm, vraag, msg.content):
+                            correcte += 1
                     else:
-                        await dm.send(f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**")
+                        # Standaardcontrole
+                        if normalize(vraag[verwacht]) == antwoord:
+                            await dm.send("✅ Corretto!")
+                            correcte += 1
+                        else:
+                            await dm.send(f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**")
+
                 except asyncio.TimeoutError:
                     await dm.send("⏰ Tempo scaduto per questa domanda.")
 
             await dm.send(f"\n📊 Hai risposto correttamente a **{correcte}** domande su **{len(vragen)}**.")
             await dm.send(f"✉️ Per vedere tutte le risposte corrette, scrivi il comando **{oplossingscommando}** qui in DM.")
         except discord.Forbidden:
+            # Eventuele fallback voor blokkade
             channel = await user.guild.fetch_channel(self.bello_thread)
             await channel.send(f"{user.mention}, non posso inviarti un messaggio privato. Controlla le impostazioni della tua privacy.")
         finally:
@@ -476,14 +486,7 @@ class Quiz(commands.Cog):
     async def start_tra_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con TRA, FRA o DOPO alle seguenti frasi. Hai 60 secondi per ogni frase."
-        await self.start_quiz(
-            user=message.author,
-            zinnen=self.tra_zinnen,
-            antwoord_key="antwoord",
-            soluzioni_cmd="!tra-soluzioni",
-            intro=intro,
-            check_func=self.check_tra_risposta  # 👈 heel belangrijk!
-            )
+        await self.start_quiz(message.author, zinnen=self.tra_zinnen, antwoord_key="antwoord", soluzioni_cmd="!tra-soluzioni", intro=intro, check_func=self.check_tra_risposta)
         
 async def check_tra_risposta(self, dm, domanda, risposta):
     corretta = False
