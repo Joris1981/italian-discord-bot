@@ -29,6 +29,7 @@ class Quiz(commands.Cog):
         self.comparativi_thread = 1393289069009830038
         self.chi_che_thread = 1393269447094960209
         self.ci_di_ne_thread = 1393280441221644328
+        self.tra_thread = 1390091443678478397
 
         # DI o DA
         self.di_da_zinnen = [
@@ -84,9 +85,7 @@ class Quiz(commands.Cog):
             {"zin": "Hai ___ domanda?", "antwoord": "qualche"},
             {"zin": "Ci sono ___ studenti in classe.", "antwoord": "alcuni"},
             {"zin": "Non vedo ___ persona in giardino.", "antwoord": "nessuna"},
-            {"zin": "Conosci ___ ragazzo simpatico?", "antwoord": "qualche"},
             {"zin": "Non ho ___ voglia di uscire.", "antwoord": "alcuna"},
-            {"zin": "Hai ricevuto ___ notizia?", "antwoord": "qualche"},
             {"zin": "Abbiamo invitato ___ amici alla festa.", "antwoord": "alcuni"},
             {"zin": "Non c’è ___ speranza.", "antwoord": "alcuna"},
             {"zin": "___ volta vado al mare.", "antwoord": "qualche"},
@@ -106,7 +105,6 @@ class Quiz(commands.Cog):
 
         # BELLO
         self.bello_zinnen = [
-            {"zin": "___ studente ha fatto una presentazione fantastica.", "antwoord": "bello", "oplossing": "bello studente"},
             {"zin": "Hai visto che ___ idea ha avuto Giulia?", "antwoord": "bell'", "oplossing": "bell'idea"},
             {"zin": "Che ___ ragazza!", "antwoord": "bella", "oplossing": "bella ragazza"},
             {"zin": "Sono andato in vacanza in un ___ albergo a cinque stelle.", "antwoord": "bell'", "oplossing": "bell'albergo"},
@@ -150,7 +148,6 @@ class Quiz(commands.Cog):
             {"zin": "Non capisco ___ stai cercando di dire.", "antwoord": "che"},
             {"zin": "Sai ___ ha vinto la gara?", "antwoord": "chi"},
             {"zin": "Non so ___ mi ha rubato il portafoglio.", "antwoord": "chi"},
-            {"zin": "Il libro ___ sto leggendo è molto interessante.", "antwoord": "che"},
             {"zin": "Non so ___ mi ha consigliato quel ristorante.", "antwoord": "chi"}
         ]
 
@@ -240,7 +237,7 @@ class Quiz(commands.Cog):
             {"zin": "Penso spesso ___ quel giorno.", "antwoord": "di"},
             {"zin": "Hai bisogno ___ aiuto?", "antwoord": "di"},
             {"zin": "È una situazione complicata, ___ parleremo domani.", "antwoord": "ne"},
-            {"zin": "Questo gelato è buonissimo! Hai già sentito parlare ___?", "antwoord": "di"},
+            {"zin": "Questo gelato è buonissimo! Hai già sentito parlare ___ lui?", "antwoord": "di"},
             {"zin": "È molto difficile, ma ___ provo lo stesso.", "antwoord": "ci"},
             {"zin": "Vado spesso in quel ristorante, ___ vado anche stasera.", "antwoord": "ci"},
             {"zin": "Quante bottiglie d’acqua vuoi? ___ prendo due.", "antwoord": "ne"},
@@ -250,7 +247,7 @@ class Quiz(commands.Cog):
             {"zin": "Sono sicuro ___ aver chiuso la porta.", "antwoord": "di"},
             {"zin": "Non c’è bisogno di spiegare tutto, ___ hai già parlato ieri.", "antwoord": "ne"},
             {"zin": "Non voglio parlare ancora ___ quel problema, è troppo delicato.", "antwoord": "di"},
-            {"zin": "Domani vado a Milano, vuoi venire ___?", "antwoord": "ci"},
+            {"zin": "Domani vado a Milano, vuoi venire ___?", "antwoord": "con me"},
             {"zin": "Non ho mai visto un film così bello, ___ hai visto?", "antwoord": "ne"},
             {"zin": "Mi piace molto questo libro, ___ hai letto?", "antwoord": "ne"},
             {"zin": "Non ho mai pensato ___ trasferirmi all’estero.", "antwoord": "di"},
@@ -278,6 +275,7 @@ class Quiz(commands.Cog):
             {"zin": "Hai comprato le uova? Si, ________ ho comprate al mercato.", "antwoord": "le"},
             {"zin": "Hai scritto il messaggio a Marco? Si, ________ l'ho scritto ieri sera.", "antwoord": "gli"},
             {"zin": "Hai comprato il biglietto per il concerto? Si, ________ ho comprato online.", "antwoord": "l'"},
+            {"zin": "Hai già fatto i compiti? Si, ________ ho fatti ieri sera.", "antwoord": "li"}
         ]
 
         # COMPARATIVI
@@ -293,10 +291,9 @@ class Quiz(commands.Cog):
             {"zin": "Studiare è più importante ___ uscire.", "antwoord": "che"},
             {"zin": "Questa strada è meno pericolosa ___ quella.", "antwoord": "di"},
             {"zin": "Questo film è meno interessante ___ quello che abbiamo visto ieri.", "antwoord": "di"},
-            {"zin": "Luca è più simpatico ___ Paolo.", "antwoord": "di"},
             {"zin": "Il caffè è più forte ___ amaro.", "antwoord": "che"},
             {"zin": "Questo libro è più interessante ___ noioso.", "antwoord": "che"},
-            {"zin": "La pasta è meno calorica ___ il pane.", "antwoord": "di"},
+            {"zin": "La pasta è meno calorica ___ pane.", "antwoord": "del"},
             {"zin": "Questo problema è più urgente ___ complicato.", "antwoord": "che"},
             {"zin": "Lei è più sportiva ___ me.", "antwoord": "di"},
             {"zin": "Andare al mare è meglio ___ restare in città.", "antwoord": "che"},
@@ -310,6 +307,30 @@ class Quiz(commands.Cog):
             {"zin": "Questo esercizio è ___ difficile di quello di ieri.", "antwoord": "più"}
         ]
 
+        # TRA/FRA o DOPO
+        self.tra_zinnen = [
+            {"zin": "Ci vediamo ___ due settimane.", "antwoord": "fra"},
+            {"zin": "Il gatto è nascosto ___ i cuscini.", "antwoord": "tra"},
+            {"zin": "Andremo in vacanza ___ l’esame finale.", "antwoord": "dopo"},
+            {"zin": "La festa inizierà ___ 20 minuti.", "antwoord": "fra"},
+            {"zin": "L’appuntamento è ___ il medico.", "antwoord": "alle"},
+            {"zin": "Partiremo ___ aver finito di lavorare.", "antwoord": "dopo"},
+            {"zin": "C'è un parcheggio ___ la banca e il supermercato.", "antwoord": "tra"},
+            {"zin": "Ci sentiamo ___ cena.", "antwoord": "dopo"},
+            {"zin": "L’autobus parte ___ 10 minuti.", "antwoord": "fra"},
+            {"zin": "Devi essere a scuola ___ 8.", "antwoord": "alle"},
+            {"zin": "Il libro è ___ quelli che preferisco.", "antwoord": "tra"},
+            {"zin": "Andiamo al cinema ___ cena?", "antwoord": "dopo"},
+            {"zin": "Ho un colloquio ___ due giorni.", "antwoord": "fra"},
+            {"zin": "Non so scegliere ___ queste opzioni.", "antwoord": "tra"},
+            {"zin": "Sono arrivato ___ la pioggia.", "antwoord": "dopo"},
+            {"zin": "La riunione comincia ___ 5 minuti.", "antwoord": "fra"},
+            {"zin": "Dividi la torta ___ i bambini.", "antwoord": "tra"},
+            {"zin": "Riposati ___ il lavoro.", "antwoord": "dopo"},
+            {"zin": "Ci vediamo ___ il concerto?", "antwoord": "dopo"},
+            {"zin": "Ha parcheggiato ___ due alberi.", "antwoord": "fra"}
+        ]
+    
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -320,6 +341,12 @@ class Quiz(commands.Cog):
         content = normalize(message.content)
 
         if content == "quiz" and not session_manager.is_user_in_active_session(user_id):
+            if thread_id == self.tra_thread:
+                try:
+                    logger.info(f"Starting TRA/FRA quiz for user {user_id}")
+                    await self.start_tra_quiz(message)
+                except Exception as e:
+                    logger.error(f"Error starting TRA/FRA quiz for user {user_id}: {e}")
             if thread_id == self.di_da_thread:
                 try:
                     logger.info(f"Starting DI/DA quiz for user {user_id}")
@@ -446,6 +473,11 @@ class Quiz(commands.Cog):
         intro = "🎯 Iniziamo il quiz! Rispondi con il pronome corretto per ogni frase. Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.pronomi_zinnen, "antwoord", "!pronomi-soluzioni", intro)
 
+    async def start_tra_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz! Rispondi con TRA, FRA o DOPO alle seguenti frasi. Hai 60 secondi per ogni frase."
+        await self.start_quiz(message.author, self.tra_zinnen, "antwoord", "!tra-soluzioni", intro)
+
     async def start_ci_quiz(self, message):
         user = message.author
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
@@ -542,6 +574,13 @@ class Quiz(commands.Cog):
                 opzioni = domanda["opzioni"]
                 risposta = domanda["corretta"]
                 await ctx.send(f"{i}. {domanda['domanda']}\nRisposta corretta: **{risposta}**) {opzioni[risposta]}")
+    
+    @commands.command(name="tra-soluzioni")
+    async def tra_soluzioni(self, ctx):
+        if isinstance(ctx.channel, discord.DMChannel):
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *TRA/FRA o DOPO*:")
+            for i, z in enumerate(self.tra_zinnen, 1):
+                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))
