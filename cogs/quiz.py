@@ -262,8 +262,8 @@ class Quiz(commands.Cog):
             {"zin": "Hai telefonato a Maria? No, non ________ ho ancora telefonto", "antwoord": "le"},
             {"zin": "Puoi chiamare il medico e prendere un appuntamento per domani? Si certo, ________ chiamo tra un secondo.", "antwoord": "lo"},
             {"zin": "Devi portare i libri a tua zia? Si, ________ porto io.", "antwoord": "le"},
-            {"zin": "Ho preso una pizza e ________ ho mangiata tutta.", "antwoord": "l'ho"},
-            {"zin": "Hai visto il film che ti ho consigliato? Si, ________ visto ieri, ma non mi è piaciuto molto.", "antwoord": "l'ho"},
+            {"zin": "Ho preso una pizza e ________ ho mangiata tutta.", "antwoord": "l'"},
+            {"zin": "Hai visto il film che ti ho consigliato? Si, ________ ho visto ieri, ma non mi è piaciuto molto.", "antwoord": "l'"},
             {"zin": "Non riesco a trovare le chiavi! ________ sto cercando da due ore!", "antwoord": "le"},
             {"zin": "Hai ascoltato la nuova canzone di Taylor Swift? Si, ________ sto ascoltando da due ore!", "antwoord": "la"},
             {"zin": "Luca e Paolo ________ hanno invitato a casa loro. Andiamo?", "antwoord": "ci"},
@@ -276,11 +276,8 @@ class Quiz(commands.Cog):
             {"zin": "Vai da Carlo, ________ serve una mano a portare i pacchi!", "antwoord": "gli"},
             {"zin": "Hai visto il gatto di Sara? No, non ________ ho visto.", "antwoord": "lo"},
             {"zin": "Hai comprato le uova? Si, ________ ho comprate al mercato.", "antwoord": "le"},
-            {"zin": "Hai raccontato la storia ai bambini? Si, ________ l'ho raccontata ieri.", "antwoord": "gliela"},
-            {"zin": "Hai dato il regalo a tua sorella? Si, ________ l'ho dato ieri.", "antwoord": "glielo"},
-            {"zin": "Hai portato i documenti al tuo capo? Si, ________ li ho portati stamattina.", "antwoord": "glieli"},
             {"zin": "Hai scritto il messaggio a Marco? Si, ________ l'ho scritto ieri sera.", "antwoord": "gli"},
-            {"zin": "Hai comprato il biglietto per il concerto? Si, ________ comprato online.", "antwoord": "l'ho"}
+            {"zin": "Hai comprato il biglietto per il concerto? Si, ________ ho comprato online.", "antwoord": "l'"},
         ]
 
         # COMPARATIVI
@@ -378,63 +375,75 @@ class Quiz(commands.Cog):
                 except Exception as e:
                     logger.error(f"Error starting CHI/CHE quiz for user {user_id}: {e}")
 
-    async def start_quiz(self, user, vragen, verwacht, oplossingscommando):
-        try:
-            session_manager.start_session(user.id, "quiz")
-            dm = await user.create_dm()
-            await dm.send("🎯 Iniziamo il quiz! Rispondi a ciascuna frase inserendo la parola corretta.")
-            correcte = 0
-            for i, vraag in enumerate(vragen, 1):
-                await dm.send(f"{i}. {vraag['zin']}")
-                try:
-                    msg = await self.bot.wait_for("message", timeout=60, check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel))
-                    antwoord = normalize(msg.content)
-                    if antwoord == normalize(vraag[verwacht]):
-                        await dm.send("✅ Corretto!")
-                        correcte += 1
-                    else:
-                        await dm.send(f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**")
-                except asyncio.TimeoutError:
-                    await dm.send("⏰ Tempo scaduto per questa domanda.")
+    async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro):
+    try:
+        session_manager.start_session(user.id, "quiz")
+        dm = await user.create_dm()
+        await dm.send(intro)  # ✅ aangepast startbericht hier
+        correcte = 0
+        for i, vraag in enumerate(vragen, 1):
+            await dm.send(f"{i}. {vraag['zin']}")
+            try:
+                msg = await self.bot.wait_for(
+                    "message",
+                    timeout=60,
+                    check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel),
+                )
+                antwoord = normalize(msg.content)
+                if antwoord == normalize(vraag[verwacht]):
+                    await dm.send("✅ Corretto!")
+                    correcte += 1
+                else:
+                    await dm.send(f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**")
+            except asyncio.TimeoutError:
+                await dm.send("⏰ Tempo scaduto per questa domanda.")
 
-            await dm.send(f"\n📊 Hai risposto correttamente a **{correcte}** domande su **{len(vragen)}**.")
-            await dm.send(f"✉️ Per vedere tutte le risposte corrette, scrivi il comando **{oplossingscommando}** qui in DM.")
-        except discord.Forbidden:
-            channel = await user.guild.fetch_channel(self.bello_thread)
-            await channel.send(f"{user.mention}, non posso inviarti un messaggio privato. Controlla le impostazioni della tua privacy.")
-        finally:
-            session_manager.end_session(user.id)
+        await dm.send(f"\n📊 Hai risposto correttamente a **{correcte}** domande su **{len(vragen)}**.")
+        await dm.send(f"✉️ Per vedere tutte le risposte corrette, scrivi il comando **{oplossingscommando}** qui in DM.")
+    except discord.Forbidden:
+        channel = await user.guild.fetch_channel(self.bello_thread)
+        await channel.send(f"{user.mention}, non posso inviarti un messaggio privato. Controlla le impostazioni della tua privacy.")
+    finally:
+        session_manager.end_session(user.id)
 
     async def start_di_da_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
-        await self.start_quiz(message.author, self.di_da_zinnen, "antwoord", "!di-soluzioni")
+        intro = "🎯 Iniziamo il quiz! Rispondi con DI o DA alle seguenti frasi."
+        await self.start_quiz(message.author, self.di_da_zinnen, "antwoord", "!di-soluzioni", intro)
 
     async def start_per_in_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz! Rispondi con PER o IN alle seguenti frasi."
         await self.start_quiz(message.author, self.per_in_zinnen, "antwoord", "!perin-soluzioni")
 
     async def start_qualche_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz! Rispondi con QUALCHE, ALCUNI o NESSUNO alle seguenti frasi. Hai 60 secondi per ogni frase"
         await self.start_quiz(message.author, self.qualche_zinnen, "antwoord", "!qualche-soluzioni")
 
     async def start_bello_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz! Rispondi con BELLO, BELLA, BEI, BEGLI o BELL' alle seguenti frasi. Hai 60 secondi per ogni frase"
         await self.start_quiz(message.author, self.bello_zinnen, "antwoord", "!bello-soluzioni")
 
     async def start_chi_che_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz! Rispondi con CHI o CHE alle seguenti frasi. Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.chi_che_zinnen, "antwoord", "!chiche-soluzioni")
 
     async def start_comparativi_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz! Rispondi con DI, CHE, PIÙ, MENO o DELLE seguenti frasi. Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.comparativi_zinnen, "antwoord", "!comparativi-soluzioni")
 
     async def start_ci_di_ne_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz! Rispondi con CI, DI o NE alle seguenti frasi. Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.ci_di_ne_zinnen, "antwoord", "!cidine-soluzioni")
 
     async def start_pronomi_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz! Rispondi con il pronome corretto per ogni frase. Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.pronomi_zinnen, "antwoord", "!pronomi-soluzioni")
 
     async def start_ci_quiz(self, message):
