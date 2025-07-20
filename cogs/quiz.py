@@ -510,7 +510,7 @@ async def check_tra_risposta(self, dm, domanda, risposta):
         await dm.send(f"❌ Sbagliato! La risposta corretta era: **{domanda['antwoord']}**")
     return corretta
 
-    async def start_ci_quiz(self, message):
+async def start_ci_quiz(self, message):
         user = message.author
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         try:
@@ -542,77 +542,77 @@ async def check_tra_risposta(self, dm, domanda, risposta):
         finally:
             session_manager.end_session(user.id)
 
-    @commands.command(name="di-soluzioni")
-    async def di_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *DI o DA*:")
-            for i, z in enumerate(self.di_da_zinnen, 1):
-                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+@commands.command(name="di-soluzioni")
+async def di_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *DI o DA*:")
+        for i, z in enumerate(self.di_da_zinnen, 1):
+            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    @commands.command(name="perin-soluzioni")
-    async def perin_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *PER o IN*:")
-            for i, z in enumerate(self.per_in_zinnen, 1):
-                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+@commands.command(name="perin-soluzioni")
+async def perin_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *PER o IN*:")
+        for i, z in enumerate(self.per_in_zinnen, 1):
+            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    @commands.command(name="qualche-soluzioni")
-    async def qualche_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *Qualche / Alcuni / Nessuno*:")
-            for i, z in enumerate(self.qualche_zinnen, 1):
-                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+@commands.command(name="qualche-soluzioni")
+async def qualche_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *Qualche / Alcuni / Nessuno*:")
+        for i, z in enumerate(self.qualche_zinnen, 1):
+            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    @commands.command(name="bello-soluzioni")
-    async def bello_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *Bello*:")
-            for i, z in enumerate(self.bello_zinnen, 1):
-                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+@commands.command(name="bello-soluzioni")
+async def bello_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *Bello*:")
+        for i, z in enumerate(self.bello_zinnen, 1):
+            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    @commands.command(name="chiche-soluzioni")
-    async def chiche_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *Chi o Che*:")
-            for i, z in enumerate(self.chi_che_zinnen, 1):
-                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+@commands.command(name="chiche-soluzioni")
+async def chiche_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *Chi o Che*:")
+        for i, z in enumerate(self.chi_che_zinnen, 1):
+            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    @commands.command(name="comparativi-soluzioni")
-    async def comparativi_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *Comparativi*:")
-            for i, z in enumerate(self.comparativi_zinnen, 1):
-                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+@commands.command(name="comparativi-soluzioni")
+async def comparativi_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *Comparativi*:")
+        for i, z in enumerate(self.comparativi_zinnen, 1):
+            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    @commands.command(name="cidine-soluzioni")
-    async def cidine_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *CI / DI / NE*:")
-            for i, z in enumerate(self.ci_di_ne_zinnen, 1):
-                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+@commands.command(name="cidine-soluzioni")
+async def cidine_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *CI / DI / NE*:")
+        for i, z in enumerate(self.ci_di_ne_zinnen, 1):
+            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
-    @commands.command(name="pronomi-soluzioni")
-    async def pronomi_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *Pronomi diretti e indiretti*:")
-            for i, z in enumerate(self.pronomi_zinnen, 1):
-                await ctx.send(f"{i}. {z['zin']} → **{z['antwoord']}**")
+@commands.command(name="pronomi-soluzioni")
+async def pronomi_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *Pronomi diretti e indiretti*:")
+        for i, z in enumerate(self.pronomi_zinnen, 1):
+            await ctx.send(f"{i}. {z['zin']} → **{z['antwoord']}**")
 
-    @commands.command(name="ci-soluzioni")
-    async def ci_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *CI*:")
-            for i, domanda in enumerate(self.ci_domande, 1):
-                opzioni = domanda["opzioni"]
-                risposta = domanda["corretta"]
-                await ctx.send(f"{i}. {domanda['domanda']}\nRisposta corretta: **{risposta}**) {opzioni[risposta]}")
-    
-    @commands.command(name="tra-soluzioni")
-    async def tra_soluzioni(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.send("📘 Ecco le risposte corrette per il quiz *TRA/FRA o DOPO*:")
-            for i, z in enumerate(self.tra_zinnen, 1):
-                await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+@commands.command(name="ci-soluzioni")
+async def ci_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *CI*:")
+        for i, domanda in enumerate(self.ci_domande, 1):
+            opzioni = domanda["opzioni"]
+            risposta = domanda["corretta"]
+            await ctx.send(f"{i}. {domanda['domanda']}\nRisposta corretta: **{risposta}**) {opzioni[risposta]}")
+
+@commands.command(name="tra-soluzioni")
+async def tra_soluzioni(self, ctx):
+    if isinstance(ctx.channel, discord.DMChannel):
+        await ctx.send("📘 Ecco le risposte corrette per il quiz *TRA/FRA o DOPO*:")
+        for i, z in enumerate(self.tra_zinnen, 1):
+            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))
