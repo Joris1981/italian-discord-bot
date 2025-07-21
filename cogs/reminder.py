@@ -76,7 +76,8 @@ class Reminder(commands.Cog):
                         "@everyone 🕘 *Ultimo giorno per migliorare il tuo punteggio!*\n\n"
                         "Mercoledì arriva un nuovo tema per il gioco `!wordle`.\n"
                         "Hai tempo fino a stasera per giocare o riprovare per migliorare la tua classifica!\n"
-                        "💪 Non mollare — ogni punto può fare la differenza!"
+                        "💪 Non mollare — ogni punto può fare la differenza!\n"
+                        " Per iniziare, digita il comando !wordle nella tua inbox con ItalianoBot.\n"
                     )
                     logger.info("Wordle reminder verzonden.")
             except Exception as e:
@@ -87,14 +88,16 @@ class Reminder(commands.Cog):
     async def weekly_frasi_reminder(self):
         await self.bot.wait_until_ready()
         now = datetime.datetime.now(pytz.timezone("Europe/Brussels"))
-        if now.weekday() == 3 and now.hour == 9 and now.minute == 0:  # donderdag 09:00
+        if now.weekday() == 5 and now.hour == 9 and now.minute == 0:  # sabato 09:00
             try:
                 thread = self.bot.get_channel(FRASI_THREAD_ID)
                 if thread:
                     await thread.send(
                         "@everyone 🕘 *Ultimo giorno per migliorare il tuo punteggio nel gioco `!frasi`!*\n\n"
                         "Domani arriva un nuovo tema: gioca o riprova ora per salire nella classifica! 🏆\n"
-                        "Ogni frase conta, non lasciarti sfuggire l'occasione! ✨"
+                        "Ogni frase conta, non lasciarti sfuggire l'occasione! ✨ \n"
+                        "Hai tempo fino a stasera per giocare o riprovare per migliorare il tuo punteggio.\n" \
+                        "Per iniziare, digita il comando !frasi nella tua inbox con ItalianoBot.\n"
                     )
                     logger.info("Frasi reminder verzonden.")
             except Exception as e:
