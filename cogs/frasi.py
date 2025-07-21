@@ -247,6 +247,37 @@ class Frasi(commands.Cog):
             await thread.send("\n".join(lines))
         except Exception:
             await ctx.send("⚠️ Er is iets misgegaan bij het posten van het leaderboard.")
+    
+    @commands.command(name="frasi-leaderboard-week")
+    async def leaderboard_specifieke_week(self, ctx, week: int):
+        data = laad_leaderboard(week)
+        if not data:
+            await ctx.send(f"📭 Nessun punteggio trovato per la settimana {week}.")
+            return
+
+        index = max(0, week - 29)
+        thema = THEMA_LIJST[index % len(THEMA_LIJST)]
+        titel = f"Week {week - 28}: {thema}"
+        scores = list(data.items())
+        scores.sort(key=lambda x: (-x[1]["score"], x[1]["duration"]))
+
+        guild = discord.utils.get(self.bot.guilds)
+        members = {str(m.id): m for m in guild.members} if guild else {}
+
+        lines = [f"🏆 **Frasi idiomatiche – Leaderboard {titel}**"]
+        for i, (uid, entry) in enumerate(scores[:10], 1):
+            member = members.get(uid)
+            naam = member.display_name if member and hasattr(member, "display_name") else entry.get("username", uid)
+            ster = " ⭐" if entry["score"] >= 8 else ""
+            lines.append(f"{i}. **{naam}** – {entry['score']}/10{ster}")
+
+        try:
+            thread = await self.bot.fetch_channel(LEADERBOARD_THREAD_ID)
+            await thread.send("\n".join(lines))
+            await ctx.send(f"✅ Leaderboard voor week {week - 28} opnieuw gepost in de thread.")
+        except Exception:
+            await ctx.send("⚠️ Er is iets misgegaan bij het posten van het leaderboard.")
+
 
     @commands.command(name="frasi-speelstatistiek")
     async def speelstatistiek(self, ctx):
