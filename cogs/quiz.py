@@ -486,31 +486,38 @@ class Quiz(commands.Cog):
     async def start_tra_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con TRA, FRA o DOPO alle seguenti frasi. Hai 60 secondi per ogni frase."
-        await self.start_quiz(message.author, zinnen=self.tra_zinnen, antwoord_key="antwoord", soluzioni_cmd="!tra-soluzioni", intro=intro, check_func=self.check_tra_risposta)
-        
-async def check_tra_risposta(self, dm, domanda, risposta):
-    corretta = False
-    risposta = risposta.strip().lower()
+        await self.start_quiz(
+            message.author,
+            zinnen=self.tra_zinnen,
+            antwoord_key="antwoord",
+            soluzioni_cmd="!tra-soluzioni",
+            intro=intro,
+            check_func=self.check_tra_risposta
+        )
 
-    # Voeg alle correcte antwoorden samen: hoofdantwoord + alternatieven
-    alle_juist = [domanda["antwoord"]]
-    if "alternatieven" in domanda:
-        alle_juist += domanda["alternatieven"]
+    async def check_tra_risposta(self, dm, domanda, risposta):
+        corretta = False
+        risposta = risposta.strip().lower()
 
-    # Maak alles lowercase voor veilige vergelijking
-    alle_juist_lower = [a.lower() for a in alle_juist]
+        # Voeg alle correcte antwoorden samen: hoofdantwoord + alternatieven
+        alle_juist = [domanda["antwoord"]]
+        if "alternatieven" in domanda:
+            alle_juist += domanda["alternatieven"]
 
-    if risposta in alle_juist_lower:
-        corretta = True
-        if risposta != domanda["antwoord"].lower():
-            await dm.send(f"✅ Corretto! Anche '{risposta}' va bene, ma di solito si dice '{domanda['antwoord']}' per motivi di suono.")
+        # Maak alles lowercase voor veilige vergelijking
+        alle_juist_lower = [a.lower() for a in alle_juist]
+
+        if risposta in alle_juist_lower:
+            corretta = True
+            if risposta != domanda["antwoord"].lower():
+                await dm.send(f"✅ Corretto! Anche '{risposta}' va bene, ma di solito si dice '{domanda['antwoord']}' per motivi di suono.")
+            else:
+                await dm.send("✅ Corretto!")
         else:
-            await dm.send("✅ Corretto!")
-    else:
-        await dm.send(f"❌ Sbagliato! La risposta corretta era: **{domanda['antwoord']}**")
-    return corretta
+            await dm.send(f"❌ Sbagliato! La risposta corretta era: **{domanda['antwoord']}**")
+        return corretta
 
-async def start_ci_quiz(self, message):
+    async def start_ci_quiz(self, message):
         user = message.author
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         try:
@@ -541,10 +548,6 @@ async def start_ci_quiz(self, message):
             await message.channel.send(f"{user.mention}, non posso inviarti un DM. Controlla le tue impostazioni di privacy.")
         finally:
             session_manager.end_session(user.id)
-
-class Quiz(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
 
     async def stuur_oplossingen(self, ctx, titel, zinnen, speciaal_format=False):
         if not isinstance(ctx.channel, discord.DMChannel):
