@@ -6,3 +6,4 @@ requests
 beautifulsoup4
 aiohttp
 langdetect
+pytz
