@@ -155,78 +155,78 @@ class Quiz(commands.Cog):
         self.ci_domande = [
             {
                 "domanda": "— Quale frase usa CI correttamente per indicare un luogo?",
-                "opzioni": {"A": "Ci vado spesso in palestra", "B": "Ne vado spesso", "C": "Lo vado spesso in palestra"},
+                "opzioni": {"A": "Ci vado spesso in palestra", "B": "Vado spesso ci", "C": "Vado spesso li"},
                 "corretta": "A"
             },
             {
-                "domanda": "— Quale frase usa CI correttamente per indicare un'azione?",
-                "opzioni": {"A": "Ci penso spesso", "B": "Ne penso spesso", "C": "Lo penso spesso"},
+                "domanda": "— In quale frase CI sostituisce una cosa già menzionata?",
+                "opzioni": {"A": "Pensi a quel problema? Si, ci penso spesso.", "B": "Ci ha chiamato Marco?", "C": "Ci ha dato un libro."},
                 "corretta": "A"
             },
             {
-                "domanda": "— Quale frase contiene un errore nell'uso di CI?",
-                "opzioni": {"A": "Ci vado spesso in palestra", "B": "Ne vado spesso", "C": "Lo vado spesso in palestra"},
+                "domanda": "— CI metto due ore per finire. Cosa indica CI in questa frase?",
+                "opzioni": {"A": "Il tempo necessario", "B": "Un luogo", "C": "In quella cosa o situazione"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— Quale frase contiene un errore nell’uso di CI?",
+                "opzioni": {"A": "Ci sono andato Marco", "B": "Non ci credo", "C": "Ci ho parlato ieri"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— CI vuole pazienza. Cosa significa CI in questa espressione?",
+                "opzioni": {"A": "Indica una persona", "B": "Non ha un significato preciso, è impersonale", "C": "Indica il tempo"},
+                "corretta": "B"
+            },
+            {
+                "domanda": "— Non so se CI riesco. Cosa indica CI in questa frase?",
+                "opzioni": {"A": "Il luogo", "B": "L'azione o il obiettivo", "C": "Una persona"},
+                "corretta": "B"
+            },
+            {
+                "domanda": "— Marco CI tiene molto a quella cosa. Cosa significa CI in questa frase?",
+                "opzioni": {"A": "È importante", "B": "Marco sta lì", "C": "La possiede quella cosa"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "— Quale frase è grammaticalmente corretta?",
+                "opzioni": {"A": "Gli ci parlo spesso", "B": "Ci sono parlato", "C": "Ci parlo spesso"},
                 "corretta": "C"
             },
             {
-                "domanda": "— Quale frase è corretta?",
-                "opzioni": {"A": "Non penso più a ci", "B": "Non ci penso più", "C": "Non penso ci"},
+                "domanda": "— Scegli l’uso corretto di CI impersonale?",
+                "opzioni": {"A": "In Italia ci si saluta con un bacio", "B": "Ci dice sempre la verità", "C": "Ci ho una macchina nuova"},
+                "corretta": "A"
+            },
+            {
+                "domanda": "- Quale frase contiene un uso scorretto di CI?",
+                "opzioni": {"A": "Ci credo davvero", "B": "Ci piace andare al mare", "C": "Ci fa il letto ogni mattina"},
+                "corretta": "C"
+            },
+            {
+                "domanda": "— In quale frase CI è usato in modo impersonale?",
+                "opzioni": {"A": "Ci ho messo due ore", "B": "Ci si diverte molto in quel corso", "C": "Ci serve più tempo per finire"},
                 "corretta": "B"
             },
             {
-                "domanda": "— Quale frase usa CI correttamente per indicare un'azione futura?",
-                "opzioni": {"A": "Ci andrò domani", "B": "Ne andrò domani", "C": "Lo andrò domani"},
+                "domanda": "— In quale frase CI è complemento indiretto?",
+                "opzioni": {"A": "Ci vediamo domani", "B": "Non ci credo più", "C": "Ci hanno offerto un caffè"},
+                "corretta": "C"
+            },
+            {
+                "domanda": "- In quale frase CI significa = a noi??",
+                "opzioni": {"A": "Ci ha promesso una risposta entro domani", "B": "Non ci vado più", "C": "Ci siamo visti per caso"},
                 "corretta": "A"
             },
             {
-                "domanda": "— Quale frase contiene un errore nell'uso di CI?",
-                "opzioni": {"A": "Ci credo davvero", "B": "Ne credo davvero", "C": "Lo credo davvero"},
+                "domanda": "- In quale frase CI indica un luogo?",
+                "opzioni": {"A": "Non ci credo nemmeno un po’", "B": "Ci siamo svegliati tardi", "C": "Quando torno a casa, ci metto sempre mezz’ora"},
+                "corretta": "C"
+            },
+            {
+                "domanda": "- In quale frase CI sostituisce a qualcosa?",
+                "opzioni": {"A": "Non ci vediamo da mesi", "B": "Ci sto pensando da giorni", "C": "Ci chiama ogni mattina"},
                 "corretta": "B"
-            },
-            {
-                "domanda": "— Quale frase usa CI correttamente per indicare un luogo?",
-                "opzioni": {"A": "Ci sono stato ieri", "B": "Ne sono stato ieri", "C": "Lo sono stato ieri"},
-                "corretta": "A"
-            },
-            {
-                "domanda": "— Quale frase è corretta?",
-                "opzioni": {"A": "Ci penso spesso a lei", "B": "Ne penso spesso a lei", "C": "Lo penso spesso a lei"},
-                "corretta": "A"
-            },
-            {
-                "domanda": "— Quale frase contiene un errore nell'uso di CI?",
-                "opzioni": {"A": "Ci voglio bene", "B": "Ne voglio bene", "C": "Lo voglio bene"},
-                "corretta": "B"
-            },
-            {
-                "domanda": "- Quale frase usa CI correttamente per indicare un'azione passata?",
-                "opzioni": {"A": "Ci ho pensato ieri", "B": "Ne ho pensato ieri", "C": "Lo ho pensato ieri"},
-                "corretta": "A"
-            },
-            {
-                "domanda": "— Quale frase è corretta?",
-                "opzioni": {"A": "Ci riesco di solito", "B": "Ne riesco di solito", "C": "Lo riesco di solito"},
-                "corretta": "A"
-            },
-            {
-                "domanda": "— Quale frase contiene un errore nell'uso di CI?",
-                "opzioni": {"A": "Pensaci bene", "B": "Ne pensi bene", "C": "Lo pensi bene"},
-                "corretta": "B"
-            },
-            {
-                "domanda": "- Quale frase usa CI correttamente per indicare un'azione futura?",
-                "opzioni": {"A": "Ci torno domani", "B": "Ne torno domani", "C": "Lo torno domani"},
-                "corretta": "A"
-            },
-            {
-                "domanda": "- Quale frase è corretta?",
-                "opzioni": {"A": "Ci provo sempre", "B": "Ne provo sempre", "C": "Lo provo sempre"},
-                "corretta": "A"
-            },
-            {
-                "domanda": "- Individua l'uso corretto di CI",
-                "opzioni": {"A": "Ci credo", "B": "Credo a ci", "C": "Credo ci"},
-                "corretta": "A"
             }
         ]
 
