@@ -542,77 +542,88 @@ async def start_ci_quiz(self, message):
         finally:
             session_manager.end_session(user.id)
 
-@commands.command(name="di-soluzioni")
-async def di_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *DI o DA*:")
-        for i, z in enumerate(self.di_da_zinnen, 1):
-            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+class Quiz(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
 
-@commands.command(name="perin-soluzioni")
-async def perin_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *PER o IN*:")
-        for i, z in enumerate(self.per_in_zinnen, 1):
-            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+    async def stuur_oplossingen(self, ctx, titel, zinnen, speciaal_format=False):
+        if not isinstance(ctx.channel, discord.DMChannel):
+            try:
+                await ctx.author.send(f"📘 Ecco le risposte corrette per il quiz *{titel}*:")
+                await ctx.send("✅ Ti ho inviato le soluzioni nei tuoi DM!")
+            except discord.Forbidden:
+                await ctx.send("⛔ Non riesco a mandarti un DM. Controlla le impostazioni di privacy.")
+                return
+        else:
+            await ctx.send(f"📘 Ecco le risposte corrette per il quiz *{titel}*:")
 
-@commands.command(name="qualche-soluzioni")
-async def qualche_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *Qualche / Alcuni / Nessuno*:")
-        for i, z in enumerate(self.qualche_zinnen, 1):
-            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+        for i, z in enumerate(zinnen, 1):
+            try:
+                zin = z["zin"]
+                antwoord = z["antwoord"]
+                if speciaal_format:
+                    await ctx.author.send(f"{i}. {zin} → **{antwoord}**")
+                else:
+                    await ctx.author.send(f"{i}. {zin.replace('___', f'**{antwoord}**')}")
+            except Exception as e:
+                await ctx.author.send(f"{i}. ⚠️ Errore nella frase o risposta mancante. ({e})")
 
-@commands.command(name="bello-soluzioni")
-async def bello_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *Bello*:")
-        for i, z in enumerate(self.bello_zinnen, 1):
-            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+    @commands.command(name="di-soluzioni")
+    async def di_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "DI o DA", self.di_da_zinnen)
 
-@commands.command(name="chiche-soluzioni")
-async def chiche_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *Chi o Che*:")
-        for i, z in enumerate(self.chi_che_zinnen, 1):
-            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+    @commands.command(name="perin-soluzioni")
+    async def perin_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "PER o IN", self.per_in_zinnen)
 
-@commands.command(name="comparativi-soluzioni")
-async def comparativi_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *Comparativi*:")
-        for i, z in enumerate(self.comparativi_zinnen, 1):
-            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+    @commands.command(name="qualche-soluzioni")
+    async def qualche_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Qualche / Alcuni / Nessuno", self.qualche_zinnen)
 
-@commands.command(name="cidine-soluzioni")
-async def cidine_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *CI / DI / NE*:")
-        for i, z in enumerate(self.ci_di_ne_zinnen, 1):
-            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+    @commands.command(name="bello-soluzioni")
+    async def bello_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Bello", self.bello_zinnen)
 
-@commands.command(name="pronomi-soluzioni")
-async def pronomi_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *Pronomi diretti e indiretti*:")
-        for i, z in enumerate(self.pronomi_zinnen, 1):
-            await ctx.send(f"{i}. {z['zin']} → **{z['antwoord']}**")
+    @commands.command(name="chiche-soluzioni")
+    async def chiche_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Chi o Che", self.chi_che_zinnen)
 
-@commands.command(name="ci-soluzioni")
-async def ci_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *CI*:")
+    @commands.command(name="comparativi-soluzioni")
+    async def comparativi_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Comparativi", self.comparativi_zinnen)
+
+    @commands.command(name="cidine-soluzioni")
+    async def cidine_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "CI / DI / NE", self.ci_di_ne_zinnen)
+
+    @commands.command(name="pronomi-soluzioni")
+    async def pronomi_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Pronomi diretti e indiretti", self.pronomi_zinnen, speciaal_format=True)
+
+    @commands.command(name="ci-soluzioni")
+    async def ci_soluzioni(self, ctx):
+        if not isinstance(ctx.channel, discord.DMChannel):
+            try:
+                await ctx.author.send("📘 Ecco le risposte corrette per il quiz *CI*:")
+                await ctx.send("✅ Ti ho inviato le soluzioni nei tuoi DM!")
+            except discord.Forbidden:
+                await ctx.send("⛔ Non riesco a mandarti un DM. Controlla le impostazioni di privacy.")
+                return
+        else:
+            await ctx.send("📘 Ecco le risposte corrette per il quiz *CI*:")
+
         for i, domanda in enumerate(self.ci_domande, 1):
-            opzioni = domanda["opzioni"]
-            risposta = domanda["corretta"]
-            await ctx.send(f"{i}. {domanda['domanda']}\nRisposta corretta: **{risposta}**) {opzioni[risposta]}")
+            try:
+                testo = domanda["domanda"]
+                opzioni = domanda["opzioni"]
+                risposta = domanda["corretta"]
+                await ctx.author.send(f"{i}. {testo}\nRisposta corretta: **{risposta}**) {opzioni[risposta]}")
+            except Exception as e:
+                await ctx.author.send(f"{i}. ⚠️ Errore nella domanda o risposta. ({e})")
 
-@commands.command(name="tra-soluzioni")
-async def tra_soluzioni(self, ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("📘 Ecco le risposte corrette per il quiz *TRA/FRA o DOPO*:")
-        for i, z in enumerate(self.tra_zinnen, 1):
-            await ctx.send(f"{i}. {z['zin'].replace('___', f'**{z['antwoord']}**')}")
+    @commands.command(name="tra-soluzioni")
+    async def tra_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "TRA/FRA o DOPO", self.tra_zinnen)
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))

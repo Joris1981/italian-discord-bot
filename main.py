@@ -68,10 +68,11 @@ REACTION_THREADS = {1387594096759144508, 1387571841442385951}
 intents = discord.Intents.default()
 intents.message_content = True
 intents.dm_messages = True
+intents.members = True
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
-        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics", "cogs.ascolto", "cogs.frasi"]:
+        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics", "cogs.ascolto", "cogs.frasi", "cogs.reminder"]:
             try:
                 await self.load_extension(extension)
                 logging.info(f"✅ Extension geladen: {extension}")
