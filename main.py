@@ -72,7 +72,7 @@ intents.members = True
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
-        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics", "cogs.ascolto", "cogs.frasi", "cogs.reminder"]:
+        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics", "cogs.ascolto", "cogs.frasi", "cogs.reminder", "cogs.coniuga"]:
             try:
                 await self.load_extension(extension)
                 logging.info(f"✅ Extension geladen: {extension}")
