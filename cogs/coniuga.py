@@ -16,9 +16,9 @@ logging.basicConfig(level=logging.INFO)
 TIJDSLIMIET = 60
 DATA_PATH = "/persistent/data/wordle/coniuga"
 SCORE_PATH = "/persistent/data/wordle/coniuga_scores"
-LEADERBOARD_THREAD_ID = 123456789012345678  # <-- pas aan indien nodig
-TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932]
-TIJDEN = ["presente", "progressivo", "passato", "imperfetto", "futuro", "condizionale"]
+LEADERBOARD_THREAD_ID = 1397220124150468618  # <-- pas aan indien nodig
+TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932, 1397220124150468618]
+TIJDEN = ["presente", "progressivo presente", "passato prossimo", "imperfetto", "futuro", "condizionale"]
 NIVEAUS = ["A2", "B1", "B2"]
 
 os.makedirs(DATA_PATH, exist_ok=True)
@@ -59,6 +59,17 @@ async def voer_coniuga_generatie_uit(week):
 
 def build_prompt(tijd, niveau, bonus=False):
     soort = "20" if bonus else "50"
+    extra = "Gebruik alleen onregelmatige werkwoorden." if bonus else ""
+    if niveau == "A2":
+        extra += " Gebruik eenvoudige zinnen."
+    elif niveau == "B1":
+        extra += " Geef voorkeur aan iets langere zinnen."
+    elif niveau == "B2":
+        extra += " Gebruik complexere werkwoorden en structuur."
+
+    if tijd == "misto":
+        extra += " Voeg bij elke zin expliciet toe in welke tijd het werkwoord vervoegd moet worden."
+
     return (
         f"Geef me enkel een geldige JSON-array van {soort} Italiaanse zinnen op niveau {niveau}, "
         f"waar een werkwoord vervoegd moet worden in de tijd '{tijd}'. "
@@ -159,33 +170,36 @@ class Coniuga(commands.Cog):
                 return
 
             # Tijden (inclusief progressivo en misto)
-            tijden = ["presente", "progressivo", "passato", "imperfetto", "futuro", "condizionale", "misto"]
+            tijden = ["presente", "progressivo presente", "passato prossimo", "imperfetto", "futuro", "condizionale", "misto"]
             niveaus = ["A2", "B1", "B2"]
 
             def check(m):
                 return m.author == user and isinstance(m.channel, discord.DMChannel)
 
             # Tijdkeuze
-            await dm.send("⏳ Quale tempo verbale vuoi esercitare?\n" +
+            await dm.send("⏳ Quale tempo verbale vuoi esercitare?\n(Digita un numero da 1 a 7)\n\n" +
                           "\n".join(f"{i+1}. {t}" for i, t in enumerate(tijden)))
             try:
                 msg = await self.bot.wait_for("message", timeout=60, check=check)
                 tijd_index = int(msg.content.strip()) - 1
                 tijd = tijden[tijd_index]
             except:
-                await dm.send("Risposta non valida o tempo scaduto. Riprova con `!coniuga`.")
+                await dm.send("Risposta non valida o tempo scaduto. Riprova con `!verbi`.")
                 end_session(user.id)
                 return
 
             # Niveaukeuze
-            await dm.send("🎯 Quale livello vuoi esercitare?\n1. A2\n2. B1\n3. B2")
+            await dm.send("🎯 Quale livello vuoi esercitare?\n(Digita un numero da 1 a 3)\n1. A2\n2. B1\n3. B2")
             try:
                 msg = await self.bot.wait_for("message", timeout=60, check=check)
                 niveau = niveaus[int(msg.content.strip()) - 1]
             except:
-                await dm.send("Risposta non valida o tempo scaduto. Riprova con `!coniuga`.")
+                await dm.send("Risposta non valida o tempo scaduto. Riprova con `!verbi`.")
                 end_session(user.id)
                 return
+            
+            await dm.send(f"👍 Perfetto! Hai scelto:\n– Tempo verbale: **{tijd}**\n– Livello: **{niveau}**\n\n"
+                          "🔄 Puoi digitare `!stop-verbi` in qualsiasi momento per interrompere il quiz.")
 
             # Zinnen laden
             if tijd == "misto":
@@ -298,6 +312,15 @@ class Coniuga(commands.Cog):
                 await dm.send(f"⏰ Tempo scaduto! Risposta corretta: **{oplossing}**")
         ster = correcte >= 8
         return ster, correcte
+    
+    @commands.command(name='stop-verbi')
+    async def stop_verbi(self, ctx):
+        user_id = ctx.author.id
+        if is_user_in_active_session(user_id):
+            end_session(user_id)
+            await ctx.send("🛑 Hai interrotto il quiz. Puoi riprovare quando vuoi con `!verbi`.")
+        else:
+            await ctx.send("ℹ️ Non hai un quiz attivo al momento.")
 
     @commands.command(name='coniuga-leaderboard')
     async def coniuga_leaderboard(self, ctx):
@@ -371,6 +394,27 @@ class Coniuga(commands.Cog):
             lines.append(f"– **{naam}**: 1")
 
         await ctx.send("\n".join(lines))
+    
+    @commands.command(name='verwijder-coniuga-week')
+    @commands.is_owner()
+    async def verwijder_coniuga_week(ctx, week: int = None):
+        if ctx.channel.id not in TOEGESTANE_KANALEN:
+            return
+        if week is None:
+            week = weeknummer()
+        pad = os.path.join(DATA_PATH, f"week_{week}")
+        if not os.path.exists(pad):
+            await ctx.send(f"ℹ️ Geen lijsten gevonden voor week {week}.")
+            return
+        try:
+            for bestand in os.listdir(pad):
+                os.remove(os.path.join(pad, bestand))
+            os.rmdir(pad)
+            await ctx.send(f"🗑️ Lijsten van week {week} succesvol verwijderd.")
+            logging.info(f"[Coniuga] Lijsten van week {week} verwijderd door {ctx.author}.")
+        except Exception as e:
+            logging.error(f"[Coniuga] Fout bij verwijderen lijsten: {e}")
+            await ctx.send("❌ Fout bij verwijderen van de lijsten.")
 
 async def setup(bot):
     logging.info("🧩 setup() van cogs.coniuga gestart")  # 👈 Extra loggingregel
