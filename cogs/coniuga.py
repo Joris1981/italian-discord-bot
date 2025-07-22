@@ -7,6 +7,7 @@ import json
 import os
 import logging
 import time
+import re
 from openai import OpenAI
 from session_manager import start_session, end_session, is_user_in_active_session
 
@@ -17,7 +18,7 @@ TIJDSLIMIET = 60
 DATA_PATH = "/persistent/data/wordle/coniuga"
 SCORE_PATH = "/persistent/data/wordle/coniuga_scores"
 LEADERBOARD_THREAD_ID = 1397220124150468618  # <-- pas aan indien nodig
-TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932, 1397220124150468618]
+TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932, 1397220124150468618, 1397248870056067113]
 TIJDEN = ["presente", "progressivo presente", "passato prossimo", "imperfetto", "futuro", "condizionale"]
 NIVEAUS = ["A2", "B1", "B2"]
 
@@ -59,7 +60,7 @@ async def voer_coniuga_generatie_uit(week):
 
 def build_prompt(tijd, niveau, bonus=False):
     soort = "20" if bonus else "50"
-    extra = "Gebruik alleen onregelmatige werkwoorden." if bonus else ""
+    extra = "Geef me enkel zinnen waarin een **duidelijk onregelmatig werkwoord** vervoegd moet worden. Vermijd werkwoorden die regelmatig zijn of slechts kleine spellingaanpassingen hebben." if bonus else ""
     if niveau == "A2":
         extra += " Gebruik eenvoudige zinnen."
     elif niveau == "B1":
@@ -68,13 +69,20 @@ def build_prompt(tijd, niveau, bonus=False):
         extra += " Gebruik complexere werkwoorden en structuur."
 
     if tijd == "misto":
-        extra += " Voeg bij elke zin expliciet toe in welke tijd het werkwoord vervoegd moet worden."
+        extra += (
+            f" Voeg bij elke zin expliciet toe in welke tijd '{tijd}' het werkwoord vervoegd moet worden."
+            " Bijvoorbeeld (futuro), (imperfetto), (condizionale), enz. "
+            "Zorg dat dit zichtbaar is voor de speler zodat die weet welke tijd hij moet toepassen."
+            " Gebruik dit formaat exact:\n"
+            '{ "zin": "Se avessi una macchina, ___ (viaggiare) (condizionale) di più", "oplossing": "viaggerei", "varianten": [] }\n'
+        )
 
     return (
         f"Geef me enkel een geldige JSON-array van {soort} Italiaanse zinnen op niveau {niveau}, "
         f"waar een werkwoord vervoegd moet worden in de tijd '{tijd}'. "
         "Gebruik dit formaat exact per item:\n"
         '{ "zin": "... ___ ...", "oplossing": "...", "varianten": ["...", "..."] }\n'
+        "Toon in de zin de infinitief van het werkwoord tussen haakjes. Geef nooit de vervoegde vorm al in de zin."
         "Laat 'varianten' leeg indien niet van toepassing. Geef alleen de JSON array terug, geen uitleg."
     )
 
@@ -87,7 +95,10 @@ async def call_openai(prompt, aantal):
         ))
         content = response.choices[0].message.content
         logging.warning(f"[OpenAI Response]:\n{content}")
-        return json.loads(content)
+
+        # 🔧 Sanitize JSON: verwijder ongecontroleerde control characters
+        sanitized = re.sub(r'[\x00-\x1F\x7F]', '', content)
+        return json.loads(sanitized)
     except Exception as e:
         logging.error(f"[Coniuga] Fout bij genereren met OpenAI: {e}")
         return []
