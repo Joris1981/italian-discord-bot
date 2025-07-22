@@ -51,7 +51,6 @@ class Reminder(commands.Cog):
     # 🔁 DM-reminder elke 72 uur
     @tasks.loop(hours=72)
     async def quiz_reminder(self):
-        await self.bot.wait_until_ready()
         for user_id in GEBRUIKERS_IDS:
             try:
                 user = await self.bot.fetch_user(user_id)
@@ -62,6 +61,12 @@ class Reminder(commands.Cog):
                 logger.warning(f"Cannot DM user {user_id}, permission denied.")
             except Exception as e:
                 logger.error(f"Error sending reminder to {user_id}: {e}")
+    
+    @quiz_reminder.before_loop
+    async def before_quiz_reminder(self):
+        await self.bot.wait_until_ready()
+        # Start de eerste cyclus pas 72 uur NA het opstarten
+        logger.info("Wacht 72 uur tot eerste quiz reminder.")
 
     # 📆 Dinsdag 9u00 – Wordle reminder
     @tasks.loop(minutes=1)

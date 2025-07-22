@@ -56,13 +56,11 @@ async def genereer_coniuga_lijsten():
 def build_prompt(tijd, niveau, bonus=False):
     soort = "20" if bonus else "50"
     return (
-        f"Geef me {soort} Italiaanse zinnen op niveau {niveau}, telkens met een werkwoord dat vervoegd moet worden in de tijd '{tijd}'. "
-        "Vervang het werkwoord door een lege plaats '___' in de zin. "
-        "Geef bij elke zin:\n"
-        "- 'zin': de volledige zin met ___\n"
-        "- 'oplossing': de juiste vervoeging van het werkwoord\n"
-        "- 'varianten': (optioneel) andere toegelaten vormen\n"
-        "Gebruik dagelijkse context en varieer de zinsstructuur."
+        f"Geef me enkel een geldige JSON-array van {soort} Italiaanse zinnen op niveau {niveau}, "
+        f"waar een werkwoord vervoegd moet worden in de tijd '{tijd}'. "
+        "Gebruik dit formaat exact per item:\n"
+        '{ "zin": "... ___ ...", "oplossing": "...", "varianten": ["...", "..."] }\n'
+        "Laat 'varianten' leeg indien niet van toepassing. Geef alleen de JSON array terug, geen uitleg."
     )
 
 async def call_openai(prompt, aantal):
@@ -73,6 +71,7 @@ async def call_openai(prompt, aantal):
             temperature=0.8
         ))
         content = response.choices[0].message.content
+        logging.warning(f"[OpenAI Response]:\n{content}")
         # Verwacht dat de output een JSON-array is
         return json.loads(content)
     except Exception as e:
@@ -349,6 +348,29 @@ class Coniuga(commands.Cog):
             lines.append(f"– **{naam}**: 1")
 
         await ctx.send("\n".join(lines))
+
+    @commands.command(name='genereer-coniuga-week')
+    @commands.is_owner()  # Alleen jij kan dit gebruiken (optioneel voor veiligheid)
+    async def genereer_coniuga_week(self, ctx, week: int = None):
+        if ctx.channel.id != 1388667261761359932:
+            return  # Enkel toegestaan in testkanaal
+
+        if week is None:
+            week = weeknummer()
+        pad = os.path.join(DATA_PATH, f"week_{week}")
+        if os.path.exists(pad):
+            await ctx.send(f"⚠️ De map voor week {week} bestaat al. Verwijder handmatig als je opnieuw wil genereren.")
+            return
+
+        await ctx.send(f"🛠️ Genereren van Coniuga-lijsten voor week {week}...")
+
+        try:
+            # Roep de scheduled taak aan als gewone functie
+            await genereer_coniuga_lijsten.callback()
+            await ctx.send(f"✅ Lijsten gegenereerd voor week {week}.")
+        except Exception as e:
+            await ctx.send(f"❌ Fout bij genereren: {e}")
+            logging.error(f"[Coniuga] Fout bij manuele generatie: {e}")
 
 async def setup(bot):
     await bot.add_cog(Coniuga(bot))
