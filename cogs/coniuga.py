@@ -397,7 +397,8 @@ class Coniuga(commands.Cog):
     
     @commands.command(name='verwijder-coniuga-week')
     @commands.is_owner()
-    async def verwijder_coniuga_week(ctx, week: int = None):
+    async def verwijder_coniuga_week(self, ctx, week: int = None):
+        logging.info(f"[Command] verwijder-coniuga-week opgeroepen door {ctx.author} in kanaal {ctx.channel} voor week {week}")
         if ctx.channel.id not in TOEGESTANE_KANALEN:
             return
         if week is None:
@@ -422,3 +423,5 @@ async def setup(bot):
     logging.info("✅ Coniuga-cog toegevoegd aan bot")     # 👈 Nog een loggingregel
     genereer_coniuga_lijsten.start()
     logging.info("⏰ Scheduler coniuga gestart")           # 👈 Optioneel, maar handig
+    for command in bot.commands:
+        logging.info(f"✅ Commando geladen: {command.name}")
