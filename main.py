@@ -82,6 +82,15 @@ class MyBot(commands.Bot):
 
 bot = MyBot(command_prefix='!', intents=intents, case_insensitive=True)
 
+# === 📜 Bot events ===
+@bot.event
+async def on_ready():
+    logging.info(f"✅ Bot is online als {bot.user}")
+    logging.info("📜 Geregistreerde commando's:")
+    for command in bot.commands:
+        logging.info(f"- {command.name}")
+    logging.info("🌐 Bot is klaar om te corrigeren en te chatten!")
+
 # === 🔔 Reminder woensdagavond ===
 async def reminder_task():
     await bot.wait_until_ready()

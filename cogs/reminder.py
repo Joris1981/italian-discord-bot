@@ -65,8 +65,9 @@ class Reminder(commands.Cog):
     @quiz_reminder.before_loop
     async def before_quiz_reminder(self):
         await self.bot.wait_until_ready()
-        # Start de eerste cyclus pas 72 uur NA het opstarten
         logger.info("Wacht 72 uur tot eerste quiz reminder.")
+        await asyncio.sleep(72 * 3600)  # 👈 wacht effectief 72 uur (3 dagen) vóór eerste reminder
+        logger.info("Start quiz reminders.")
 
     # 📆 Dinsdag 9u00 – Wordle reminder
     @tasks.loop(minutes=1)
