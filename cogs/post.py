@@ -34,11 +34,11 @@ class OefeningenOverzicht(commands.Cog):
             value=(
                 "Typ `quiz` in de thread van een specifiek onderwerp. De bot stuurt je dan 20 zinnen die je meteen kunt oplossen.\n"
                 "Je krijgt directe feedback op elk antwoord. Kies hieronder het onderwerp dat je wil oefenen:\n\n"
-                "[DI o DA](https://discord.com/channels/123456789012345678/1388866025679880256)\n"
-                "[PER o IN](https://discord.com/channels/123456789012345678/1390080013533052949)\n"
-                "[QUALCHE / ALCUNI / NESSUNO](https://discord.com/channels/123456789012345678/1390371003414216805)\n"
-                "[CI – usi diversi](https://discord.com/channels/123456789012345678/1388241920790237347)\n"
-                "[PRONOMI – diretti e indiretti](https://discord.com/channels/123456789012345678/1394735397824758031)"
+                "[DI o DA](https://discord.com/channels/1387552031132094709/1388866025679880256)\n"
+                "[PER o IN](https://discord.com/channels/1387552031132094709/1390080013533052949)\n"
+                "[QUALCHE / ALCUNI / NESSUNO](https://discord.com/channels/1387552031132094709/1390371003414216805)\n"
+                "[CI – usi diversi](https://discord.com/channels/1387552031132094709/1388241920790237347)\n"
+                "[PRONOMI – diretti e indiretti](https://discord.com/channels/1387552031132094709/1394735397824758031)"
             ),
             inline=False
         )
@@ -46,12 +46,12 @@ class OefeningenOverzicht(commands.Cog):
         embed1.add_field(
             name="🎯 Quiz interattivi (deel 2)",
             value=(
-                "[BELLO – tutte le forme](https://discord.com/channels/123456789012345678/1396072250221920276)\n"
-                "[COMPARATIVI](https://discord.com/channels/123456789012345678/1393289069009830038)\n"
-                "[CHI o CHE](https://discord.com/channels/123456789012345678/1393269447094960209)\n"
-                "[CI / DI / NE](https://discord.com/channels/123456789012345678/1393280441221644328)\n"
-                "[TRA / FRA / DOPO](https://discord.com/channels/123456789012345678/1390091443678478397)\n"
-                "[BUONO o BENE](https://discord.com/channels/123456789012345678/1397860505808535573)"
+                "[BELLO – tutte le forme](https://discord.com/channels/1387552031132094709/1396072250221920276)\n"
+                "[COMPARATIVI](https://discord.com/channels/1387552031132094709/1393289069009830038)\n"
+                "[CHI o CHE](https://discord.com/channels/1387552031132094709/1393269447094960209)\n"
+                "[CI / DI / NE](https://discord.com/channels/1387552031132094709/1393280441221644328)\n"
+                "[TRA / FRA / DOPO](https://discord.com/channels/1387552031132094709/1390091443678478397)\n"
+                "[BUONO o BENE](https://discord.com/channels/1387552031132094709/1397860505808535573)"
             ),
             inline=False
         )
@@ -64,8 +64,8 @@ class OefeningenOverzicht(commands.Cog):
             value=(
                 "We hebben ook klassieke invuloefeningen die je zelf op papier of digitaal kan maken.\n"
                 "Controleer je antwoorden nadien met het bijhorende commando voor de oplossingen.\n"
-                "[Imperfetto](https://discord.com/channels/123456789012345678/1388907175920795658) – `!imperfetto-esercizio` / `!imperfetto-soluzioni`\n"
-                "[Passato prossimo](https://discord.com/channels/123456789012345678/1388907630889664522) – `!passato-esercizio` / `!passato-esercizio-soluzioni`"
+                "[Imperfetto](https://discord.com/channels/1387552031132094709/1388907175920795658) – `!imperfetto-esercizio` / `!imperfetto-soluzioni`\n"
+                "[Passato prossimo](https://discord.com/channels/1387552031132094709/1388907630889664522) – `!passato-esercizio` / `!passato-esercizio-soluzioni`"
             ),
             inline=False
         )
@@ -74,10 +74,10 @@ class OefeningenOverzicht(commands.Cog):
             name="📝 Schrijfoefeningen",
             value=(
                 "In deze threads kun je korte teksten of zinnen schrijven. De bot controleert automatisch je spelling en grammatica.\n"
-                "[A chi? A cosa?](https://discord.com/channels/123456789012345678/1394729973939699753)\n"
-                "[Com'era la situazione](https://discord.com/channels/123456789012345678/1387853018845810891)\n"
-                "[Oggi ho fatto](https://discord.com/channels/123456789012345678/1387573784055255263)\n\n"
-                "📌 Vrij schrijven? Gebruik [Due Parole](https://discord.com/channels/123456789012345678/1387569943746318386) voor eigen teksten met bot-feedback."
+                "[A chi? A cosa?](https://discord.com/channels/1387552031132094709/1394729973939699753)\n"
+                "[Com'era la situazione](https://discord.com/channels/1387552031132094709/1387853018845810891)\n"
+                "[Oggi ho fatto](https://discord.com/channels/1387552031132094709/1387573784055255263)\n\n"
+                "📌 Vrij schrijven? Gebruik [Due Parole](https://discord.com/channels/1387552031132094709/1387569943746318386) voor eigen teksten met bot-feedback."
             ),
             inline=False
         )
@@ -86,12 +86,12 @@ class OefeningenOverzicht(commands.Cog):
             name="🎧 Luistervaardigheid",
             value=(
                 "Wekelijkse podcasts met transcript in PDF:\n"
-                "📥 [Podcastkanaal](https://discord.com/channels/123456789012345678/1387594096759144508)\n\n"
+                "📥 [Podcastkanaal](https://discord.com/channels/1387552031132094709/1387594096759144508)\n\n"
                 "Begrijpend luisteren – luister en beantwoord de vragen:\n"
-                "🔊 [Dai accompagni](https://discord.com/channels/123456789012345678/1388473121346027520)\n"
-                "🔊 [Spaghetti alla puttanesca](https://discord.com/channels/123456789012345678/1390073410826014903)\n"
-                "🔊 [Cristina e la sua famiglia](https://discord.com/channels/123456789012345678/1390410564093743285)\n"
-                "🔊 [Cos'hai fatto?](https://discord.com/channels/123456789012345678/1394796805283385454)"
+                "🔊 [Dai accompagni](https://discord.com/channels/1387552031132094709/1388473121346027520)\n"
+                "🔊 [Spaghetti alla puttanesca](https://discord.com/channels/1387552031132094709/1390073410826014903)\n"
+                "🔊 [Cristina e la sua famiglia](https://discord.com/channels/1387552031132094709/1390410564093743285)\n"
+                "🔊 [Cos'hai fatto?](https://discord.com/channels/1387552031132094709/1394796805283385454)"
             ),
             inline=False
         )
@@ -103,7 +103,7 @@ class OefeningenOverzicht(commands.Cog):
             name="📖 Begrijpend lezen",
             value=(
                 "Lees korte nieuwsberichten in het Italiaans. Vaak met audio zodat je ook uitspraak kan oefenen.\n"
-                "📚 [Nieuws & lettura](https://discord.com/channels/123456789012345678/1395140458493251776)"
+                "📚 [Nieuws & lettura](https://discord.com/channels/1387552031132094709/1395140458493251776)"
             ),
             inline=False
         )
@@ -113,7 +113,7 @@ class OefeningenOverzicht(commands.Cog):
             value=(
                 "Deel je favoriete nummers met een YouTube-link.\n"
                 "De bot helpt met tekst en vertaling.\n"
-                "🎵 [Muziek & vertaling](https://discord.com/channels/123456789012345678/1390448992520765501)"
+                "🎵 [Muziek & vertaling](https://discord.com/channels/1387552031132094709/1390448992520765501)"
             ),
             inline=False
         )
@@ -121,9 +121,9 @@ class OefeningenOverzicht(commands.Cog):
         embed3.add_field(
             name="🎮 Giochi – leer via spel!",
             value=(
-                "[!wordle](https://discord.com/channels/123456789012345678/1389552706783543307) – Raad het Italiaanse woord\n"
-                "[!frasi](https://discord.com/channels/123456789012345678/1395771435632431104) – Vervoeg het juiste werkwoord in 20 zinnen + bonusronde\n"
-                "[!verbi](https://discord.com/channels/123456789012345678/1397248870056067113) – Coniugazione: vervoegen op tijd en niveau"
+                "[!wordle](https://discord.com/channels/1387552031132094709/1389552706783543307) – Raad het Italiaanse woord\n"
+                "[!frasi](https://discord.com/channels/1387552031132094709/1395771435632431104) – Vervoeg het juiste werkwoord in 20 zinnen + bonusronde\n"
+                "[!verbi](https://discord.com/channels/1387552031132094709/1397248870056067113) – Coniugazione: vervoegen op tijd en niveau"
             ),
             inline=False
         )
