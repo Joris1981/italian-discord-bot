@@ -136,6 +136,8 @@ class OefeningenOverzicht(commands.Cog):
                 "[!wordle](https://discord.com/channels/1387552031132094709/1389552706783543307) – Vertaal woorden uit het Nederlands naar het Italiaans. Elke week een nieuw thema.\n"
                 "[!frasi](https://discord.com/channels/1387552031132094709/1395771435632431104) – Vertaal volledige zinnen naar het Italiaans en leer ook mogelijke varianten. Wekelijks nieuwe thema’s.\n"
                 "[!verbi](https://discord.com/channels/1387552031132094709/1397248870056067113) – Vervoeg Italiaanse werkwoorden correct in context. Elke week nieuwe zinnen.\n\n"
+                "🔗 Gebruik de commando's in de threads om te starten, bv. `!wordle`, `!frasi`, `!verbi`.\n"
+                "📌 Je kan elk van deze spellen ook rechtstreeks starten in je inbox (DM) door een bericht te sturen naar **ItalianoBot** 🤖. Typ daar gewoon !wordle, !frasi of !verbi om het spel naar keuze onmiddellijk te starten in jouw privéberichten."
             ),
             inline=False
         )
