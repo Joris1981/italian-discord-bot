@@ -129,29 +129,37 @@ class OefeningenOverzicht(commands.Cog):
         )
 
         embed3.add_field(
-            name="🎮 Giochi – leer via spel!",
+            name="🎮 Giochi – leer via spel! (deel 1)",
             value=(
                 "🆕 Elke week publiceert de bot nieuwe zinnen of thema’s, zodat je telkens iets nieuws kunt oefenen.\n"
-                "📊 Je resultaten worden automatisch opgenomen in het wekelijkse [Leaderboard](https://discord.com/channels/1387552031132094709/1390779837593026594). Een beetje competitie houdt iedereen gemotiveerd! 💪🇮🇹\n"
+                "📊 Je resultaten worden automatisch opgenomen in het wekelijkse [Leaderboard](https://discord.com/channels/1387552031132094709/1390779837593026594).\n"
+                "Een beetje competitie houdt iedereen gemotiveerd! 💪🇮🇹\n\n"
                 "[!wordle](https://discord.com/channels/1387552031132094709/1389552706783543307) – Vertaal woorden uit het Nederlands naar het Italiaans. Elke week een nieuw thema.\n"
-                "[!frasi](https://discord.com/channels/1387552031132094709/1395771435632431104) – Vertaal volledige zinnen naar het Italiaans en leer ook mogelijke varianten. Wekelijks nieuwe thema’s.\n"
-                "[!verbi](https://discord.com/channels/1387552031132094709/1397248870056067113) – Vervoeg Italiaanse werkwoorden correct in context. Elke week nieuwe zinnen.\n\n"
-                "📌 Je kunt deze spellen ook rechtstreeks starten in je inbox (DM) door een bericht te sturen naar **ItalianoBot** 🤖. Typ daar gewoon !wordle, !frasi of !verbi om het spel naar keuze onmiddellijk te starten in jouw privéberichten."
+                "[!frasi](https://discord.com/channels/1387552031132094709/1395771435632431104) – Vertaal volledige zinnen naar het Italiaans en leer ook mogelijke varianten."
             ),
             inline=False
         )
 
         embed3.add_field(
-            name="🔗 Start een spel",
+            name="🎮 Giochi – leer via spel! (deel 2)",
             value=(
-                "🔗 Gebruik de commando's in de threads om te starten, bv. `!wordle`, `!frasi`, `!verbi`.\n"
-                "📌 Je kan elk van deze spellen ook rechtstreeks starten in je inbox (DM) door een bericht te sturen naar **ItalianoBot** 🤖. Typ daar gewoon !wordle, !frasi of !verbi om het spel naar keuze onmiddellijk te starten in jouw privéberichten."
+                "[!verbi](https://discord.com/channels/1387552031132094709/1397248870056067113) – Vervoeg Italiaanse werkwoorden correct in context. Elke week nieuwe zinnen.\n\n"
+                "📌 Je kunt deze spellen ook rechtstreeks starten in je inbox (DM) door een bericht te sturen naar **ItalianoBot** 🤖.\n"
+                "Typ daar gewoon `!wordle`, `!frasi` of `!verbi` om het spel onmiddellijk te starten."
             ),
             inline=False
         )
 
+        embed3.add_field(
+            name="📢 Heb je een suggestie?",
+            value=(
+                "Heb je een idee voor een nieuwe oefening of spel? Laat het weten in de [suggesties thread](https://discord.com/channels/1387552031132094709/1387552031631478942)!\n"
+                "Nieuwe ideeën om samen te leren en te groeien zijn altijd welkom. Grazie mille! 🙏"
+            ),
+            inline=False
+        )
         embed3.set_footer(
-            text="✨ **Elke oefening helpt je weer een stapje verder.** Suggesties voor nieuwe onderwerpen zijn altijd welkom of maak zelf een nieuwe post aan. Forza! Continuiamo insieme 💪🇮🇹"
+            text="✨ **Elke oefening helpt je weer een stapje verder.** Forza! Continuiamo insieme 💪🇮🇹"
         )
 
         await kanaal.send(embed=embed1)
