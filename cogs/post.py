@@ -24,6 +24,7 @@ class OefeningenOverzicht(commands.Cog):
                 "Ik heb jullie feedback gehoord: de quizzen en oefeningen waren soms moeilijk terug te vinden."
                 " Daarom vind je hier een duidelijk overzicht van alle interactieve tools, oefeningen en spellen"
                 " die je kunt gebruiken om je Italiaans te verbeteren.\n\n"
+                "📌 Alle links in dit bericht zijn klikbaar – ze brengen je rechtstreeks naar het juiste onderwerp.\n"
                 "🔄 We voegen regelmatig nieuwe oefeningen toe. Kom dus zeker terug om te ontdekken wat er nieuw is!"
             ),
             color=discord.Color.blue()
@@ -65,8 +66,8 @@ class OefeningenOverzicht(commands.Cog):
         embed2.add_field(
             name="✍️ Esercizi su carta",
             value=(
-                "Dit zijn klassieke invuloefeningen die je op je eigen tempo kunt maken, op papier.\n"
-                "Typ het commando, bv. `!passato-esercizio`, in de betreffende thread om de oefening te krijgen.\n"
+                "Er zijn ook klassieke invuloefeningen die je op je eigen tempo kunt maken, op papier.\n"
+                "Typ in het grammatica kanaal het commando, bv. `!passato-esercizio`, in de betreffende thread om de oefening te krijgen.\n"
                 "Maak eerst de oefening zonder hulp, en gebruik daarna het bijhorende commando, bv. `!passato-esercizio-soluzioni`, om je antwoorden te controleren.\n"
                 "Zo oefen je actief en leer je uit je fouten.\n"
                 "[Imperfetto](https://discord.com/channels/1387552031132094709/1388907175920795658) – `!imperfetto-esercizio` / `!imperfetto-soluzioni`\n"
@@ -94,7 +95,7 @@ class OefeningenOverzicht(commands.Cog):
                 "Een ideale manier om je luistervaardigheid te verbeteren én je woordenschat uit te breiden op een leuke manier.\n"
                 "Wekelijkse podcasts met transcript in PDF:\n"
                 "📥 [Podcastkanaal](https://discord.com/channels/1387552031132094709/1387594096759144508)\n\n"
-                "Begrijpend luisteren – luister naar het fragment, doe de bijhorende oefening of beantwoord de vragen.\n"
+                "**Begrijpend luisteren** – luister naar het fragment, doe de bijhorende oefening of beantwoord de vragen.\n"
                 "Gebruik nadien het juiste commando in de thread om het transcript in jouw inbox te ontvangen.\n"
                 "Bijvoorbeeld: `!ascolto_cristina`, `!ascolto_coshaifatto`, ... enz.\n\n"
                 "🔊 [Dai accompagni](https://discord.com/channels/1387552031132094709/1388473121346027520)\n"
@@ -139,7 +140,9 @@ class OefeningenOverzicht(commands.Cog):
             inline=False
         )
 
-        embed3.set_footer(text="✨ Elke oefening helpt je weer een stapje verder. Suggesties voor nieuwe onderwerpen zijn altijd welkom of maak zelf een nieuwe post aan. Forza! Continuiamo insieme 💪🇮🇹")
+        embed3.set_footer(
+            text="✨ __Elke oefening helpt je weer een stapje verder.__ Suggesties voor nieuwe onderwerpen zijn altijd welkom of maak zelf een nieuwe post aan. Forza! Continuiamo insieme 💪🇮🇹"
+        )
 
         await kanaal.send(embed=embed1)
         await kanaal.send(embed=embed2)
