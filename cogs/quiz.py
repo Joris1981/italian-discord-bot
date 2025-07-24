@@ -31,6 +31,7 @@ class Quiz(commands.Cog):
         self.ci_di_ne_thread = 1393280441221644328  # Thread ID for CI/DI/NE quiz
         self.tra_thread = 1390091443678478397 # Thread ID for TRA/FRA quiz
         self.buono_bene_thread = 1397860505808535573 # Thread ID for BUONO/BENE quiz
+        self.diminutivi_thread = 1398060503590244432 # Thread ID for DIMINUTIVI quiz
 
         # DI o DA
         self.di_da_zinnen = [
@@ -356,6 +357,40 @@ class Quiz(commands.Cog):
             {"zin": "Hai dei consigli ___ da darmi per l’esame?", "antwoord": "buoni"}
         ]
     
+        # DIMINUTIVI 
+        self.diminutivi_zinnen = [
+            {"zin": "Dopo il pranzo, ho preso un piccolo caffè. Era un __________. (caffè)", "antwoord": "caffettino", "type": ":arrow_down:"},
+            {"zin": "Quando ero bambino avevo una piccola casa in campagna, una __________. (casa)", "antwoord": "casetta", "type": ":arrow_down:"},
+            {"zin": "Hai portato un regalo enorme! È davvero un __________. (regalo)", "antwoord": "regalone", "type": ":arrow_up:"},
+            {"zin": "Mi ha scritto un pensiero molto dolce, un __________. (pensiero)", "antwoord": "pensierino", "type": ":arrow_down:"},
+            {"zin": "Quando ci siamo visti, mi ha dato un piccolo bacio, un __________. (bacio)", "antwoord": "bacetto", "type": ":arrow_down:"},
+            {"zin": "Sul balcone ho messo un piccolo vaso con fiori, un __________. (vaso)", "antwoord": "vasetto", "type": ":arrow_down:"},
+            {"zin": "In montagna abbiamo visto un grande albero, un __________. (albero)", "antwoord": "alberone", "type": ":arrow_up:"},
+            {"zin": "Mia sorella da piccola era proprio una __________. (sorella)", "antwoord": "sorellina", "type": ":arrow_down:"},
+            {"zin": "Da piccolo ero un __________ molto timido. (fratello)", "antwoord": "fratellino", "type": ":arrow_down:"},
+            {"zin": "Oggi ho avuto una giornata davvero orribile, una __________. (giornata)", "antwoord": "giornataccia", "type": ":arrow_up:"},
+            {"zin": "Questa strada porta a un grande portone, un __________. (porta)", "antwoord": "portone", "type": ":arrow_up:"},
+            {"zin": "Che piatto enorme! Questo è un __________! (piatto)", "antwoord": "piattone", "type": ":arrow_up:"},
+            {"zin": "Ho letto un piccolo libro illustrato, un __________. (libro)", "antwoord": "libricino", "type": ":arrow_down:"},
+            {"zin": "Hai preparato una torta piccola ma deliziosa, una __________. (torta)", "antwoord": "tortina", "type": ":arrow_down:"},
+            {"zin": "Non essere così __________, su! (cattivo)", "antwoord": "cattivello", "type": ":arrow_down:"},
+            {"zin": "Ti mando un grande bacio, un __________! (bacio)", "antwoord": "bacione", "type": ":arrow_up:"},
+            {"zin": "Era una donna davvero imponente, una __________. (donna)", "antwoord": "donnona", "type": ":arrow_up:"},
+            {"zin": "Quel ragazzo è __________! Davvero, sa tutto. (intelligente)", "antwoord": "superintelligente", "type": ":arrow_up:"},
+            {"zin": "Questa è un'informazione molto piccola e poco importante, un'__________. (informazione)", "antwoord": "informazioncella", "type": ":arrow_down:"},
+            {"zin": "Non è un evento ordinario, è qualcosa di __________. (ordinario)", "antwoord": "straordinario", "type": ":arrow_up:"},
+            {"zin": "Abbiamo camminato per un piccolo tratto, un __________. (tratto)", "antwoord": "trattino", "type": ":arrow_down:"},
+            {"zin": "Quello è un __________ di uomo! (uomo)", "antwoord": "omone", "type": ":arrow_up:"},
+            {"zin": "Abbiamo preso un __________ prima di cena. (aperitivo)", "antwoord": "aperitivino", "type": ":arrow_down:"},
+            {"zin": "Mi ha raccontato una __________ davvero interessante. (storia)", "antwoord": "storiella", "type": ":arrow_down:"},
+            {"zin": "Quella pizza era enorme, un vero __________. (pizza)", "antwoord": "pizzone", "type": ":arrow_up:"},
+            {"zin": "Vorrei un pezzetto piccolo, un __________. (pezzo)", "antwoord": "pezzettino", "type": ":arrow_down:"},
+            {"zin": "Abbiamo bevuto un bicchiere piccolo, un __________. (bicchiere)", "antwoord": "bicchierino", "type": ":arrow_down:"},
+            {"zin": "Quel cane era minuscolo, proprio un __________. (cane)", "antwoord": "cagnolino", "type": ":arrow_down:"},
+            {"zin": "Questo libro è gigantesco, un __________! (libro)", "antwoord": "librone", "type": ":arrow_up:"},
+            {"zin": "Hai scritto un messaggio molto corto, un __________. (messaggio)", "antwoord": "messaggino", "type": ":arrow_down:"},
+        ]
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -432,6 +467,12 @@ class Quiz(commands.Cog):
                     await self.start_buono_bene_quiz(message)
                 except Exception as e:
                     logger.error(f"Error starting BUONO/BENE quiz for user {user_id}: {e}")
+            elif thread_id == self.diminutivi_thread:
+                try:
+                    logger.info(f"Starting DIMINUTIVI quiz for user {user_id}")
+                    await self.start_diminutivi_quiz(message)
+                except Exception as e:
+                    logger.error(f"Error starting DIMINUTIVI quiz for user {user_id}: {e}")             
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None):
         try:
@@ -518,6 +559,11 @@ class Quiz(commands.Cog):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "\ud83c\udfaf Iniziamo il quiz! Rispondi con BUONO, BUONA, BUON, BUONI, BUONE o BENE alle seguenti frasi. Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.buono_bene_zinnen, "antwoord", "!buono-soluzioni", intro)
+
+    async def start_diminutivi_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Il tuo compito è scrivere la forma alterata corretta – un **diminutivo** (➜ :arrow_up:) o un **accrescitivo** (➜ :arrow_down:) – a seconda del contesto."
+        await self.start_quiz(message.author, self.diminutivi_zinnen, "antwoord", "type", "!diminutivi-soluzioni", intro)
 
     async def start_tra_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
@@ -660,6 +706,10 @@ class Quiz(commands.Cog):
     @commands.command(name="buono-soluzioni")
     async def buono_soluzioni(self, ctx):
         await self.stuur_oplossingen(ctx, "Buono vs Bene", self.buono_bene_zinnen)
+
+    @commands.command(name="diminutivi-soluzioni")
+    async def diminutivi_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Diminutivi e accrescitivi", self.diminutivi_zinnen)
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))
