@@ -482,7 +482,11 @@ class Quiz(commands.Cog):
             correcte = 0
 
             for i, vraag in enumerate(vragen, 1):
-                await dm.send(f"{i}. {vraag['zin']}")
+                zin = vraag["zin"]
+                if "type" in vraag:
+                    zin += f" {vraag['type']}"  # Voeg emoji toe als aanwezig
+                await dm.send(f"{i}. {zin}")
+
                 try:
                     msg = await self.bot.wait_for(
                         "message",
@@ -498,16 +502,29 @@ class Quiz(commands.Cog):
                     else:
                         # Standaardcontrole
                         if normalize(vraag[verwacht]) == antwoord:
-                            await dm.send("✅ Corretto!")
+                            feedback = "✅ Corretto!"
+                            if "type" in vraag:
+                                if vraag["type"] == ":arrow_up:":
+                                    feedback += " (Hai inserito un **accrescitivo** 👍)"
+                                elif vraag["type"] == ":arrow_down:":
+                                    feedback += " (Hai inserito un **diminutivo** 👍)"
+                            await dm.send(feedback)
                             correcte += 1
                         else:
-                            await dm.send(f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**")
+                            msg_text = f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**"
+                            if "type" in vraag:
+                                if vraag["type"] == ":arrow_up:":
+                                    msg_text += " (Era un **accrescitivo**)"
+                                elif vraag["type"] == ":arrow_down:":
+                                    msg_text += " (Era un **diminutivo**)"
+                            await dm.send(msg_text)
 
                 except asyncio.TimeoutError:
                     await dm.send("⏰ Tempo scaduto per questa domanda.")
 
             await dm.send(f"\n📊 Hai risposto correttamente a **{correcte}** domande su **{len(vragen)}**.")
             await dm.send(f"✉️ Per vedere tutte le risposte corrette, scrivi il comando **{oplossingscommando}** qui in DM.")
+
         except discord.Forbidden:
             # Eventuele fallback voor blokkade
             channel = await user.guild.fetch_channel(self.bello_thread)
@@ -562,8 +579,14 @@ class Quiz(commands.Cog):
 
     async def start_diminutivi_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
-        intro = "🎯 Il tuo compito è scrivere la forma alterata corretta – un **diminutivo** (➜ :arrow_up:) o un **accrescitivo** (➜ :arrow_down:) – a seconda del contesto."
-        await self.start_quiz(message.author, self.diminutivi_zinnen, "antwoord", "type", "!diminutivi-soluzioni", intro)
+        intro = "🎯 Iniziamo il quiz sui **diminutivi e accrescitivi**!\n Scrivere la forma alterata corretta – un **diminutivo** (➜ :arrow_down:) o un **accrescitivo** (➜ :arrow_up:) – a seconda del contesto."
+        await self.start_quiz(
+            message.author,
+            self.diminutivi_zinnen,
+            "antwoord",
+            "!diminutivi-soluzioni",
+            intro
+        )
 
     async def start_tra_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
