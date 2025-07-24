@@ -17,7 +17,7 @@ class OefeningenOverzicht(commands.Cog):
         if not kanaal:
             return await ctx.send("⚠️ Doelkanaal niet gevonden. Controleer het ID.")
 
-        # Embed 1: Intro + Quiz interattivi
+        # Embed 1: Intro + Quiz interattivi (in 2 delen)
         embed1 = discord.Embed(
             title="📚 Oefeningen en tools om je Italiaans te oefenen 🇮🇹",
             description=(
@@ -30,15 +30,22 @@ class OefeningenOverzicht(commands.Cog):
         )
 
         embed1.add_field(
-            name="🎯 Quiz interattivi",
+            name="🎯 Quiz interattivi (deel 1)",
             value=(
-                "Typ `quiz` in de thread van een specifiek onderwerp. De bot stuurt je dan 20 zinnen die je meteen kunt oplossen."
-                " Je krijgt directe feedback op elk antwoord. Kies hieronder het onderwerp dat je wil oefenen:\n"
+                "Typ `quiz` in de thread van een specifiek onderwerp. De bot stuurt je dan 20 zinnen die je meteen kunt oplossen.\n"
+                "Je krijgt directe feedback op elk antwoord. Kies hieronder het onderwerp dat je wil oefenen:\n\n"
                 "[DI o DA](https://discord.com/channels/123456789012345678/1388866025679880256)\n"
                 "[PER o IN](https://discord.com/channels/123456789012345678/1390080013533052949)\n"
                 "[QUALCHE / ALCUNI / NESSUNO](https://discord.com/channels/123456789012345678/1390371003414216805)\n"
                 "[CI – usi diversi](https://discord.com/channels/123456789012345678/1388241920790237347)\n"
-                "[PRONOMI – diretti e indiretti](https://discord.com/channels/123456789012345678/1394735397824758031)\n"
+                "[PRONOMI – diretti e indiretti](https://discord.com/channels/123456789012345678/1394735397824758031)"
+            ),
+            inline=False
+        )
+
+        embed1.add_field(
+            name="🎯 Quiz interattivi (deel 2)",
+            value=(
                 "[BELLO – tutte le forme](https://discord.com/channels/123456789012345678/1396072250221920276)\n"
                 "[COMPARATIVI](https://discord.com/channels/123456789012345678/1393289069009830038)\n"
                 "[CHI o CHE](https://discord.com/channels/123456789012345678/1393269447094960209)\n"
