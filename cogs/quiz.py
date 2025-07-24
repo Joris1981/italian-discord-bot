@@ -20,16 +20,17 @@ class Quiz(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.di_da_thread = 1388866025679880256
-        self.per_in_thread = 1390080013533052949
-        self.qualche_thread = 1390371003414216805
-        self.ci_thread = 1388241920790237347
-        self.pronomi_thread = 1394735397824758031
-        self.bello_thread = 1396072250221920276
-        self.comparativi_thread = 1393289069009830038
-        self.chi_che_thread = 1393269447094960209
-        self.ci_di_ne_thread = 1393280441221644328
-        self.tra_thread = 1390091443678478397
+        self.di_da_thread = 1388866025679880256 # Thread ID for DI/DA quiz
+        self.per_in_thread = 1390080013533052949 # Thread ID for PER/IN quiz
+        self.qualche_thread = 1390371003414216805 # Thread ID for QUALCHE quiz
+        self.ci_thread = 1388241920790237347    # Thread ID for CI quiz
+        self.pronomi_thread = 1394735397824758031   # Thread ID for PRONOMI quiz
+        self.bello_thread = 1396072250221920276     # Thread ID for BELLO quiz
+        self.comparativi_thread = 1393289069009830038   # Thread ID for COMPARATIVI quiz
+        self.chi_che_thread = 1393269447094960209 # Thread ID for CHI/CHE quiz
+        self.ci_di_ne_thread = 1393280441221644328  # Thread ID for CI/DI/NE quiz
+        self.tra_thread = 1390091443678478397 # Thread ID for TRA/FRA quiz
+        self.buono_bene_thread = 1397860505808535573 # Thread ID for BUONO/BENE quiz
 
         # DI o DA
         self.di_da_zinnen = [
@@ -330,6 +331,30 @@ class Quiz(commands.Cog):
             {"zin": "Ci vediamo ___ il concerto?", "antwoord": "dopo"},
             {"zin": "Ha parcheggiato ___ due alberi.", "antwoord": "fra", "alternatieven": ["tra"]}
         ]
+
+        # BUONO o BENE
+        self.buono_bene_zinnen = [
+            {"zin": "Questo ristorante cucina davvero molto ___", "antwoord": "bene"},
+            {"zin": "Ieri abbiamo visto un film davvero ___", "antwoord": "buono"},
+            {"zin": "Hai fatto un ___ lavoro, bravo!", "antwoord": "buon"},
+            {"zin": "La pasta di mia nonna è sempre molto ___", "antwoord": "buona"},
+            {"zin": "Penso che parlare lentamente faccia ___ agli studenti", "antwoord": "bene"},
+            {"zin": "È un ragazzo ___, sempre gentile con tutti", "antwoord": "buono"},
+            {"zin": "Oggi ho passato una giornata davvero ___", "antwoord": "buona"},
+            {"zin": "Mi sento ___ dopo aver dormito otto ore", "antwoord": "bene"},
+            {"zin": "Quella è una ___ notizia, grazie!", "antwoord": "buona"},
+            {"zin": "Non è stato facile, ma alla fine tutto è andato ___", "antwoord": "bene"},
+            {"zin": "Maria è una persona molto ___, aiuta sempre tutti", "antwoord": "buona"},
+            {"zin": "Ieri ho letto dei libri davvero ___", "antwoord": "buoni"},
+            {"zin": "Questa pizza è ___, voglio un'altra fetta!", "antwoord": "buona"},
+            {"zin": "Non mi sento molto ___ oggi, credo che ho preso freddo", "antwoord": "bene"},
+            {"zin": "Grazie, mi hai fatto un favore molto ___", "antwoord": "buono"},
+            {"zin": "È un ___ amico, mi conosce da quando ero bambino", "antwoord": "buon"},
+            {"zin": "I bambini si sono comportati molto ___ a scuola oggi", "antwoord": "bene"},
+            {"zin": "L’esame è andato ___, sono soddisfatto", "antwoord": "bene"},
+            {"zin": "È sempre ___ parlare con te, mi fai ridere", "antwoord": "bello"},
+            {"zin": "Hai dei consigli ___ da darmi per l’esame?", "antwoord": "buoni"}
+        ]
     
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -401,6 +426,12 @@ class Quiz(commands.Cog):
                     await self.start_chi_che_quiz(message)
                 except Exception as e:
                     logger.error(f"Error starting CHI/CHE quiz for user {user_id}: {e}")
+            elif thread_id == self.buono_bene_thread:
+                try:
+                    logger.info(f"Starting BUONO/BENE quiz for user {user_id}")
+                    await self.start_buono_bene_quiz(message)
+                except Exception as e:
+                    logger.error(f"Error starting BUONO/BENE quiz for user {user_id}: {e}")
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None):
         try:
@@ -482,6 +513,11 @@ class Quiz(commands.Cog):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con il pronome corretto per ogni frase. Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.pronomi_zinnen, "antwoord", "!pronomi-soluzioni", intro)
+
+    async def start_buono_bene_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "\ud83c\udfaf Iniziamo il quiz! Rispondi con BUONO, BUONA, BUON, BUONI, BUONE o BENE alle seguenti frasi. Hai 60 secondi per ogni frase."
+        await self.start_quiz(message.author, self.buono_bene_zinnen, "antwoord", "!buono-soluzioni", intro)
 
     async def start_tra_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
@@ -620,6 +656,10 @@ class Quiz(commands.Cog):
     @commands.command(name="tra-soluzioni")
     async def tra_soluzioni(self, ctx):
         await self.stuur_oplossingen(ctx, "TRA/FRA o DOPO", self.tra_zinnen)
+
+    @commands.command(name="buono-soluzioni")
+    async def buono_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Buono vs Bene", self.buono_bene_zinnen)
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))
