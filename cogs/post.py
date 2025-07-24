@@ -132,16 +132,16 @@ class OefeningenOverzicht(commands.Cog):
             name="🎮 Giochi – leer via spel!",
             value=(
                 "🆕 Elke week publiceert de bot nieuwe zinnen of thema’s, zodat je telkens iets nieuws kunt oefenen.\n"
-                "📊 Je resultaten worden automatisch opgenomen in het wekelijkse [Leaderboard](https://discord.com/channels/123456789012345678/1390779837593026594). Een beetje competitie houdt iedereen gemotiveerd! 💪🇮🇹\n"
-                "[!wordle](https://discord.com/channels/123456789012345678/1389552706783543307) – Vertaal woorden uit het Nederlands naar het Italiaans. Elke week een nieuw thema.\n"
-                "[!frasi](https://discord.com/channels/123456789012345678/1395771435632431104) – Vertaal volledige zinnen naar het Italiaans en leer ook mogelijke varianten. Wekelijks nieuwe thema’s.\n"
-                "[!verbi](https://discord.com/channels/123456789012345678/1397248870056067113) – Vervoeg Italiaanse werkwoorden correct in context. Elke week nieuwe zinnen.\n\n"
+                "📊 Je resultaten worden automatisch opgenomen in het wekelijkse [Leaderboard](https://discord.com/channels/1387552031132094709/1390779837593026594). Een beetje competitie houdt iedereen gemotiveerd! 💪🇮🇹\n"
+                "[!wordle](https://discord.com/channels/1387552031132094709/1389552706783543307) – Vertaal woorden uit het Nederlands naar het Italiaans. Elke week een nieuw thema.\n"
+                "[!frasi](https://discord.com/channels/1387552031132094709/1395771435632431104) – Vertaal volledige zinnen naar het Italiaans en leer ook mogelijke varianten. Wekelijks nieuwe thema’s.\n"
+                "[!verbi](https://discord.com/channels/1387552031132094709/1397248870056067113) – Vervoeg Italiaanse werkwoorden correct in context. Elke week nieuwe zinnen.\n\n"
             ),
             inline=False
         )
 
         embed3.set_footer(
-            text="✨ __Elke oefening helpt je weer een stapje verder.__ Suggesties voor nieuwe onderwerpen zijn altijd welkom of maak zelf een nieuwe post aan. Forza! Continuiamo insieme 💪🇮🇹"
+            text="✨ **Elke oefening helpt je weer een stapje verder.** Suggesties voor nieuwe onderwerpen zijn altijd welkom of maak zelf een nieuwe post aan. Forza! Continuiamo insieme 💪🇮🇹"
         )
 
         await kanaal.send(embed=embed1)
