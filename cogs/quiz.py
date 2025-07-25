@@ -613,6 +613,10 @@ class Quiz(commands.Cog):
         intro = "🎯 Iniziamo il quiz su Cercare un lavoro! Rispondi alle 6 domande. Puoi rispondere con calma."
         await self.start_quiz(message.author, self.clara_zinnen, "antwoord", "!clara-soluzioni", intro, check_func=self.check_clara_risposta, use_timeout=False)
 
+    async def check_clara_risposta(self, user_input, juiste_woorden):
+        user_input = normalize(user_input)
+        return any(woord in user_input for woord in juiste_woorden)
+
     async def start_tra_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz! Rispondi con TRA, FRA o DOPO alle seguenti frasi. Hai 60 secondi per ogni frase."
