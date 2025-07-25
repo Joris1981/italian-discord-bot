@@ -55,7 +55,8 @@ class OefeningenOverzicht(commands.Cog):
                 "[CHI o CHE](https://discord.com/channels/1387552031132094709/1393269447094960209)\n"
                 "[CI / DI / NE](https://discord.com/channels/1387552031132094709/1393280441221644328)\n"
                 "[TRA / FRA / DOPO](https://discord.com/channels/1387552031132094709/1390091443678478397)\n"
-                "[BUONO o BENE](https://discord.com/channels/1387552031132094709/1397860505808535573)"
+                "[BUONO o BENE](https://discord.com/channels/1387552031132094709/1397860505808535573)\n"
+                "[DIMINUTIVI ed ACCRESCITIVI](https://discord.com/channels/1387552031132094709/1398060503590244432)"
             ),
             inline=False
         )
@@ -102,6 +103,7 @@ class OefeningenOverzicht(commands.Cog):
                 "🔊 [Spaghetti alla puttanesca](https://discord.com/channels/1387552031132094709/1390073410826014903)\n"
                 "🔊 [Cristina e la sua famiglia](https://discord.com/channels/1387552031132094709/1390410564093743285)\n"
                 "🔊 [Cos'hai fatto?](https://discord.com/channels/1387552031132094709/1394796805283385454)"
+                "🔊 [Cercare un lavoro](https://discord.com/channels/1387552031132094709/1398368313293144196)"
             ),
             inline=False
         )
