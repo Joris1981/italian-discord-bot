@@ -5,6 +5,7 @@ import asyncio
 import re
 import session_manager
 import logging
+import traceback
 
 # Loggingconfiguratie
 logging.basicConfig(level=logging.INFO)
@@ -392,8 +393,8 @@ class Quiz(commands.Cog):
             {"zin": "Hai scritto un messaggio molto corto, un ___. (messaggio)", "antwoord": "messaggino", "type": ":arrow_down:"},
         ]
 
-    # CLARA QUIZ
-    self.clara.zinnen = [
+        # CLARA QUIZ
+        self.clara.zinnen = [
             {"zin": "Dove si è trasferita Clara?", "antwoord": ["milano"], "oplossing": "A Milano"},
             {"zin": "Dove è nata Clara?", "antwoord": ["como", "provincia di como", "paesino vicino como"], "oplossing": "In un paesino della provincia di Como"},
             {"zin": "Che lavoro cerca Clara?", "antwoord": ["contabile", "commercialista"], "oplossing": "Come contabile"},
