@@ -8,6 +8,8 @@ import os
 import logging
 import time
 import re
+import zipfile
+from io import BytesIO
 from openai import OpenAI
 from session_manager import start_session, end_session, is_user_in_active_session
 
@@ -427,6 +429,77 @@ class Coniuga(commands.Cog):
         except Exception as e:
             logging.error(f"[Coniuga] Fout bij verwijderen lijsten: {e}")
             await ctx.send("❌ Fout bij verwijderen van de lijsten.")
+
+    @commands.command(name='download-coniuga-week')
+    @commands.is_owner()
+    async def download_coniuga_week(self, ctx, week: int = None):
+        if week is None:
+            week = weeknummer()
+        weekmap = os.path.join(DATA_PATH, f"week_{week}")
+
+        if not os.path.exists(weekmap):
+            await ctx.send(f"❌ Geen map gevonden voor week {week}.")
+            return
+
+        bestanden = os.listdir(weekmap)
+        if not bestanden:
+            await ctx.send(f"📁 De map voor week {week} is leeg.")
+            return
+
+    # Maak een zip in het geheugen
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for bestandsnaam in bestanden:
+                pad = os.path.join(weekmap, bestandsnaam)
+                zip_file.write(pad, arcname=bestandsnaam)
+        zip_buffer.seek(0)
+
+    # Upload als bijlage
+        discord_file = discord.File(fp=zip_buffer, filename=f"coniuga_week_{week}.zip")
+        await ctx.send(f"📦 Alle bestanden voor week {week}:", file=discord_file)
+
+    @commands.command(name='upload-coniuga-week')
+    @commands.is_owner()
+    async def upload_coniuga_week(self, ctx, week: int):
+        if not ctx.message.attachments:
+            await ctx.send("❌ Voeg een `.zip` bestand toe aan je bericht.")
+            return
+
+        attachment = ctx.message.attachments[0]
+        if not attachment.filename.endswith(".zip"):
+            await ctx.send("❌ Het bestand moet een `.zip` bestand zijn.")
+            return
+
+        zip_bytes = await attachment.read()
+
+        try:
+            zip_file = zipfile.ZipFile(BytesIO(zip_bytes))
+            bestanden = zip_file.namelist()
+
+            foutieve_bestanden = []
+            for naam in bestanden:
+                if not naam.endswith(".json"):
+                    continue  # enkel JSON controleren
+                try:
+                    inhoud = zip_file.read(naam).decode("utf-8")
+                    json.loads(inhoud)
+                except Exception as e:
+                    foutieve_bestanden.append(naam)
+
+            if foutieve_bestanden:
+                await ctx.send("❌ De volgende bestanden bevatten geen geldige JSON:\n" +
+                                "\n".join(f"- `{f}`" for f in foutieve_bestanden))
+                return
+
+            # Als alles OK is → uitpakken
+            weekmap = os.path.join(DATA_PATH, f"week_{week}")
+            os.makedirs(weekmap, exist_ok=True)
+            zip_file.extractall(weekmap)
+            await ctx.send(f"✅ ZIP-bestand is uitgepakt naar `week_{week}`. {len(bestanden)} bestanden toegevoegd:\n" +
+                            "\n".join(f"- `{b}`" for b in bestanden if b.endswith(".json")))
+        except Exception as e:
+            logging.error(f"[Coniuga Upload ZIP] Fout bij controleren of uitpakken: {e}")
+            await ctx.send("❌ Er ging iets mis bij het controleren of uitpakken van de ZIP.")
 
 async def setup(bot):
     logging.info("🧩 setup() van cogs.coniuga gestart")  # 👈 Extra loggingregel
