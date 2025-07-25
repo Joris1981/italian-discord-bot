@@ -484,7 +484,13 @@ class Quiz(commands.Cog):
                     logger.info(f"Starting DIMINUTIVI quiz for user {user_id}")
                     await self.start_diminutivi_quiz(message)
                 except Exception as e:
-                    logger.error(f"Error starting DIMINUTIVI quiz for user {user_id}: {e}")             
+                    logger.error(f"Error starting DIMINUTIVI quiz for user {user_id}: {e}")
+            elif thread_id == self.clara_thread:
+                try:
+                    logger.info(f"Starting CERCARE UN LAVORO quiz for user {user_id}")
+                    await self.start_clara_quiz(message)
+                except Exception as e:
+                    logger.error(f"Error starting CERCARE UN LAVORO quiz for user {user_id}: {e}")            
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None, use_timeout=True):
         try:
