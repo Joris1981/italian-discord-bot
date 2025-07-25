@@ -57,8 +57,18 @@ class Quiz(commands.Cog):
             {"zin": "Tornano ___ vacanza domani", "antwoord": "dalla"},
             {"zin": "Torno ___ lavoro alle sei", "antwoord": "dal"},
             {"zin": "La macchina ___ Marco è rossa", "antwoord": "di"}
-        ] 
-        
+        ]
+
+        # CLARA QUIZ
+        self.clara_zinnen = [
+            {"zin": "Dove si è trasferita Clara?", "antwoord": ["milano"], "oplossing": "A Milano"},
+            {"zin": "Dove è nata Clara?", "antwoord": ["como", "provincia di como", "paesino vicino como"], "oplossing": "In un paesino della provincia di Como"},
+            {"zin": "Che lavoro cerca Clara?", "antwoord": ["contabile", "commercialista"], "oplossing": "Come contabile"},
+            {"zin": "Che cosa ha cercato per prima cosa Clara?", "antwoord": ["appartamento", "appartamento economico"], "oplossing": "Un appartamento economico dove vivere"},
+            {"zin": "Che cosa ha fatto Clara per cercare lavoro?", "antwoord": ["curriculum", "inviato", "scritto il suo curriculum"], "oplossing": "Ha scritto e inviato il suo curriculum a molte aziende"},
+            {"zin": "Dove ha trovato lavoro alla fine Clara?", "antwoord": ["turismo", "azienda di turismo"], "oplossing": "In un’azienda che si occupa di turismo"}
+        ]
+
         # PER o IN
         self.per_in_zinnen = [
             {"zin": "Studio italiano ___ passione.", "antwoord": "per"},
@@ -393,16 +403,6 @@ class Quiz(commands.Cog):
             {"zin": "Hai scritto un messaggio molto corto, un ___. (messaggio)", "antwoord": "messaggino", "type": ":arrow_down:"},
         ]
 
-        # CLARA QUIZ
-        self.clara.zinnen = [
-            {"zin": "Dove si è trasferita Clara?", "antwoord": ["milano"], "oplossing": "A Milano"},
-            {"zin": "Dove è nata Clara?", "antwoord": ["como", "provincia di como", "paesino vicino como"], "oplossing": "In un paesino della provincia di Como"},
-            {"zin": "Che lavoro cerca Clara?", "antwoord": ["contabile", "commercialista"], "oplossing": "Come contabile"},
-            {"zin": "Che cosa ha cercato per prima cosa Clara?", "antwoord": ["appartamento", "appartamento economico"], "oplossing": "Un appartamento economico dove vivere"},
-            {"zin": "Che cosa ha fatto Clara per cercare lavoro?", "antwoord": ["curriculum", "inviato", "scritto il suo curriculum"], "oplossing": "Ha scritto e inviato il suo curriculum a molte aziende"},
-            {"zin": "Dove ha trovato lavoro alla fine Clara?", "antwoord": ["turismo", "azienda di turismo"], "oplossing": "In un’azienda che si occupa di turismo"},
-        ]
-
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -486,7 +486,7 @@ class Quiz(commands.Cog):
                 except Exception as e:
                     logger.error(f"Error starting DIMINUTIVI quiz for user {user_id}: {e}")             
 
-    async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None):
+    async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None, use_timeout=True):
         try:
             session_manager.start_session(user.id, "quiz")
             dm = await user.create_dm()
@@ -604,7 +604,7 @@ class Quiz(commands.Cog):
     
     async def start_clara_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
-        intro = "🎯 Iniziamo il quiz su Clara! Rispondi alle 6 domande. Puoi rispondere con calma."
+        intro = "🎯 Iniziamo il quiz su Cercare un lavoro! Rispondi alle 6 domande. Puoi rispondere con calma."
         await self.start_quiz(message.author, self.clara_zinnen, "antwoord", "!clara-soluzioni", intro, check_func=self.check_clara_risposta, use_timeout=False)
 
     async def start_tra_quiz(self, message):
