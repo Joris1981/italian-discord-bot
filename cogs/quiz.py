@@ -32,7 +32,7 @@ class Quiz(commands.Cog):
         self.tra_thread = 1390091443678478397 # Thread ID for TRA/FRA quiz
         self.buono_bene_thread = 1397860505808535573 # Thread ID for BUONO/BENE quiz
         self.diminutivi_thread = 1398060503590244432 # Thread ID for DIMINUTIVI quiz
-        self.clara_thread = 11111111111111111111 # Thread ID for 
+        self.clara_thread = 1398368313293144196 # Thread ID for CLARA quiz
 
         # DI o DA
         self.di_da_zinnen = [
