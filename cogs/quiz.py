@@ -32,6 +32,7 @@ class Quiz(commands.Cog):
         self.tra_thread = 1390091443678478397 # Thread ID for TRA/FRA quiz
         self.buono_bene_thread = 1397860505808535573 # Thread ID for BUONO/BENE quiz
         self.diminutivi_thread = 1398060503590244432 # Thread ID for DIMINUTIVI quiz
+        self.clara_thread = 11111111111111111111 # Thread ID for 
 
         # DI o DA
         self.di_da_zinnen = [
@@ -391,6 +392,16 @@ class Quiz(commands.Cog):
             {"zin": "Hai scritto un messaggio molto corto, un ___. (messaggio)", "antwoord": "messaggino", "type": ":arrow_down:"},
         ]
 
+    # CLARA QUIZ
+    self.clara.zinnen = [
+            {"zin": "Dove si è trasferita Clara?", "antwoord": ["milano"], "oplossing": "A Milano"},
+            {"zin": "Dove è nata Clara?", "antwoord": ["como", "provincia di como", "paesino vicino como"], "oplossing": "In un paesino della provincia di Como"},
+            {"zin": "Che lavoro cerca Clara?", "antwoord": ["contabile", "commercialista"], "oplossing": "Come contabile"},
+            {"zin": "Che cosa ha cercato per prima cosa Clara?", "antwoord": ["appartamento", "appartamento economico"], "oplossing": "Un appartamento economico dove vivere"},
+            {"zin": "Che cosa ha fatto Clara per cercare lavoro?", "antwoord": ["curriculum", "inviato", "scritto il suo curriculum"], "oplossing": "Ha scritto e inviato il suo curriculum a molte aziende"},
+            {"zin": "Dove ha trovato lavoro alla fine Clara?", "antwoord": ["turismo", "azienda di turismo"], "oplossing": "In un’azienda che si occupa di turismo"},
+        ]
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -488,11 +499,13 @@ class Quiz(commands.Cog):
                 await dm.send(f"{i}. {zin}")
 
                 try:
+                    timeout = 60 if use_timeout else None
                     msg = await self.bot.wait_for(
                         "message",
-                        timeout=60,
+                        timeout=timeout,
                         check=lambda m: m.author == user and isinstance(m.channel, discord.DMChannel),
                     )
+
                     antwoord = normalize(msg.content)
 
                     if check_func:
@@ -587,6 +600,11 @@ class Quiz(commands.Cog):
             "!diminutivi-soluzioni",
             intro
         )
+    
+    async def start_clara_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz su Clara! Rispondi alle 6 domande. Puoi rispondere con calma."
+        await self.start_quiz(message.author, self.clara_zinnen, "antwoord", "!clara-soluzioni", intro, check_func=self.check_clara_risposta, use_timeout=False)
 
     async def start_tra_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
@@ -733,6 +751,34 @@ class Quiz(commands.Cog):
     @commands.command(name="diminutivi-soluzioni")
     async def diminutivi_soluzioni(self, ctx):
         await self.stuur_oplossingen(ctx, "Diminutivi e accrescitivi", self.diminutivi_zinnen)
+
+    @commands.command(name="clara-soluzioni")
+    async def clara_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Clara", self.clara_zinnen, speciaal_format=True)
+
+    @commands.command(name="clara-transcript")
+    async def clara_transcript(self, ctx):
+        transcript = (
+            "Clara si è appena trasferita a Milano per trovare lavoro. "
+            "Viene da un piccolo paesino della provincia di Como dove ha vissuto fino al diploma.\n\n"
+            "Dopo il diploma Clara è andata a studiare economia all’università di Perugia. "
+            "Il paesino da cui viene è molto piccolo e non c’è molto lavoro, per questo ha deciso di trasferirsi a Milano "
+            "e cercare un lavoro come contabile.\n\n"
+            "Per prima cosa Clara ha cercato un appartamento economico dove vivere. "
+            "Poi ha scritto il suo curriculum e l’ha inviato a molte aziende della città.\n\n"
+            "Dopo qualche settimana un’azienda l’ha chiamata per fare un colloquio di lavoro. "
+            "Il colloquio è andato bene e finalmente Clara ha trovato un lavoro presso un’azienda che si occupa di turismo.\n\n"
+            "Clara è molto felice di aver trovato un lavoro che le piace."
+        )
+
+        try:
+            if not isinstance(ctx.channel, discord.DMChannel):
+                await ctx.author.send("📄 Ecco il transcript del quiz su Clara:\n\n" + transcript)
+                await ctx.send("✅ Ti ho inviato il transcript nei tuoi DM!")
+            else:
+                await ctx.send("📄 Ecco il transcript del quiz su Clara:\n\n" + transcript)
+        except discord.Forbidden:
+            await ctx.send("⛔ Non riesco a mandarti un DM. Controlla le impostazioni di privacy.")
 
 async def setup(bot):
     await bot.add_cog(Quiz(bot))
