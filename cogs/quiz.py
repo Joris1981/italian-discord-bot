@@ -404,6 +404,7 @@ class Quiz(commands.Cog):
             {"zin": "Hai scritto un messaggio molto corto, un ___. (messaggio)", "antwoord": "messaggino", "type": ":arrow_down:"},
         ]
 
+        # TUTTO QUIZ
         self.tutto_zinnen = [
             {"zin": "Ho preso ___ quello che serviva per il viaggio.", "antwoord": ["tutto"]},
             {"zin": "___ è pronto per la festa, manca solo la torta.", "antwoord": ["tutto"]},
@@ -518,7 +519,7 @@ class Quiz(commands.Cog):
             elif thread_id == self.tutto_thread:
                 try:
                     logger.info(f"Starting TUTTO/TUTTI quiz for user {user_id}")
-                    await self.start_tutti_quiz(message)
+                    await self.start_tutto_quiz(message)
                 except Exception as e:
                     logger.error(f"Error starting TUTTO/TUTTI quiz for user {user_id}: {e}")          
 
