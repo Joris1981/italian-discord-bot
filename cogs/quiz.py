@@ -547,12 +547,15 @@ class Quiz(commands.Cog):
                     antwoord = normalize(msg.content)
 
                     if check_func:
-                        # Gebruik aangepaste check-functie (zoals check_tra_risposta)
                         if await check_func(dm, vraag, msg.content):
                             correcte += 1
                     else:
-                        # Standaardcontrole
-                        if normalize(vraag[verwacht]) == antwoord:
+                        juiste_antwoorden = vraag[verwacht]
+                        if isinstance(juiste_antwoorden, str):
+                            juiste_antwoorden = [juiste_antwoorden]
+                        juiste_genormaliseerd = [normalize(a) for a in juiste_antwoorden]
+
+                        if antwoord in juiste_genormaliseerd:
                             feedback = "✅ Corretto!"
                             if "type" in vraag:
                                 if vraag["type"] == ":arrow_up:":
@@ -562,7 +565,7 @@ class Quiz(commands.Cog):
                             await dm.send(feedback)
                             correcte += 1
                         else:
-                            msg_text = f"❌ Sbagliato! La risposta corretta era: **{vraag[verwacht]}**"
+                            msg_text = f"❌ Sbagliato! Le risposte corrette erano: **{', '.join(juiste_antwoorden)}**"
                             if "type" in vraag:
                                 if vraag["type"] == ":arrow_up:":
                                     msg_text += " (Era un **accrescitivo**)"
@@ -574,15 +577,12 @@ class Quiz(commands.Cog):
                     await dm.send("⏰ Tempo scaduto per questa domanda.")
 
             await dm.send(f"\n📊 Hai risposto correttamente a **{correcte}** domande su **{len(vragen)}**.")
-            # Standaardbericht voor oplossingen
             await dm.send(f"✉️ Per vedere tutte le risposte corrette, scrivi il comando **{oplossingscommando}** qui in DM.")
 
-            # Optioneel extra transcript (alleen voor Clara)
             if oplossingscommando == "!clara-soluzioni":
                 await dm.send("📄 Per rileggere il testo completo, scrivi **!clara-transcript**.")
-                
+
         except discord.Forbidden:
-            # Eventuele fallback voor blokkade
             channel = await user.guild.fetch_channel(self.bello_thread)
             await channel.send(f"{user.mention}, non posso inviarti un messaggio privato. Controlla le impostazioni della tua privacy.")
         finally:
