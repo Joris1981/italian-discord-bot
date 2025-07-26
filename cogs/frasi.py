@@ -113,7 +113,7 @@ async def genereer_zinnen(week: int):
 - Per ogni frase, fornisci:
     - la frase originale in italiano
     - la traduzione corretta in olandese
-    - 1 o 2 alternative italiane accettabili.
+    - 4 alternative italiane accettabili.
 Poi crea anche 10 frasi BONUS sullo stesso tema.
 Rispondi in JSON con due chiavi:
 - "standard": una lista di 25 oggetti {{"nl": "...", "it": "...", "varianti": ["...", ...]}}
