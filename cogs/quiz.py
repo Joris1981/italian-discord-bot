@@ -543,8 +543,13 @@ class Quiz(commands.Cog):
                     await dm.send("⏰ Tempo scaduto per questa domanda.")
 
             await dm.send(f"\n📊 Hai risposto correttamente a **{correcte}** domande su **{len(vragen)}**.")
+            # Standaardbericht voor oplossingen
             await dm.send(f"✉️ Per vedere tutte le risposte corrette, scrivi il comando **{oplossingscommando}** qui in DM.")
 
+            # Optioneel extra transcript (alleen voor Clara)
+            if oplossingscommando == "!clara-soluzioni":
+                await dm.send("📄 Per rileggere il testo completo, scrivi **!clara-transcript**.")
+                
         except discord.Forbidden:
             # Eventuele fallback voor blokkade
             channel = await user.guild.fetch_channel(self.bello_thread)
@@ -790,10 +795,10 @@ class Quiz(commands.Cog):
 
         try:
             if not isinstance(ctx.channel, discord.DMChannel):
-                await ctx.author.send("📄 Ecco il transcript del quiz su Clara:\n\n" + transcript)
+                await ctx.author.send("📄 Ecco il transcript del quiz su Cercare un lavoro:\n\n" + transcript)
                 await ctx.send("✅ Ti ho inviato il transcript nei tuoi DM!")
             else:
-                await ctx.send("📄 Ecco il transcript del quiz su Clara:\n\n" + transcript)
+                await ctx.send("📄 Ecco il transcript del quiz su Cercare un lavoro:\n\n" + transcript)
         except discord.Forbidden:
             await ctx.send("⛔ Non riesco a mandarti un DM. Controlla le impostazioni di privacy.")
 

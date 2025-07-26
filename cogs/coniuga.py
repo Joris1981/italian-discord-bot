@@ -124,21 +124,22 @@ class Coniuga(commands.Cog):
                           "🔄 Puoi digitare `!stop-verbi` in qualsiasi momento per interrompere il quiz.")
 
             # Zinnen laden
-            if tijd == "misto":
+            if tijd.lower() == "misto":
                 alle_zinnen = []
-                for t in tijden[:-1]:  # alle behalve misto
+                alle_tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]
+                for t in alle_tijden:
                     zinnen_per_tijd = laad_zinnen(week, t, niveau, bonus=False)
+                    logging.info(f"[Misto] Zinnen geladen voor '{t}' (base): {len(zinnen_per_tijd)}")
                     for item in zinnen_per_tijd:
-                        # Voeg tijdsaanduiding toe aan de zin, achter het werkwoord
                         zin_met_tijd = re.sub(
-                            r"\((\w+)\)", rf"(\1) ({t})", item["zin"]
-                        )
-                        nieuwe_item = {
-                            "zin": zin_met_tijd,
-                            "oplossing": item["oplossing"],
-                            "varianten": item.get("varianten", [])
-                        }
-                        alle_zinnen.append(nieuwe_item)
+                        r"\((\w+)\)", rf"(\1) ({t})", item["zin"]
+                    )
+                    nieuwe_item = {
+                        "zin": zin_met_tijd,
+                        "oplossing": item["oplossing"],
+                        "varianten": item.get("varianten", [])
+                    }
+                    alle_zinnen.append(nieuwe_item)
 
             else:
                 alle_zinnen = laad_zinnen(week, tijd, niveau, bonus=False)
@@ -162,7 +163,7 @@ class Coniuga(commands.Cog):
                     msg = await self.bot.wait_for("message", timeout=TIJDSLIMIET, check=check)
 
                     if msg.content.strip().lower() == "!stop-verbi":
-                        await dm.send("🛑 Quiz gestopt. Puoi riprovare quando vuoi con `!verbi`.")
+                        await dm.send("🛑 Hai interrotto il quiz. Puoi riprovare quando vuoi con `!verbi`.")
                         end_session(user.id)
                         return
 
@@ -177,23 +178,25 @@ class Coniuga(commands.Cog):
                     await dm.send(f"⏰ Tempo scaduto! Risposta corretta: **{oplossing}**")
 
             tijdsduur = round(time.time() - start)
-            await self.verwerk_score(user, dm, correcte, tijdsduur, week, tijd, livello=niveau)
+            await self.verwerk_score(user, dm, correcte, tijdsduur, week, tijd, niveau)
 
         except Exception as e:
             logging.error(f"Fout in coniuga: {e}")
             await user.send("Si è verificato un errore. Riprova più tardi.")
             end_session(user.id)
 
-    async def verwerk_score(self, user, dm, correcte, tijdsduur, week, tijd, livello):
+    async def verwerk_score(self, user, dm, correcte, tijdsduur, week, tijd, niveau):
         if correcte >= 16:
             await dm.send(f"\n🎉 Hai ottenuto {correcte}/20 risposte corrette! Hai sbloccato il **bonus round**!\n"
                           "Preparati per altre 10 frasi...")
 
             # Bonuszinnen laden
-            if tijd == "misto":
+            if tijd.lower() == "misto":
                 alle_bonus = []
-                for t in ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo", "Misto"]:
-                    bonus_per_tijd = laad_zinnen(week, t, livello, bonus=True)
+                alle_tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]
+                for t in alle_tijden:
+                    bonus_per_tijd = laad_zinnen(week, t, niveau, bonus=True)
+                    logging.info(f"[Misto] Zinnen geladen voor '{t}' (bonus): {len(bonus_per_tijd)}")
                     for item in bonus_per_tijd:
                         zin_met_tijd = re.sub(
                             r"\((\w+)\)", rf"(\1) ({t})", item["zin"]
@@ -214,7 +217,7 @@ class Coniuga(commands.Cog):
                     ster, bonus_correct = await self.bonusronde(dm, user, geselecteerd_bonus)
 
             else:
-                bonuszinnen = laad_zinnen(week, tijd, livello, bonus=True)
+                bonuszinnen = laad_zinnen(week, tijd, niveau, bonus=True)
                 if len(bonuszinnen) < 10:
                     await dm.send("⚠️ Il bonus round non è disponibile per questa combinazione.")
                     ster = False
@@ -251,7 +254,7 @@ class Coniuga(commands.Cog):
                 msg = await self.bot.wait_for("message", timeout=TIJDSLIMIET, check=check)
 
                 if msg.content.strip().lower() == "!stop-verbi":
-                    await dm.send("🛑 Quiz gestopt. Puoi riprovare quando vuoi con `!verbi`.")
+                    await dm.send("🛑 Hai interrotto il quiz. Puoi riprovare quando vuoi con `!verbi`.")
                     end_session(user.id)
                     return
 
@@ -272,7 +275,6 @@ class Coniuga(commands.Cog):
         user_id = ctx.author.id
         if is_user_in_active_session(user_id):
             end_session(user_id)
-            await ctx.send("🛑 Hai interrotto il quiz. Puoi riprovare quando vuoi con `!verbi`.")
         else:
             await ctx.send("ℹ️ Non hai un quiz attivo al momento.")
 
