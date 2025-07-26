@@ -599,7 +599,7 @@ class Quiz(commands.Cog):
 
     async def start_buono_bene_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
-        intro = "\ud83c\udfaf Iniziamo il quiz! Rispondi con BUONO, BUONA, BUON, BUONI, BUONE o BENE alle seguenti frasi. Hai 60 secondi per ogni frase."
+        intro = "\ud83c\udfaf Iniziamo il quiz! Rispondi con BUONO, BUONA, BUON, BUONI, BUONE o BENE alle seguenti frasi.\n :warning: Attenzione: una frase richiede **BELLO/A**.\n Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.buono_bene_zinnen, "antwoord", "!buono-soluzioni", intro)
 
     async def start_diminutivi_quiz(self, message):
