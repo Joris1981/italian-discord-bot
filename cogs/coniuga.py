@@ -103,7 +103,6 @@ class Coniuga(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    # ... (hier komt jouw bestaande spelcode met !verbi, leaderboard, enz.)
     @commands.command(name='verbi')
     async def start_coniuga(self, ctx):
         user = ctx.author
@@ -123,16 +122,15 @@ class Coniuga(commands.Cog):
                 return
 
             # Tijden (inclusief progressivo en misto)
-            tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo", "Misto"]
-            niveaus = ["A2", "B1", "B2"]
+            tijden = TIJDEN + ["Misto"]
+            niveaus = NIVEAUS
 
             def check(m):
                 return m.author == user and isinstance(m.channel, discord.DMChannel)
 
             # Tijdkeuze
             await dm.send("⏳ Quale tempo verbale vuoi esercitare?\n(Digita un numero da 1 a 8)\n\n" +
-                            "\n".join(f"{i+1}. {ZICHTBARE_NAMEN.get(t, t)}" for i, t in enumerate(tijden)))
-
+                           "\n".join(f"{i+1}. {ZICHTBARE_NAMEN.get(t, t)}" for i, t in enumerate(tijden)))
             try:
                 msg = await self.bot.wait_for("message", timeout=60, check=check)
                 tijd_index = int(msg.content.strip()) - 1
@@ -146,43 +144,28 @@ class Coniuga(commands.Cog):
             await dm.send("🎯 Quale livello vuoi esercitare?\n(Digita un numero da 1 a 3)\n1. A2\n2. B1\n3. B2")
             try:
                 msg = await self.bot.wait_for("message", timeout=60, check=check)
-                niveau = niveaus[int(msg.content.strip()) - 1]
+                livello = NIVEAUS[int(msg.content.strip()) - 1]
             except:
                 await dm.send("Risposta non valida o tempo scaduto. Riprova con `!verbi`.")
                 end_session(user.id)
                 return
-            
-            await dm.send(f"👍 Perfetto! Hai scelto:\n– Tempo verbale: **{tijd}**\n– Livello: **{niveau}**\n\n"
+
+            await dm.send(f"👍 Perfetto! Hai scelto:\n– Tempo verbale: **{tijd}**\n– Livello: **{livello}**\n\n"
                           "🔄 Puoi digitare `!stop-verbi` in qualsiasi momento per interrompere il quiz.")
 
             # Zinnen laden
             if tijd.lower() == "misto":
-                alle_zinnen = []
-                alle_tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]
-                for t in alle_tijden:
-                    zinnen_per_tijd = laad_zinnen(week, t, niveau, bonus=False)
-                    logging.info(f"[Misto] Zinnen geladen voor '{t}' (base): {len(zinnen_per_tijd)}")
-                    for item in zinnen_per_tijd:
-                        zin_met_tijd = re.sub(
-                        r"\((\w+)\)", rf"(\1) ({t})", item["zin"]
-                    )
-                    nieuwe_item = {
-                        "zin": zin_met_tijd,
-                        "oplossing": item["oplossing"],
-                        "varianten": item.get("varianten", [])
-                    }
-                    alle_zinnen.append(nieuwe_item)
-
+                alle_zinnen = laad_misto_zinnen(week, livello, bonus=False)
             else:
-                alle_zinnen = laad_zinnen(week, tijd, niveau, bonus=False)
+                alle_zinnen = laad_zinnen(week, tijd, livello, bonus=False)
 
             if len(alle_zinnen) < 20:
                 await dm.send("⚠️ Non ci sono abbastanza frasi disponibili per il livello selezionato.")
                 end_session(user.id)
                 return
-            geselecteerd = random.sample(alle_zinnen, 20)
 
             # Spel starten
+            geselecteerd = random.sample(alle_zinnen, 20)
             correcte = 0
             start = time.time()
 
@@ -193,14 +176,11 @@ class Coniuga(commands.Cog):
                 await dm.send(f"{i}. {zin}")
                 try:
                     msg = await self.bot.wait_for("message", timeout=TIJDSLIMIET, check=check)
-
                     if msg.content.strip().lower() == "!stop-verbi":
                         await dm.send("🛑 Hai interrotto il quiz. Puoi riprovare quando vuoi con `!verbi`.")
                         end_session(user.id)
                         return
-
                     antwoord = msg.content.strip().lower()
-                    
                     if antwoord == oplossing.lower() or antwoord in [v.lower() for v in varianten]:
                         await dm.send("✅ Corretto!")
                         correcte += 1
@@ -210,53 +190,29 @@ class Coniuga(commands.Cog):
                     await dm.send(f"⏰ Tempo scaduto! Risposta corretta: **{oplossing}**")
 
             tijdsduur = round(time.time() - start)
-            await self.verwerk_score(user, dm, correcte, tijdsduur, week, tijd, niveau)
+            await self.verwerk_score(user, dm, correcte, tijdsduur, week, tijd, livello)
 
         except Exception as e:
-            logging.error(f"Fout in coniuga: {e}")
+            logging.error(f"[StartConiuga] Fout tijdens start quiz: {e}")
             await user.send("Si è verificato un errore. Riprova più tardi.")
             end_session(user.id)
 
-    async def verwerk_score(self, user, dm, correcte, tijdsduur, week, tijd, niveau):
+    async def verwerk_score(self, user, dm, correcte, tijdsduur, week, tijd, livello):
         if correcte >= 16:
             await dm.send(f"\n🎉 Hai ottenuto {correcte}/20 risposte corrette! Hai sbloccato il **bonus round**!\n"
                           "Preparati per altre 10 frasi...")
-
-            # Bonuszinnen laden
             if tijd.lower() == "misto":
-                alle_bonus = []
-                alle_tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]
-                for t in alle_tijden:
-                    bonus_per_tijd = laad_zinnen(week, t, niveau, bonus=True)
-                    logging.info(f"[Misto] Zinnen geladen voor '{t}' (bonus): {len(bonus_per_tijd)}")
-                    for item in bonus_per_tijd:
-                        zin_met_tijd = re.sub(
-                            r"\((\w+)\)", rf"(\1) ({t})", item["zin"]
-                        )
-                        nieuwe_item = {
-                            "zin": zin_met_tijd,
-                            "oplossing": item["oplossing"],
-                            "varianten": item.get("varianten", [])
-                        }
-                        alle_bonus.append(nieuwe_item)
-
-                if len(alle_bonus) < 10:
-                    await dm.send("⚠️ Il bonus round non è disponibile per questa combinazione.")
-                    ster = False
-                    bonus_correct = 0
-                else:
-                    geselecteerd_bonus = random.sample(alle_bonus, 10)
-                    ster, bonus_correct = await self.bonusronde(dm, user, geselecteerd_bonus)
-
+                alle_bonus = laad_misto_zinnen(week, livello, bonus=True)
             else:
-                bonuszinnen = laad_zinnen(week, tijd, niveau, bonus=True)
-                if len(bonuszinnen) < 10:
-                    await dm.send("⚠️ Il bonus round non è disponibile per questa combinazione.")
-                    ster = False
-                    bonus_correct = 0
-                else:
-                    geselecteerd_bonus = random.sample(bonuszinnen, 10)
-                    ster, bonus_correct = await self.bonusronde(dm, user, geselecteerd_bonus)
+                alle_bonus = laad_zinnen(week, tijd, livello, bonus=True)
+
+            if len(alle_bonus) < 10:
+                await dm.send("⚠️ Il bonus round non è disponibile per questa combinazione.")
+                ster = False
+                bonus_correct = 0
+            else:
+                geselecteerd_bonus = random.sample(alle_bonus, 10)
+                ster, bonus_correct = await self.bonusronde(dm, user, geselecteerd_bonus)
 
             if ster:
                 await dm.send(f"\n🏅 Hai ottenuto {bonus_correct}/10 nel bonus round. Hai guadagnato una **⭐**!")
@@ -266,7 +222,6 @@ class Coniuga(commands.Cog):
             ster = False
             await dm.send(f"\nHai ottenuto {correcte}/20 risposte corrette. Niente bonus round stavolta!")
 
-        # Score opslaan
         display_name = user.display_name if hasattr(user, 'display_name') else user.name
         schrijf_score(user.id, display_name, correcte, tijdsduur, ster, week)
         await dm.send("📊 La tua partita è stata registrata. Puoi riprovare quando vuoi con `!verbi`.")
