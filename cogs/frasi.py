@@ -323,9 +323,9 @@ class Frasi(commands.Cog):
             try:
                 await lid.create_dm()
                 if str(lid.id) in gespeelden:
-                    await lid.dm_channel.send("🔔 Hai già giocato questa settimana! Ma puoi ancora migliorare il tuo punteggio fino a venerdì!")
+                    await lid.dm_channel.send("🔔 Bravo/a, hai già partecipato al quiz *Frasi idiomatiche* questa settimana! Ma c’è ancora tempo per migliorare il tuo punteggio fino a venerdì! :writing_hand: Digita `!frasi` nei tuoi DM per riprovare. :muscle: ")
                 else:
-                    await lid.dm_channel.send("🔔 Non hai ancora giocato questa settimana a *Frasi idiomatiche*! Prova ora con `!frasi`!")
+                    await lid.dm_channel.send("🔔 Non hai ancora giocato questa settimana a *Frasi idiomatiche*! :writing_hand: Prova ora con `!frasi`! :four_leaf_clover: ")
             except:
                 continue
 

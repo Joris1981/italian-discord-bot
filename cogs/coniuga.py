@@ -91,7 +91,7 @@ class Coniuga(commands.Cog):
                 return
 
             # Tijden (inclusief progressivo en misto)
-            tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]
+            tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo", "Misto"]
             niveaus = ["A2", "B1", "B2"]
 
             def check(m):
@@ -192,7 +192,7 @@ class Coniuga(commands.Cog):
             # Bonuszinnen laden
             if tijd == "misto":
                 alle_bonus = []
-                for t in ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]:
+                for t in ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo", "Misto"]:
                     bonus_per_tijd = laad_zinnen(week, t, livello, bonus=True)
                     for item in bonus_per_tijd:
                         zin_met_tijd = re.sub(

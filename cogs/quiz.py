@@ -613,9 +613,15 @@ class Quiz(commands.Cog):
         intro = "🎯 Iniziamo il quiz su Cercare un lavoro! Rispondi alle 6 domande. Puoi rispondere con calma."
         await self.start_quiz(message.author, self.clara_zinnen, "antwoord", "!clara-soluzioni", intro, check_func=self.check_clara_risposta, use_timeout=False)
 
-    async def check_clara_risposta(self, user_input, juiste_woorden):
+    async def check_clara_risposta(self, dm, vraag, user_input):
         user_input = normalize(user_input)
-        return any(woord in user_input for woord in juiste_woorden)
+        juiste_woorden = [normalize(w) for w in vraag["antwoord"]]
+        if any(w in user_input for w in juiste_woorden):
+            await dm.send("✅ Corretto!")
+            return True
+        else:
+            await dm.send(f"❌ Sbagliato! La risposta corretta era: **{vraag['oplossing']}**")
+            return False
 
     async def start_tra_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")

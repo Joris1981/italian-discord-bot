@@ -67,7 +67,7 @@ class Wordle(commands.Cog):
             if played.get(week_key, 0) == 0:
                 try:
                     user = await self.bot.fetch_user(int(uid))
-                    await user.send(f"\U0001F4CB Ciao! Je hebt deze week nog geen Wordle gespeeld.\nHet thema is *{thema}*. Typ `!wordle` in het kanaal om te starten!")
+                    await user.send(f"\U0001F4CB Ciao! Je hebt deze week nog geen Wordle gespeeld.\nHet thema is *{thema}*. Typ `!wordle` in het kanaal of jouw DM om te starten!")
                 except Exception as e:
                     logging.warning(f"Kon gebruiker {uid} niet bereiken: {e}")
 
@@ -206,7 +206,7 @@ class Wordle(commands.Cog):
                     await user.send(f"⏱ Tempo scaduto! Oplossing: **{woord['italiaans']}**.")
             if bonus_score >= 3:
                 sterren = 1
-                await user.send("\U0001F31F Bravo! Je hebt een ster verdiend! \U0001F31F")
+                await user.send("\U0001F31F Bravo/a! Je hebt een ster verdiend! \U0001F31F")
         return score, sterren, totale_tijd
 
     @commands.command()
