@@ -25,7 +25,7 @@ ZICHTBARE_NAMEN = {
     "imperfetto": "Imperfetto",
     "futuro": "Futuro",
     "condizionale": "Condizionale",
-    "imperativo": "imperativo ✋ (istruzioni e ordini)"
+    "imperativo": "Imperativo ✋ (istruzioni e ordini)"
 }
 NIVEAUS = ["A2", "B1", "B2"]
 
@@ -91,7 +91,7 @@ class Coniuga(commands.Cog):
                 return
 
             # Tijden (inclusief progressivo en misto)
-            tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo", "misto"]
+            tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]
             niveaus = ["A2", "B1", "B2"]
 
             def check(m):
@@ -139,6 +139,10 @@ class Coniuga(commands.Cog):
                             "varianten": item.get("varianten", [])
                         }
                         alle_zinnen.append(nieuwe_item)
+
+            else:
+                alle_zinnen = laad_zinnen(week, tijd, niveau, bonus=False)
+
             if len(alle_zinnen) < 20:
                 await dm.send("⚠️ Non ci sono abbastanza frasi disponibili per il livello selezionato.")
                 end_session(user.id)
@@ -208,6 +212,7 @@ class Coniuga(commands.Cog):
                 else:
                     geselecteerd_bonus = random.sample(alle_bonus, 10)
                     ster, bonus_correct = await self.bonusronde(dm, user, geselecteerd_bonus)
+
             else:
                 bonuszinnen = laad_zinnen(week, tijd, livello, bonus=True)
                 if len(bonuszinnen) < 10:
