@@ -32,6 +32,8 @@ NIVEAUS = ["A2", "B1", "B2"]
 os.makedirs(DATA_PATH, exist_ok=True)
 os.makedirs(SCORE_PATH, exist_ok=True)
 
+logging.basicConfig(level=logging.INFO)
+
 def weeknummer():
     vandaag = datetime.date.today()
     eerste_week = datetime.date(2025, 7, 22)
@@ -43,12 +45,14 @@ def laad_zinnen(week, tijd, niveau, bonus=False):
     pad = os.path.join(DATA_PATH, f"week_{week}", bestand)
     try:
         with open(pad, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            logging.info(f"[Laad] Bestand geladen: {pad} ({len(data)} zinnen)")
+            return data
     except FileNotFoundError:
-        logging.warning(f"Lijst niet gevonden: {pad}")
+        logging.warning(f"[Laad] Bestand niet gevonden: {pad}")
         return []
     except json.JSONDecodeError as e:
-        logging.error(f"JSON decode error in {pad}: {e}")
+        logging.error(f"[Laad] JSON decode error in {pad}: {e}")
         return []
 
 def laad_misto_zinnen(week, niveau, bonus=False):
@@ -56,17 +60,23 @@ def laad_misto_zinnen(week, niveau, bonus=False):
     alle_tijden = TIJDEN  # alleen gewone tijden, geen 'Misto'
     for t in alle_tijden:
         zinnen_per_tijd = laad_zinnen(week, t, niveau, bonus=bonus)
-        logging.info(f"[Misto] Zinnen geladen voor '{t}' ({'bonus' if bonus else 'base'}): {len(zinnen_per_tijd)}")
+        if not zinnen_per_tijd:
+            logging.warning(f"[Misto] Geen zinnen gevonden voor tijd '{t}' ({'bonus' if bonus else 'base'})")
+        else:
+            logging.info(f"[Misto] {len(zinnen_per_tijd)} zinnen geladen voor '{t}' ({'bonus' if bonus else 'base'})")
         for item in zinnen_per_tijd:
+            if not item.get("zin"):
+                logging.warning(f"[Misto] Zin ontbreekt in item: {item}")
             zin_met_tijd = re.sub(
-                r"\((\w+)\)", rf"(\1) ({t})", item["zin"]
+                r"\((\w+)\)", rf"(\1) ({t})", item.get("zin", "")
             )
             nieuwe_item = {
                 "zin": zin_met_tijd,
-                "oplossing": item["oplossing"],
+                "oplossing": item.get("oplossing", ""),
                 "varianten": item.get("varianten", [])
             }
             alle_zinnen.append(nieuwe_item)
+    logging.info(f"[Misto] Totaal aantal zinnen verzameld: {len(alle_zinnen)}")
     return alle_zinnen
 
 def schrijf_score(user_id, display_name, score, tijd, ster, week):
@@ -87,6 +97,7 @@ def schrijf_score(user_id, display_name, score, tijd, ster, week):
         }
         with open(pad, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+        logging.info(f"[Score] Score opgeslagen voor gebruiker {user_id}: {score}/20, tijd: {tijd}s, ster: {ster}")
 
 class Coniuga(commands.Cog):
     def __init__(self, bot):
