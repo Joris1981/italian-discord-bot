@@ -20,7 +20,7 @@ TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932, 1397220124150468618,
 TIJDEN = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]
 ZICHTBARE_NAMEN = {
     "presente": "Presente",
-    "progressivo_presente": "Progressivo presente",
+    "progressivo_presente": "Progressivo presente :arrow_right: (il gerundio)",
     "passato_prossimo": "Passato prossimo",
     "imperfetto": "Imperfetto",
     "futuro": "Futuro",
@@ -99,7 +99,8 @@ class Coniuga(commands.Cog):
 
             # Tijdkeuze
             await dm.send("⏳ Quale tempo verbale vuoi esercitare?\n(Digita un numero da 1 a 8)\n\n" +
-                          "\n".join(f"{i+1}. {t}" for i, t in enumerate(tijden)))
+                            "\n".join(f"{i+1}. {ZICHTBARE_NAMEN.get(t, t)}" for i, t in enumerate(tijden)))
+
             try:
                 msg = await self.bot.wait_for("message", timeout=60, check=check)
                 tijd_index = int(msg.content.strip()) - 1
@@ -155,7 +156,14 @@ class Coniuga(commands.Cog):
                 await dm.send(f"{i}. {zin}")
                 try:
                     msg = await self.bot.wait_for("message", timeout=TIJDSLIMIET, check=check)
+
+                    if msg.content.strip().lower() == "!stop-verbi":
+                        await dm.send("🛑 Quiz gestopt. Puoi riprovare quando vuoi con `!verbi`.")
+                        end_session(user.id)
+                        return
+
                     antwoord = msg.content.strip().lower()
+                    
                     if antwoord == oplossing.lower() or antwoord in [v.lower() for v in varianten]:
                         await dm.send("✅ Corretto!")
                         correcte += 1
@@ -236,7 +244,14 @@ class Coniuga(commands.Cog):
             await dm.send(f"[Bonus] {i}. {zin}")
             try:
                 msg = await self.bot.wait_for("message", timeout=TIJDSLIMIET, check=check)
+
+                if msg.content.strip().lower() == "!stop-verbi":
+                    await dm.send("🛑 Quiz gestopt. Puoi riprovare quando vuoi con `!verbi`.")
+                    end_session(user.id)
+                    return
+
                 antwoord = msg.content.strip().lower()
+                
                 if antwoord == oplossing.lower() or antwoord in [v.lower() for v in varianten]:
                     await dm.send("✅ Corretto!")
                     correcte += 1
