@@ -34,6 +34,7 @@ class Quiz(commands.Cog):
         self.buono_bene_thread = 1397860505808535573 # Thread ID for BUONO/BENE quiz
         self.diminutivi_thread = 1398060503590244432 # Thread ID for DIMINUTIVI quiz
         self.clara_thread = 1398368313293144196 # Thread ID for CLARA quiz
+        self.tutto_thread = 1398625132636798996 # Thread ID for TUTTO quiz
 
         # DI o DA
         self.di_da_zinnen = [
@@ -403,6 +404,29 @@ class Quiz(commands.Cog):
             {"zin": "Hai scritto un messaggio molto corto, un ___. (messaggio)", "antwoord": "messaggino", "type": ":arrow_down:"},
         ]
 
+        self.tutto_zinnen = [
+            {"zin": "Ho preso ___ quello che serviva per il viaggio.", "antwoord": ["tutto"]},
+            {"zin": "___ è pronto per la festa, manca solo la torta.", "antwoord": ["tutto"]},
+            {"zin": "Sono arrivati ___ in orario, una vera sorpresa!", "antwoord": ["tutti"]},
+            {"zin": "Abbiamo visto ___ i film di Fellini.", "antwoord": ["tutti"]},
+            {"zin": "Dove sono andati ___?", "antwoord": ["tutti"]},
+            {"zin": "___ il mondo conosce Roma.", "antwoord": ["tutto"]},
+            {"zin": "Ho mangiato ___ il gelato da solo, scusami.", "antwoord": ["tutto"]},
+            {"zin": "Dopo la riunione erano stanchi ___.", "antwoord": ["tutti", "tutte"]},
+            {"zin": "Hai preparato ___ la cena da sola?", "antwoord": ["tutta"]},
+            {"zin": "___ sono invitati, nessuno escluso.", "antwoord": ["tutti"]},
+            {"zin": "Ho letto ___ i libri che mi hai prestato.", "antwoord": ["tutti"]},
+            {"zin": "È sparito ___ il denaro dalla cassa!", "antwoord": ["tutto"]},
+            {"zin": "Ho salutato ___ prima di uscire.", "antwoord": ["tutti"]},
+            {"zin": "___ le città d’Italia hanno una piazza principale.", "antwoord": ["tutte"]},
+            {"zin": "Ti ho raccontato ___ quello che è successo.", "antwoord": ["tutto"]},
+            {"zin": "Durante il viaggio hanno perso ___ le valigie.", "antwoord": ["tutte"]},
+            {"zin": "Hai pulito ___? Non c’è neanche un granello di polvere!", "antwoord": ["tutto"]},
+            {"zin": "Sono arrivate ___ le amiche di Giulia.", "antwoord": ["tutte"]},
+            {"zin": "___ parlano di politica ultimamente.", "antwoord": ["tutti"]},
+            {"zin": "Alla fine della giornata erano felici ___.", "antwoord": ["tutti", "tutte"]}
+        ]
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -490,7 +514,13 @@ class Quiz(commands.Cog):
                     logger.info(f"Starting CERCARE UN LAVORO quiz for user {user_id}")
                     await self.start_clara_quiz(message)
                 except Exception as e:
-                    logger.error(f"Error starting CERCARE UN LAVORO quiz for user {user_id}: {e}")            
+                    logger.error(f"Error starting CERCARE UN LAVORO quiz for user {user_id}: {e}")
+            elif thread_id == self.tutto_thread:
+                try:
+                    logger.info(f"Starting TUTTO/TUTTI quiz for user {user_id}")
+                    await self.start_tutti_quiz(message)
+                except Exception as e:
+                    logger.error(f"Error starting TUTTO/TUTTI quiz for user {user_id}: {e}")          
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None, use_timeout=True):
         try:
@@ -601,6 +631,11 @@ class Quiz(commands.Cog):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "\ud83c\udfaf Iniziamo il quiz! Rispondi con BUONO, BUONA, BUON, BUONI, BUONE o BENE alle seguenti frasi.\n :warning: Attenzione: una frase richiede **BELLO/A**.\n Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.buono_bene_zinnen, "antwoord", "!buono-soluzioni", intro)
+
+    async def start_tutto_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "\ud83c\udfaf Iniziamo il quiz! Rispondi con **TUTTO, TUTTA, TUTTI o TUTTE** alle seguenti frasi.\n Hai 60 secondi per ogni frase."
+        await self.start_quiz(message.author, self.tutto_zinnen, "antwoord", "!tutto-soluzioni", intro)
 
     async def start_diminutivi_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
@@ -769,6 +804,10 @@ class Quiz(commands.Cog):
     @commands.command(name="buono-soluzioni")
     async def buono_soluzioni(self, ctx):
         await self.stuur_oplossingen(ctx, "Buono vs Bene", self.buono_bene_zinnen)
+
+    @commands.command(name="tutto-soluzioni")
+    async def tutto_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Tutto vs Tutti", self.tutto_zinnen)
 
     @commands.command(name="diminutivi-soluzioni")
     async def diminutivi_soluzioni(self, ctx):
