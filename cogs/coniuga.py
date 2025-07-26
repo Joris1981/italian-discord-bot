@@ -10,100 +10,27 @@ import time
 import re
 import zipfile
 from io import BytesIO
-from openai import OpenAI
 from session_manager import start_session, end_session, is_user_in_active_session
-
-client = OpenAI()
-logging.basicConfig(level=logging.INFO)
 
 TIJDSLIMIET = 60
 DATA_PATH = "/persistent/data/wordle/coniuga"
 SCORE_PATH = "/persistent/data/wordle/coniuga_scores"
 LEADERBOARD_THREAD_ID = 1397220124150468618  # <-- pas aan indien nodig
 TOEGESTANE_KANALEN = [123456789013345, 1388667261761359932, 1397220124150468618, 1397248870056067113]
-TIJDEN = ["presente", "progressivo presente", "passato prossimo", "imperfetto", "futuro", "condizionale"]
+TIJDEN = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]
+ZICHTBARE_NAMEN = {
+    "presente": "Presente",
+    "progressivo_presente": "Progressivo presente",
+    "passato_prossimo": "Passato prossimo",
+    "imperfetto": "Imperfetto",
+    "futuro": "Futuro",
+    "condizionale": "Condizionale",
+    "imperativo": "imperativo ✋ (istruzioni e ordini)"
+}
 NIVEAUS = ["A2", "B1", "B2"]
 
 os.makedirs(DATA_PATH, exist_ok=True)
 os.makedirs(SCORE_PATH, exist_ok=True)
-
-@tasks.loop(time=datetime.time(hour=7, minute=0))  # 09:00 (UTC+2)
-async def genereer_coniuga_lijsten():
-    week = weeknummer()
-    await voer_coniuga_generatie_uit(week)
-
-@genereer_coniuga_lijsten.before_loop
-async def before_genereer_coniuga_lijsten():
-    await asyncio.sleep(5)
-    logging.info("[Coniuga] Scheduler klaar om te starten.")
-
-async def voer_coniuga_generatie_uit(week):
-    weekpad = os.path.join(DATA_PATH, f"week_{week}")
-    if os.path.exists(weekpad):
-        logging.info(f"[Coniuga] Week {week} bestaat al – geen nieuwe lijsten gegenereerd.")
-        return
-
-    os.makedirs(weekpad, exist_ok=True)
-    logging.info(f"[Coniuga] Genereren van lijsten voor week {week}...")
-
-    for tijd in TIJDEN:
-        for niveau in NIVEAUS:
-            prompt = build_prompt(tijd, niveau, bonus=False)
-            lijst = await call_openai(prompt, aantal=50)
-            with open(os.path.join(weekpad, f"{tijd}_{niveau}_base.json"), "w", encoding="utf-8") as f:
-                json.dump(lijst, f, ensure_ascii=False, indent=2)
-
-            prompt = build_prompt(tijd, niveau, bonus=True)
-            bonus = await call_openai(prompt, aantal=20)
-            with open(os.path.join(weekpad, f"{tijd}_{niveau}_bonus.json"), "w", encoding="utf-8") as f:
-                json.dump(bonus, f, ensure_ascii=False, indent=2)
-
-    logging.info(f"[Coniuga] ✅ Lijsten gegenereerd voor week {week}")
-
-def build_prompt(tijd, niveau, bonus=False):
-    soort = "20" if bonus else "50"
-    extra = "Geef me enkel zinnen waarin een **duidelijk onregelmatig werkwoord** vervoegd moet worden. Vermijd werkwoorden die regelmatig zijn of slechts kleine spellingaanpassingen hebben." if bonus else ""
-    if niveau == "A2":
-        extra += " Gebruik eenvoudige zinnen."
-    elif niveau == "B1":
-        extra += " Geef voorkeur aan iets langere zinnen."
-    elif niveau == "B2":
-        extra += " Gebruik complexere werkwoorden en structuur."
-
-    if tijd == "misto":
-        extra += (
-            f" Voeg bij elke zin expliciet toe in welke tijd '{tijd}' het werkwoord vervoegd moet worden."
-            " Bijvoorbeeld (futuro), (imperfetto), (condizionale), enz. "
-            "Zorg dat dit zichtbaar is voor de speler zodat die weet welke tijd hij moet toepassen."
-            " Gebruik dit formaat exact:\n"
-            '{ "zin": "Se avessi una macchina, ___ (viaggiare) (condizionale) di più", "oplossing": "viaggerei", "varianten": [] }\n'
-        )
-
-    return (
-        f"Geef me enkel een geldige JSON-array van {soort} Italiaanse zinnen op niveau {niveau}, "
-        f"waar een werkwoord vervoegd moet worden in de tijd '{tijd}'. "
-        "Gebruik dit formaat exact per item:\n"
-        '{ "zin": "... ___ ...", "oplossing": "...", "varianten": ["...", "..."] }\n'
-        "Toon in de zin de infinitief van het werkwoord tussen haakjes. Geef nooit de vervoegde vorm al in de zin."
-        "Laat 'varianten' leeg indien niet van toepassing. Geef alleen de JSON array terug, geen uitleg."
-    )
-
-async def call_openai(prompt, aantal):
-    try:
-        response = await asyncio.to_thread(lambda: client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.8
-        ))
-        content = response.choices[0].message.content
-        logging.warning(f"[OpenAI Response]:\n{content}")
-
-        # 🔧 Sanitize JSON: verwijder ongecontroleerde control characters
-        sanitized = re.sub(r'[\x00-\x1F\x7F]', '', content)
-        return json.loads(sanitized)
-    except Exception as e:
-        logging.error(f"[Coniuga] Fout bij genereren met OpenAI: {e}")
-        return []
 
 def weeknummer():
     vandaag = datetime.date.today()
@@ -144,25 +71,6 @@ class Coniuga(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='genereer-coniuga-week')
-    @commands.is_owner()
-    async def genereer_coniuga_week(self, ctx, week: int = None):
-        if ctx.channel.id != 1388667261761359932:
-            return
-        if week is None:
-            week = weeknummer()
-        pad = os.path.join(DATA_PATH, f"week_{week}")
-        if os.path.exists(pad):
-            await ctx.send(f"⚠️ De map voor week {week} bestaat al. Verwijder handmatig als je opnieuw wil genereren.")
-            return
-        await ctx.send(f"🛠️ Genereren van Coniuga-lijsten voor week {week}...")
-        try:
-            await voer_coniuga_generatie_uit(week)
-            await ctx.send(f"✅ Lijsten gegenereerd voor week {week}.")
-        except Exception as e:
-            await ctx.send(f"❌ Fout bij genereren: {e}")
-            logging.error(f"[Coniuga] Fout bij manuele generatie: {e}")
-
     # ... (hier komt jouw bestaande spelcode met !verbi, leaderboard, enz.)
     @commands.command(name='verbi')
     async def start_coniuga(self, ctx):
@@ -183,14 +91,14 @@ class Coniuga(commands.Cog):
                 return
 
             # Tijden (inclusief progressivo en misto)
-            tijden = ["presente", "progressivo presente", "passato prossimo", "imperfetto", "futuro", "condizionale", "misto"]
+            tijden = ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo", "misto"]
             niveaus = ["A2", "B1", "B2"]
 
             def check(m):
                 return m.author == user and isinstance(m.channel, discord.DMChannel)
 
             # Tijdkeuze
-            await dm.send("⏳ Quale tempo verbale vuoi esercitare?\n(Digita un numero da 1 a 7)\n\n" +
+            await dm.send("⏳ Quale tempo verbale vuoi esercitare?\n(Digita un numero da 1 a 8)\n\n" +
                           "\n".join(f"{i+1}. {t}" for i, t in enumerate(tijden)))
             try:
                 msg = await self.bot.wait_for("message", timeout=60, check=check)
@@ -218,20 +126,23 @@ class Coniuga(commands.Cog):
             if tijd == "misto":
                 alle_zinnen = []
                 for t in tijden[:-1]:  # alle behalve misto
-                    z = laad_zinnen(week, t, niveau, bonus=False)
-                    alle_zinnen.extend(z)
-                if len(alle_zinnen) < 20:
-                    await dm.send("⚠️ Non ci sono abbastanza frasi disponibili per il livello selezionato.")
-                    end_session(user.id)
-                    return
-                geselecteerd = random.sample(alle_zinnen, 20)
-            else:
-                zinnen = laad_zinnen(week, tijd, niveau, bonus=False)
-                if len(zinnen) < 20:
-                    await dm.send("⚠️ Le frasi per questa combinazione non sono ancora disponibili.")
-                    end_session(user.id)
-                    return
-                geselecteerd = random.sample(zinnen, 20)
+                    zinnen_per_tijd = laad_zinnen(week, t, niveau, bonus=False)
+                    for item in zinnen_per_tijd:
+                        # Voeg tijdsaanduiding toe aan de zin, achter het werkwoord
+                        zin_met_tijd = re.sub(
+                            r"\((\w+)\)", rf"(\1) ({t})", item["zin"]
+                        )
+                        nieuwe_item = {
+                            "zin": zin_met_tijd,
+                            "oplossing": item["oplossing"],
+                            "varianten": item.get("varianten", [])
+                        }
+                        alle_zinnen.append(nieuwe_item)
+            if len(alle_zinnen) < 20:
+                await dm.send("⚠️ Non ci sono abbastanza frasi disponibili per il livello selezionato.")
+                end_session(user.id)
+                return
+            geselecteerd = random.sample(alle_zinnen, 20)
 
             # Spel starten
             correcte = 0
@@ -269,9 +180,19 @@ class Coniuga(commands.Cog):
             # Bonuszinnen laden
             if tijd == "misto":
                 alle_bonus = []
-                for t in ["presente", "progressivo", "passato", "imperfetto", "futuro", "condizionale"]:
-                    z = laad_zinnen(week, t, livello, bonus=True)
-                    alle_bonus.extend(z)
+                for t in ["presente", "progressivo_presente", "passato_prossimo", "imperfetto", "futuro", "condizionale", "imperativo"]:
+                    bonus_per_tijd = laad_zinnen(week, t, livello, bonus=True)
+                    for item in bonus_per_tijd:
+                        zin_met_tijd = re.sub(
+                            r"\((\w+)\)", rf"(\1) ({t})", item["zin"]
+                        )
+                        nieuwe_item = {
+                            "zin": zin_met_tijd,
+                            "oplossing": item["oplossing"],
+                            "varianten": item.get("varianten", [])
+                        }
+                        alle_bonus.append(nieuwe_item)
+
                 if len(alle_bonus) < 10:
                     await dm.send("⚠️ Il bonus round non è disponibile per questa combinazione.")
                     ster = False
@@ -505,7 +426,5 @@ async def setup(bot):
     logging.info("🧩 setup() van cogs.coniuga gestart")  # 👈 Extra loggingregel
     await bot.add_cog(Coniuga(bot))
     logging.info("✅ Coniuga-cog toegevoegd aan bot")     # 👈 Nog een loggingregel
-    genereer_coniuga_lijsten.start()
-    logging.info("⏰ Scheduler coniuga gestart")           # 👈 Optioneel, maar handig
     for command in bot.commands:
         logging.info(f"✅ Commando geladen: {command.name}")
