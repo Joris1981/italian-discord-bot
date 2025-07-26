@@ -56,7 +56,8 @@ class OefeningenOverzicht(commands.Cog):
                 "[CI / DI / NE](https://discord.com/channels/1387552031132094709/1393280441221644328)\n"
                 "[TRA / FRA / DOPO](https://discord.com/channels/1387552031132094709/1390091443678478397)\n"
                 "[BUONO o BENE](https://discord.com/channels/1387552031132094709/1397860505808535573)\n"
-                "[DIMINUTIVI ed ACCRESCITIVI](https://discord.com/channels/1387552031132094709/1398060503590244432)"
+                "[DIMINUTIVI ed ACCRESCITIVI](https://discord.com/channels/1387552031132094709/1398060503590244432)\n"
+                "[TUTTO / TUTTI](https://discord.com/channels/1387552031132094709/1398625132636798996)"
             ),
             inline=False
         )
@@ -90,7 +91,7 @@ class OefeningenOverzicht(commands.Cog):
         )
 
         embed2.add_field(
-            name="🎧 Luistervaardigheid",
+            name="🎧 Luistervaardigheid (deel 1)",
             value=(
                 "We posten regelmatig een interessante podcast die je kan beluisteren met of zonder transcript.\n"
                 "Een ideale manier om je luistervaardigheid te verbeteren én je woordenschat uit te breiden op een leuke manier.\n"
@@ -98,11 +99,18 @@ class OefeningenOverzicht(commands.Cog):
                 "📥 [Podcastkanaal](https://discord.com/channels/1387552031132094709/1387594096759144508)\n\n"
                 "**Begrijpend luisteren** – luister naar het fragment, doe de bijhorende oefening of beantwoord de vragen.\n"
                 "Gebruik nadien het juiste commando in de thread om het transcript in jouw inbox te ontvangen.\n"
-                "Bijvoorbeeld: `!ascolto_cristina`, `!ascolto_coshaifatto`, ... enz.\n\n"
+                "Bijvoorbeeld: `!ascolto_cristina`, `!ascolto_coshaifatto`, ... enz."
+            ),
+            inline=False
+        )
+
+        embed2.add_field(
+            name="🎧 Luistervaardigheid (deel 2)",
+            value=(
                 "🔊 [Dai accompagni](https://discord.com/channels/1387552031132094709/1388473121346027520)\n"
                 "🔊 [Spaghetti alla puttanesca](https://discord.com/channels/1387552031132094709/1390073410826014903)\n"
                 "🔊 [Cristina e la sua famiglia](https://discord.com/channels/1387552031132094709/1390410564093743285)\n"
-                "🔊 [Cos'hai fatto?](https://discord.com/channels/1387552031132094709/1394796805283385454)"
+                "🔊 [Cos'hai fatto?](https://discord.com/channels/1387552031132094709/1394796805283385454)\n"
                 "🔊 [Cercare un lavoro](https://discord.com/channels/1387552031132094709/1398368313293144196)"
             ),
             inline=False
