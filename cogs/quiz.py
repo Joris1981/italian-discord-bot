@@ -413,7 +413,7 @@ class Quiz(commands.Cog):
             {"zin": "Dove sono andati ___?", "antwoord": ["tutti"]},
             {"zin": "___ il mondo conosce Roma.", "antwoord": ["tutto"]},
             {"zin": "Ho mangiato ___ il gelato da solo, scusami.", "antwoord": ["tutto"]},
-            {"zin": "Dopo la riunione erano stanchi ___.", "antwoord": ["tutti", "tutte"]},
+            {"zin": "Dopo la riunione erano stanchi ___.", "antwoord": ["tutti"]},
             {"zin": "Hai preparato ___ la cena da sola?", "antwoord": ["tutta"]},
             {"zin": "___ sono invitati, nessuno escluso.", "antwoord": ["tutti"]},
             {"zin": "Ho letto ___ i libri che mi hai prestato.", "antwoord": ["tutti"]},
@@ -425,7 +425,7 @@ class Quiz(commands.Cog):
             {"zin": "Hai pulito ___? Non c’è neanche un granello di polvere!", "antwoord": ["tutto"]},
             {"zin": "Sono arrivate ___ le amiche di Giulia.", "antwoord": ["tutte"]},
             {"zin": "___ parlano di politica ultimamente.", "antwoord": ["tutti"]},
-            {"zin": "Alla fine della giornata erano felici ___.", "antwoord": ["tutti", "tutte"]}
+            {"zin": "Alla fine della giornata erano felici ___.", "antwoord": ["tutti"]}
         ]
 
     @commands.Cog.listener()
