@@ -47,6 +47,27 @@ def laad_zinnen(week, tijd, niveau, bonus=False):
     except FileNotFoundError:
         logging.warning(f"Lijst niet gevonden: {pad}")
         return []
+    except json.JSONDecodeError as e:
+        logging.error(f"JSON decode error in {pad}: {e}")
+        return []
+
+def laad_misto_zinnen(week, niveau, bonus=False):
+    alle_zinnen = []
+    alle_tijden = TIJDEN  # alleen gewone tijden, geen 'Misto'
+    for t in alle_tijden:
+        zinnen_per_tijd = laad_zinnen(week, t, niveau, bonus=bonus)
+        logging.info(f"[Misto] Zinnen geladen voor '{t}' ({'bonus' if bonus else 'base'}): {len(zinnen_per_tijd)}")
+        for item in zinnen_per_tijd:
+            zin_met_tijd = re.sub(
+                r"\((\w+)\)", rf"(\1) ({t})", item["zin"]
+            )
+            nieuwe_item = {
+                "zin": zin_met_tijd,
+                "oplossing": item["oplossing"],
+                "varianten": item.get("varianten", [])
+            }
+            alle_zinnen.append(nieuwe_item)
+    return alle_zinnen
 
 def schrijf_score(user_id, display_name, score, tijd, ster, week):
     pad = os.path.join(SCORE_PATH, f"week_{week}.json")
