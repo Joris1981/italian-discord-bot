@@ -35,6 +35,7 @@ class Quiz(commands.Cog):
         self.diminutivi_thread = 1398060503590244432 # Thread ID for DIMINUTIVI quiz
         self.clara_thread = 1398368313293144196 # Thread ID for CLARA quiz
         self.tutto_thread = 1398625132636798996 # Thread ID for TUTTO quiz
+        self.ci_tempo_thread = 1399127152246653049 # Thread ID for CI TEMPO quiz
 
         # DI o DA
         self.di_da_zinnen = [
@@ -428,6 +429,35 @@ class Quiz(commands.Cog):
             {"zin": "Alla fine della giornata erano felici ___.", "antwoord": ["tutti"]}
         ]
 
+        # CI TEMPO QUIZ
+        self.ci_tempo_zinnen = [
+            {"zin": "Per fare questa torta, ___ almeno due ore.", "antwoord": "ci vogliono"},
+            {"zin": "Ogni mattina io ___ venti minuti a prepararmi.", "antwoord": "ci metto"},
+            {"zin": "Per capire bene questa grammatica, ___ tempo e pazienza.", "antwoord": "ci vuole"},
+            {"zin": "Loro ___ troppo a rispondere ai messaggi.", "antwoord": "ci mettono"},
+            {"zin": "Quando andiamo al mare, ___ due ore per arrivarci.", "antwoord": "ci vogliono"},
+            {"zin": "La professoressa ___ sempre un po’ di tempo per correggere tutto.", "antwoord": "ci mette"},
+            {"zin": "___ dieci minuti per raggiungere la scuola a piedi.", "antwoord": "ci vogliono"},
+            {"zin": "Marta ___ solo cinque minuti per truccarsi.", "antwoord": "ci mette"},
+            {"zin": "Ragazzi, quanto tempo ___ per studiare tutto?", "antwoord": "ci mettete"},
+            {"zin": "In estate ___ molta acqua per le piante.", "antwoord": "ci vuole"},
+            {"zin": "Ieri ___ una mezz’ora per trovare parcheggio.", "antwoord": "ci è voluta"},
+            {"zin": "I miei amici ___ troppo tempo per finire il progetto.", "antwoord": "ci mettono"},
+            {"zin": "Quando sei stanco, ti ___ di più a concentrarti.", "antwoord": "ci metti"},
+            {"zin": "Per finire questo libro, secondo me ___ almeno una settimana.", "antwoord": "ci vuole"},
+            {"zin": "Voi quanto tempo ___ a sistemare la casa?", "antwoord": "ci mettete"},
+            {"zin": "Non sempre ___ le parole giuste per spiegare tutto.", "antwoord": "ci vogliono"},
+            {"zin": "Stamattina io ___ un’eternità per vestirmi!", "antwoord": "ci ho messo"},
+            {"zin": "___ due ore a piedi da qui a casa mia.", "antwoord": "ci vogliono"},
+            {"zin": "L’autobus è in ritardo, ci ___ un po’.", "antwoord": "ci mette"},
+            {"zin": "Ieri ___ cinque minuti per trovare il biglietto.", "antwoord": "ci sono voluti"},
+            {"zin": "Se c’è traffico, ___ anche un’ora in più.", "antwoord": "ci vuole"},
+            {"zin": "Per imparare una lingua, ___ dedizione e costanza.", "antwoord": "ci vuole"},
+            {"zin": "Quando cucino con mia madre, noi ___ pochissimo tempo!", "antwoord": "ci mettiamo"},
+            {"zin": "Tu quanto tempo ___ a scrivere un’email formale?", "antwoord": "ci metti"},
+            {"zin": "Per imparare bene, ___ solo volontà. Il resto viene da sé!", "antwoord": "ci vuole"}
+        ]
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -521,7 +551,13 @@ class Quiz(commands.Cog):
                     logger.info(f"Starting TUTTO/TUTTI quiz for user {user_id}")
                     await self.start_tutto_quiz(message)
                 except Exception as e:
-                    logger.error(f"Error starting TUTTO/TUTTI quiz for user {user_id}: {e}")          
+                    logger.error(f"Error starting TUTTO/TUTTI quiz for user {user_id}: {e}")
+            elif thread_id == self.ci_tempo_thread:
+                try:
+                    logger.info(f"Starting CI TEMPO quiz for user {user_id}")
+                    await self.start_ci_tempo_quiz(message)
+                except Exception as e:
+                    logger.error(f"Error starting CI TEMPO quiz for user {user_id}: {e}")  
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None, use_timeout=True):
         try:
@@ -646,6 +682,17 @@ class Quiz(commands.Cog):
             self.diminutivi_zinnen,
             "antwoord",
             "!diminutivi-soluzioni",
+            intro
+        )
+    
+    async def start_ci_tempo_quiz(self, message):
+        await message.channel.send("📩 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz su **CI VUOLE / CI METTE**!\nRispondi con la forma corretta (presente o passato prossimo).\nHai 60 secondi per ogni frase."
+        await self.start_quiz(
+            message.author,
+            self.ci_tempo_zinnen,
+            "antwoord",
+            "!ci-tempo-soluzioni",
             intro
         )
     
@@ -797,6 +844,10 @@ class Quiz(commands.Cog):
                 await ctx.author.send(f"{i}. {testo}\nRisposta corretta: **{risposta}**) {opzioni[risposta]}")
             except Exception as e:
                 await ctx.author.send(f"{i}. ⚠️ Errore nella domanda o risposta. ({e})")
+
+    @commands.command(name="ci-tempo-soluzioni")
+    async def ci_tempo_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "CI TEMPO", self.ci_tempo_zinnen)
 
     @commands.command(name="tra-soluzioni")
     async def tra_soluzioni(self, ctx):
