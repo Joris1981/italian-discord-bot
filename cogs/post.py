@@ -57,7 +57,8 @@ class OefeningenOverzicht(commands.Cog):
                 "[TRA / FRA / DOPO](https://discord.com/channels/1387552031132094709/1390091443678478397)\n"
                 "[BUONO o BENE](https://discord.com/channels/1387552031132094709/1397860505808535573)\n"
                 "[DIMINUTIVI ed ACCRESCITIVI](https://discord.com/channels/1387552031132094709/1398060503590244432)\n"
-                "[TUTTO / TUTTI](https://discord.com/channels/1387552031132094709/1398625132636798996)"
+                "[TUTTO / TUTTI](https://discord.com/channels/1387552031132094709/1398625132636798996)\n"
+                "[VOLERCI vs METTERCI](https://discord.com/channels/1387552031132094709/1399127152246653049)"
             ),
             inline=False
         )

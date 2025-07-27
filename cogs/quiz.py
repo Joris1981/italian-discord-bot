@@ -601,7 +601,7 @@ class Quiz(commands.Cog):
                             await dm.send(feedback)
                             correcte += 1
                         else:
-                            msg_text = f"❌ Sbagliato! Le risposte corrette erano: **{', '.join(juiste_antwoorden)}**"
+                            msg_text = f"❌ Sbagliato! La risposta corretta era: **{', '.join(juiste_antwoorden)}**"
                             if "type" in vraag:
                                 if vraag["type"] == ":arrow_up:":
                                     msg_text += " (Era un **accrescitivo**)"
