@@ -89,12 +89,12 @@ class Reminder(commands.Cog):
             except Exception as e:
                 logger.error(f"Fout bij verzenden Wordle reminder: {e}")
 
-    # 📆 Donderdag 9u00 – Frasi reminder
+    # 📆 Zondag 9u00 – Frasi reminder
     @tasks.loop(minutes=1)
     async def weekly_frasi_reminder(self):
         await self.bot.wait_until_ready()
         now = datetime.datetime.now(pytz.timezone("Europe/Brussels"))
-        if now.weekday() == 5 and now.hour == 9 and now.minute == 0:  # sabato 09:00
+        if now.weekday() == 6 and now.hour == 9 and now.minute == 0:  # domenica 09:00
             try:
                 thread = self.bot.get_channel(FRASI_THREAD_ID)
                 if thread:
@@ -103,7 +103,7 @@ class Reminder(commands.Cog):
                         "Domani arriva un nuovo tema: gioca o riprova ora per salire nella classifica! 🏆\n"
                         "Ogni frase conta, non lasciarti sfuggire l'occasione! ✨ \n"
                         "Hai tempo fino a stasera per giocare o riprovare per migliorare il tuo punteggio.\n" \
-                        "Per iniziare, digita il comando !frasi nella tua inbox con ItalianoBot.\n"
+                        "Per iniziare, digita il comando !frasi qui sotto o nella tua inbox con ItalianoBot.\n"
                     )
                     logger.info("Frasi reminder verzonden.")
             except Exception as e:
