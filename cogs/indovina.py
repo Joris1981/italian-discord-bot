@@ -13,7 +13,11 @@ logger = logging.getLogger(__name__)
 DATA_PATH = "/persistent/data/indovina"
 XP_PATH = os.path.join(DATA_PATH, "xp_scores.json")
 WEEKLY_FILE = os.path.join(DATA_PATH, "indovina_settimana_1.json")
-ALLOWED_THREAD_ID = 1389545682007883816
+ALLOWED_THREAD_IDS = {
+    1388667261761359932,
+    1399518842505400591,
+    1389545682007883816
+}
 MAX_TIME = 90
 TIP_TIME_PENALTY = 30
 
@@ -25,8 +29,8 @@ class Indovina(commands.Cog):
 
     @commands.command(name="indovina")
     async def start_indovina(self, ctx):
-        if not isinstance(ctx.channel, discord.DMChannel) and ctx.channel.id != ALLOWED_THREAD_ID:
-            return await ctx.send("❌ Questo gioco può essere avviato solo nel thread autorizzato o tramite DM.")
+        if not isinstance(ctx.channel, discord.DMChannel) and ctx.channel.id not in ALLOWED_THREAD_IDS:
+            return await ctx.send("❌ Questo gioco può essere avviato solo nei thread autorizzati o tramite DM.")
 
         user_id = ctx.author.id
         if session_manager.is_user_in_active_session(user_id):
