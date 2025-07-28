@@ -215,6 +215,8 @@ async def on_message(message):
                             "❌ *Tipo di errore:* spiegazione\n"
                             "✅ **Corretto:** versione migliorata\n"
                             "Usa Markdown per la formattazione. Rispondi solo se ci sono modifiche rispetto all'originale."
+                            "Evita risposte vaghe come 'versione corretta'. Specifica sempre gli errori e le correzioni. "
+                            "Non rispondere con 'nessun errore' o 'nessuna correzione necessaria'."
                             "⚠️ Se non ci sono errori, NON scrivere nulla. Lascia la risposta vuota."
                         )},
                         {"role": "user", "content": f"Testo originale:\n{message.content}\n\nVersione corretta:\n{reply}"}
