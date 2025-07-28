@@ -72,7 +72,7 @@ intents.members = True
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
-        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics", "cogs.ascolto", "cogs.frasi", "cogs.reminder", "cogs.coniuga", "cogs.post"]:
+        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics", "cogs.ascolto", "cogs.frasi", "cogs.reminder", "cogs.coniuga", "cogs.post", "cogs.indovina"]:
             try:
                 await self.load_extension(extension)
                 logging.info(f"✅ Extension geladen: {extension}")
@@ -208,14 +208,14 @@ async def on_message(message):
                         {"role": "system", "content": (
                             "Analizza attentamente la frase originale e quella corretta. "
                             "Non riscrivere la frase corretta. Elenca solo gli errori presenti nella frase originale. "
-                            "Per ogni errore, segui questo formato:"
-                            "❌ **Tipo di errore**  → ⚠️ **Spiegazione dell'errore e il perché!**\n"
+                            "Per ogni errore, segui sempre questo formato e fammi un elenco puntato:"
+                            "❌ **Tipo di errore**  → ⚠️ **Spiegazione dell'errore e il perché!**\n""
                             "Non correggere la frase, ma spiega gli errori in modo chiaro e conciso."
-                            "Ignora gli errori di punteggiatura e rispondi solo se ci sono errori reali."
+                            "Sempre ignora gli errori di punteggiatura e rispondi solo se ci sono errori reali."
                         )},
                         {"role": "user", "content": f"Individua e spiega solo gli errori presenti nella seguente frase (senza correggerla completamente):\n{message.content}"}
                         ]
-                    
+                )   
 
                 feedback_text = feedback.choices[0].message.content.strip()
                 if feedback_text:
