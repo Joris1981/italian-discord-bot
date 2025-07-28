@@ -190,29 +190,47 @@ async def on_message(message):
             ]
             await message.reply(random.choice(compliments), mention_author=False)
             return
+
         else:
             await message.reply(f"\U0001F4DD **{reply}**", suppress_embeds=True)
-            if message.channel.id in REACTION_CHANNELS or (
+
+    except Exception as e:
+        logging.error(f"Taalcorrectie fout: {e}")
+
+        if message.channel.id in REACTION_CHANNELS or (
                 hasattr(message.channel, 'parent_id') and message.channel.parent_id in REACTION_THREADS
             ):
                 try:
-                    context_reply = client.chat.completions.create(
+                    feedback = client.chat.completions.create(
                         model="gpt-3.5-turbo",
                         messages=[
                             {"role": "system", "content": (
-                                "Analizza la versione originale del testo e quella corretta. Fornisci un elenco puntato con i principali errori che sono stati corretti, suddivisi se possibile in categorie (grammatica, lessico, ortografia, stile)."
-                                "Per ogni punto, spiega brevemente cosa c'era di sbagliato e perché è stato corretto."
-                                "Non ripetere l’intero testo originale o corretto."
-                                "Rispondi solo se ci sono errori effettivi."
+                                "Analizza la versione originale del testo e quella corretta. "
+                                "Non ripetere le frasi. "
+                                "Elenca solo gli errori riscontrati o i miglioramenti stilistici effettuati. "
+                                "Per ogni punto, indica se si tratta di un errore grammaticale, lessicale, stilistico o di registro. "
+                                "Spiega brevemente perché era sbagliato o meno naturale e proponi la forma corretta o più adeguata. "
+                                "Usa questo formato:\n"
+                                "❌ *Tipo di errore:* spiegazione\n"
+                                "✅ **Corretto:** versione migliorata\n"
+                                "Usa Markdown per la formattazione. Rispondi solo se ci sono modifiche rispetto all'originale."
                             )},
-                            {"role": "user", "content": message.content}
+                            {"role": "user", "content": f"Testo originale:\n{message.content}\n\nVersione corretta:\n{reply}"}
                         ]
                     )
-                    await message.reply(context_reply.choices[0].message.content.strip(), mention_author=False)
+
+                    feedback_text = feedback.choices[0].message.content.strip()
+                    if feedback_text:
+                        embed = discord.Embed(
+                            title="🧠 Feedback sugli errori",
+                            description=feedback_text,
+                            color=0x2ECC71
+                        )
+                        embed.set_footer(text="Correzioni automatiche – ItalianoBot")
+                        await message.reply(embed=embed, mention_author=False)
+
                 except Exception as e:
                     logging.error(f"❌ Fout bij feedback reactie: {e}")
-    except Exception as e:
-        logging.error(f"Taalcorrectie fout: {e}")
 
     # GPT DM Chat
     if isinstance(message.channel, discord.DMChannel):
