@@ -10,7 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-DATA_PATH = "/persistent/data/indovina"
+DATA_PATH = "/persistent/data/wordle/indovina"
 XP_PATH = os.path.join(DATA_PATH, "xp_scores.json")
 WEEKLY_FILE = os.path.join(DATA_PATH, "indovina_settimana_1.json")
 ALLOWED_THREAD_IDS = {
