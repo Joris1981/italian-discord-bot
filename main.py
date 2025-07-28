@@ -208,11 +208,10 @@ async def on_message(message):
                         {"role": "system", "content": (
                             "Analizza attentamente la frase originale e quella corretta. "
                             "Non riscrivere la frase corretta. Elenca solo gli errori presenti nella frase originale. "
-                            "Raggruppa gli errori per categoria (Grammaticale, Lessicale, Ortografico, Stilistico). "
                             "Per ogni errore, segui questo formato:"
                             "❌ **Tipo di errore**  → ⚠️ **Spiegazione dell'errore e il perché!**\n"
-                            "Ignora gli errori di punteggiatura e rispondi solo se ci sono errori reali."
                             "Non correggere la frase, ma spiega gli errori in modo chiaro e conciso."
+                            "Ignora gli errori di punteggiatura e rispondi solo se ci sono errori reali."
                         )},
                         {"role": "user", "content": f"Individua e spiega solo gli errori presenti nella seguente frase (senza correggerla completamente):\n{message.content}"}
                         ]
