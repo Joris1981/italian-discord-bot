@@ -200,15 +200,17 @@ async def on_message(message):
                         model="gpt-3.5-turbo",
                         messages=[
                             {"role": "system", "content": (
-                                "Rispondi con una frase motivante o coinvolgente che mostra attenzione per il contenuto del messaggio precedente. "
-                                "Fai una domanda per approfondire la conversazione. Sii caloroso/a ma non eccessivamente generico/a."
+                                "Analizza la versione originale del testo e la versione corretta."
+                                "Spiega brevemente, in modo chiaro e concreto, gli errori principali che sono stati corretti."
+                                "Indica quali parole o strutture erano sbagliate e perché."
+                                "Rispondi solo se ci sono errori effettivi. Sii conciso e specifico, senza ripetere l'intero testo."
                             )},
                             {"role": "user", "content": message.content}
                         ]
                     )
                     await message.reply(context_reply.choices[0].message.content.strip(), mention_author=False)
                 except Exception as e:
-                    logging.error(f"❌ Fout bij contextuele reactie: {e}")
+                    logging.error(f"❌ Fout bij feedback reactie: {e}")
     except Exception as e:
         logging.error(f"Taalcorrectie fout: {e}")
 
