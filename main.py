@@ -209,7 +209,7 @@ async def on_message(message):
                             "Analizza attentamente la frase originale e quella corretta. "
                             "Non riscrivere la frase corretta. Elenca solo gli errori presenti nella frase originale. "
                             "Per ogni errore, segui sempre questo formato e fammi un elenco puntato:"
-                            "❌ **Tipo di errore**  → ⚠️ **Spiegazione dell'errore e il perché!**\n""
+                            "❌ **Tipo di errore**  → ⚠️ **Spiegazione dell'errore e il perché!**\n"
                             "Non correggere la frase, ma spiega gli errori in modo chiaro e conciso."
                             "Sempre ignora gli errori di punteggiatura e rispondi solo se ci sono errori reali."
                         )},
