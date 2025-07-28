@@ -208,18 +208,18 @@ async def on_message(message):
                         {"role": "system", "content": (
                             "Analizza attentamente la frase originale e quella corretta. "
                             "Non riscrivere l'intera frase corretta. Elenca solo gli errori presenti nella frase originale. "
-                            "Per ogni errore, specifica il tipo di errore (grammaticale, lessicale, ortografico, stilistico o di punteggiatura). "
+                            "Ignora completamente gli errori di punteggiatura o l'assenza di virgole, punti o accenti grafici secondari. "
+                            "Concentrati solo su errori grammaticali, lessicali, ortografici o stilistici. "
+                            "Per ogni errore, specifica il tipo (es. verbo scorretto, articolo mancante, uso errato del tempo verbale, ecc.). "
                             "Spiega *perché* è un errore e fornisci la forma corretta o più naturale. "
                             "Specifica sempre *la parola o la struttura errata* tra virgolette. "
                             "Usa questo formato per ogni punto:\n"
-                            "❌ **Tipo di errore:** spiegazione dell'errore (es. verbo scorretto, articolo mancante, accento sbagliato, ecc.)\n"
-                            "🔎 **Frase originale:** parola/frase errata\n"
-                            "✅ **Corretto:** parola/frase corretta\n\n"
-                            "Non omettere nessun dettaglio e rispondi solo se ci sono errori reali."
+                            "❌ **Tipo di errore:** spiegazione dell'errore\n"
+                            "Non rispondere se non ci sono errori grammaticali o lessicali reali."
                         )},
                         {"role": "user", "content": f"Testo originale:\n{message.content}\n\nVersione corretta:\n{reply}"}
                     ]
-                )
+                
 
                 feedback_text = feedback.choices[0].message.content.strip()
                 if feedback_text:
