@@ -200,10 +200,10 @@ async def on_message(message):
                         model="gpt-3.5-turbo",
                         messages=[
                             {"role": "system", "content": (
-                                "Analizza la versione originale del testo e la versione corretta."
-                                "Spiega brevemente, in modo chiaro e concreto, gli errori principali che sono stati corretti."
-                                "Indica quali parole o strutture erano sbagliate e perché."
-                                "Rispondi solo se ci sono errori effettivi. Sii conciso e specifico, senza ripetere l'intero testo."
+                                "Analizza la versione originale del testo e quella corretta. Fornisci un elenco puntato con i principali errori che sono stati corretti, suddivisi se possibile in categorie (grammatica, lessico, ortografia, stile)."
+                                "Per ogni punto, spiega brevemente cosa c'era di sbagliato e perché è stato corretto."
+                                "Non ripetere l’intero testo originale o corretto."
+                                "Rispondi solo se ci sono errori effettivi."
                             )},
                             {"role": "user", "content": message.content}
                         ]
