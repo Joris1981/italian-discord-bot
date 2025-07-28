@@ -207,19 +207,15 @@ async def on_message(message):
                     messages=[
                         {"role": "system", "content": (
                             "Analizza attentamente la frase originale e quella corretta. "
-                            "Non ripetere la frase corretta. Non mostrare la versione rivista. Concentrati solo sugli errori e sulla spiegazione."
-                            "Ignora completamente gli errori di punteggiatura o l'assenza di virgole, punti o accenti grafici secondari. "
-                            "Concentrati solo su errori grammaticali, lessicali, ortografici o stilistici. "
-                            "Per ogni errore, specifica il tipo (es. verbo scorretto, articolo mancante, uso errato del tempo verbale, ecc.). "
-                            "Spiega *perché* è un errore."
-                            "Specifica sempre *la parola o la struttura errata* tra virgolette. "
-                            "Usa questo formato per ogni punto:\n"
-                            "❌ **Tipo di errore:** spiegazione dell'errore\n"
-                            "Non rispondere se non ci sono errori grammaticali o lessicali reali."
+                            "Non riscrivere la frase corretta. Elenca solo gli errori presenti nella frase originale. "
+                            "Raggruppa gli errori per categoria (Grammaticale, Lessicale, Ortografico, Stilistico). "
+                            "Per ogni errore, segui questo formato:"
+                            "❌ **Tipo di errore**  → ⚠️ **Spiegazione dell'errore**\n"
+                            "Ignora gli errori di punteggiatura e rispondi solo se ci sono errori reali."
                         )},
                         {"role": "user", "content": f"Individua e spiega solo gli errori presenti nella seguente frase (senza correggerla completamente):\n{message.content}"}
-                    ]
-                
+                        ]
+                    
 
                 feedback_text = feedback.choices[0].message.content.strip()
                 if feedback_text:
