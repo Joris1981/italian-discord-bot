@@ -206,18 +206,16 @@ async def on_message(message):
                     model="gpt-3.5-turbo",
                     messages=[
                         {"role": "system", "content": (
-                            "Analizza la versione originale del testo e quella corretta. "
-                            "Non ripetere le frasi. "
-                            "Elenca solo gli errori riscontrati o i miglioramenti stilistici effettuati. "
-                            "Per ogni punto, indica se si tratta di un errore grammaticale, lessicale, stilistico o di registro. "
-                            "Spiega brevemente perché era sbagliato o meno naturale e proponi la forma corretta o più adeguata. "
-                            "Usa questo formato:\n"
-                            "❌ *Tipo di errore:* spiegazione\n"
-                            "✅ **Corretto:** versione migliorata\n"
-                            "Usa Markdown per la formattazione. Rispondi solo se ci sono modifiche rispetto all'originale."
-                            "Evita risposte vaghe come 'versione corretta'. Specifica sempre gli errori e le correzioni. "
-                            "Non rispondere con 'nessun errore' o 'nessuna correzione necessaria'."
-                            "⚠️ Se non ci sono errori, NON scrivere nulla. Lascia la risposta vuota."
+                            "Analizza attentamente la frase originale e quella corretta. "
+                            "Non riscrivere l'intera frase corretta. Elenca solo gli errori presenti nella frase originale. "
+                            "Per ogni errore, specifica il tipo di errore (grammaticale, lessicale, ortografico, stilistico o di punteggiatura). "
+                            "Spiega *perché* è un errore e fornisci la forma corretta o più naturale. "
+                            "Specifica sempre *la parola o la struttura errata* tra virgolette. "
+                            "Usa questo formato per ogni punto:\n"
+                            "❌ **Tipo di errore:** spiegazione dell'errore (es. verbo scorretto, articolo mancante, accento sbagliato, ecc.)\n"
+                            "🔎 **Frase originale:** parola/frase errata\n"
+                            "✅ **Corretto:** parola/frase corretta\n\n"
+                            "Non omettere nessun dettaglio e rispondi solo se ci sono errori reali."
                         )},
                         {"role": "user", "content": f"Testo originale:\n{message.content}\n\nVersione corretta:\n{reply}"}
                     ]
