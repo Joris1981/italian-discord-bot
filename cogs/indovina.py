@@ -7,6 +7,8 @@ import random
 from datetime import datetime
 import session_manager
 import logging
+import unicodedata
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,16 @@ os.makedirs(DATA_PATH, exist_ok=True)
 class Indovina(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    def normalize(self, text):
+        text = text.lower().strip()
+        # Verwijder lidwoorden
+        text = re.sub(r"^(l'|lo|la|il|un|una)\s*", "", text)
+        text = re.sub(r"'", "", text)
+        # Normaliseer accenten
+        text = unicodedata.normalize('NFD', text)
+        text = ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+        return text.strip()
 
     @commands.command(name="indovina")
     async def start_indovina(self, ctx):
@@ -73,16 +85,20 @@ class Indovina(commands.Cog):
                         await dm.send(f"💡 Suggerimento: {item['tip']} (⏱️ {tempo_rimanente} secondi rimanenti)")
                         continue
 
-                    normalizzata = risposta.content.lower().strip()
-                    varianti = [v.lower().strip() for v in item.get("varianti", [])] + [item['soluzione'].lower()]
-                    if normalizzata in varianti:
+                    normalizzata = self.normalize(risposta.content)
+                    varianti_normalizzate = [self.normalize(v) for v in item.get("varianti", [])] + [self.normalize(item['soluzione'])]
+
+                    if normalizzata in varianti_normalizzate:
                         await dm.send("✅ Corretto!")
                         punteggio += 1
                         logger.info(f"Risposta corretta da utente {user_id} alla domanda {idx}")
                     else:
-                        await dm.send(f"❌ Sbagliato. La risposta corretta era: **{item['soluzione']}**")
+                        varianti_mostrabili = item.get("varianti", [item["soluzione"]])
+                        varianti_str = ", ".join(f"**{v}**" for v in varianti_mostrabili)
+                        await dm.send(f"❌ Sbagliato. La risposta corretta era: **{item['soluzione']}**\n🔁 Varianti accettate: {varianti_str}")
                         logger.info(f"Risposta sbagliata da utente {user_id} alla domanda {idx}")
                     break
+
                 except asyncio.TimeoutError:
                     await dm.send(f"⏰ Tempo scaduto! La risposta corretta era: **{item['soluzione']}**")
                     logger.info(f"Timeout per utente {user_id} alla domanda {idx}")
