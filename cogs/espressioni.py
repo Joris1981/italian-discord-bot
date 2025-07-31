@@ -4,7 +4,7 @@ import json
 import asyncio
 import os
 
-QUIZ_CHANNEL_ID = 1388667261761359932, 1389545682007883816 # ID del canale dove il quiz può essere avviato
+QUIZ_CHANNEL_IDS = {1388667261761359932, 1389545682007883816}  # ✅ Meerdere toegestane kanalen
 DATA_DIR = 'persistent/data/wordle/espressioni'
 CURRENT_WEEK_FILE = 'espressioni_settimana_1.json'
 TIME_LIMIT = 90  # secondi
@@ -23,16 +23,16 @@ class Espressioni(commands.Cog):
         return data['espressioni']
 
     def format_question(self, index, q):
-        formatted = f"**Domanda {index + 1}:** {q['frase']}\n"
+        formatted = f"❓ **Domanda {index + 1}:** {q['frase']}\n"
         for key, value in q['opzioni'].items():
-            formatted += f"{key}) {value}\n"
+            formatted += f"*{key})* {value}\n"
         formatted += "\n⏱️ Hai 90 secondi per rispondere! Scrivi A, B, C o D."
         return formatted
 
     @commands.command(name='espressioni')
     async def start_quiz(self, ctx):
-        if not isinstance(ctx.channel, discord.DMChannel) and ctx.channel.id != QUIZ_CHANNEL_ID:
-            return await ctx.send("❌ Questo quiz può essere avviato solo nel canale designato o tramite DM.")
+        if not isinstance(ctx.channel, discord.DMChannel) and ctx.channel.id not in QUIZ_CHANNEL_IDS:
+            return await ctx.send("❌ Questo quiz può essere avviato solo in canali autorizzati o via DM.")
 
         try:
             dm = await ctx.author.create_dm()
