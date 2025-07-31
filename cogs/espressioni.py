@@ -4,13 +4,34 @@ import json
 import asyncio
 import os
 import datetime
+import logging
+import atexit
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 QUIZ_CHANNEL_IDS = [1388667261761359932, 1389545682007883816]
-DATA_DIR = 'persistent/data/wordle/espressioni'
+DATA_DIR = '/persistent/data/wordle/espressioni'
 CURRENT_WEEK_FILE = 'espressioni_settimana_1.json'
-TIME_LIMIT = 90  # secondi
+TIME_LIMIT = 90
 SCORE_PATH = os.path.join(DATA_DIR, "scores")
 os.makedirs(SCORE_PATH, exist_ok=True)
+
+FULL_WEEKLY_PATH = os.path.join(DATA_DIR, CURRENT_WEEK_FILE)
+
+# Debugging/log bij opstart
+if os.path.exists(FULL_WEEKLY_PATH):
+    logger.info(f"[BOOT] Il file delle espressioni ESISTE: {FULL_WEEKLY_PATH}")
+else:
+    logger.warning(f"[BOOT] Il file delle espressioni NON esiste: {FULL_WEEKLY_PATH}")
+
+def check_file_before_exit():
+    if os.path.exists(FULL_WEEKLY_PATH):
+        logger.info("[EXIT] Il file esiste ancora prima della chiusura.")
+    else:
+        logger.warning("[EXIT] Il file NON esiste più prima della chiusura.")
+
+atexit.register(check_file_before_exit)
 
 def weeknummer():
     oggi = datetime.date.today()
@@ -24,39 +45,49 @@ class Espressioni(commands.Cog):
         self.played_users = set()
 
     def load_questions(self):
-        path = os.path.join(DATA_DIR, CURRENT_WEEK_FILE)
-        with open(path, 'r', encoding='utf-8') as f:
+        logger.info(f"[LOAD] Caricamento file: {FULL_WEEKLY_PATH}")
+        if not os.path.exists(FULL_WEEKLY_PATH):
+            raise FileNotFoundError("File espressioni non trovato.")
+        with open(FULL_WEEKLY_PATH, 'r', encoding='utf-8') as f:
             data = json.load(f)
         return data['espressioni']
 
     def format_question(self, index, q):
+        emoji_map = {
+            "A": ":regional_indicator_a:",
+            "B": ":regional_indicator_b:",
+            "C": ":regional_indicator_c:",
+            "D": ":regional_indicator_d:"
+        }
         formatted = f"❓ **Domanda {index + 1}:** {q['frase']}\n"
         for key, value in q['opzioni'].items():
-            formatted += f"*{key})* {value}\n"
+            emoji = emoji_map.get(key.upper(), key)
+            formatted += f"{emoji} {value}\n"
         formatted += "\n⏱️ Hai 90 secondi per rispondere! Scrivi A, B, C o D."
         return formatted
 
     def salva_score(self, user_id, score):
         week = weeknummer()
         path = os.path.join(SCORE_PATH, f"week_{week}.json")
-
         try:
             if os.path.exists(path):
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
             else:
                 data = {}
-        except:
+        except Exception as e:
+            logger.exception("Errore nel caricamento punteggi")
             data = {}
 
         uid_str = str(user_id)
-        if uid_str not in data:  # Alleen eerste score telt
+        if uid_str not in data:
             data[uid_str] = score
             try:
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
+                logger.info(f"[SAVE] Punteggio salvato per {user_id}: {score}")
             except Exception as e:
-                print(f"❌ Fout bij opslaan score: {e}")
+                logger.exception("Errore nel salvataggio punteggio")
 
     @commands.command(name='espressioni')
     async def start_quiz(self, ctx):
@@ -68,14 +99,24 @@ class Espressioni(commands.Cog):
         except:
             return await ctx.send("⚠️ Impossibile inviare messaggi privati. Controlla le tue impostazioni.")
 
+        # Check of bestand beschikbaar is
+        if not os.path.exists(FULL_WEEKLY_PATH):
+            logger.warning(f"[START] Nessuna lista disponibile per {ctx.author.id}")
+            return await ctx.send("❌ Nessuna lista di espressioni disponibile al momento. Riprova più tardi.")
+
         await ctx.send("📬 Il quiz è stato avviato nei tuoi DM!")
 
-        questions = self.load_questions()
+        try:
+            questions = self.load_questions()
+        except Exception as e:
+            logger.exception("Errore nel caricamento delle domande")
+            return await dm.send("❌ Impossibile caricare le domande. Contatta un amministratore.")
+
         self.user_scores[ctx.author.id] = 0
         self.last_questions[ctx.author.id] = questions
         self.played_users.add(ctx.author.id)
 
-        await dm.send("🎉 **Benvenuto al quiz: 'Espressioni Idiomatiche'!**\n📚 15 domande in arrivo...\nPer ogni frase, scegli l'opzione corretta (A, B, C, D).")
+        await dm.send("🎉 **Benvenuto al quiz: 'Espressioni Idiomatiche'!**\n📚 15 domande in arrivo...\n🧠 Scegli il significato corretto del modo di dire proposto.\nPer ogni frase, scegli l'opzione corretta (A, B, C, D).")
 
         for i, q in enumerate(questions):
             await dm.send(self.format_question(i, q))
@@ -136,44 +177,6 @@ class Espressioni(commands.Cog):
         except Exception:
             await ctx.send("❌ Non posso inviarti le spiegazioni via DM. Controlla le tue impostazioni.")
 
-    @commands.command(name='espressioni_leaderboard')
-    @commands.is_owner()
-    async def leaderboard(self, ctx):
-        week = weeknummer()
-        path = os.path.join(SCORE_PATH, f"week_{week}.json")
-        kanaal_id = 1388667261761359932
-
-        if not os.path.exists(path):
-            return await ctx.send("⚠️ Nessun punteggio trovato per questa settimana.")
-
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                scores = json.load(f)
-        except:
-            return await ctx.send("❌ Errore durante la lettura del file dei punteggi.")
-
-        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-
-        embed = discord.Embed(
-            title=f"🏆 Leaderboard - Settimana {week}",
-            description="📚 Punteggi del quiz *Espressioni Idiomatiche*",
-            color=0xFFD700
-        )
-
-        for i, (uid, score) in enumerate(sorted_scores[:10], 1):
-            try:
-                user = await self.bot.fetch_user(int(uid))
-                nome = user.display_name if hasattr(user, "display_name") else user.name
-            except:
-                nome = f"ID: {uid}"
-            embed.add_field(name=f"{i}. {nome}", value=f"{score}/15", inline=False)
-
-        channel = self.bot.get_channel(kanaal_id)
-        if channel:
-            await channel.send(embed=embed)
-        else:
-            await ctx.send("❌ Canale non trovato.")
-
     @commands.command(name='upload_espressioni')
     @commands.has_permissions(administrator=True)
     async def upload_espressioni(self, ctx):
@@ -186,19 +189,20 @@ class Espressioni(commands.Cog):
         content = await file.read()
         try:
             data = json.loads(content)
-            path = os.path.join(DATA_DIR, CURRENT_WEEK_FILE)
-            with open(path, "w", encoding="utf-8") as f:
+            logger.info(f"[UPLOAD] Scrittura file: {FULL_WEEKLY_PATH}")
+            with open(FULL_WEEKLY_PATH, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             await ctx.send("✅ Nuova lista di espressioni caricata con successo.")
         except Exception as e:
+            logger.exception("Errore durante il caricamento JSON")
             await ctx.send(f"❌ Errore durante il caricamento: {e}")
 
     @commands.command(name='cancella_espressioni')
     @commands.has_permissions(administrator=True)
     async def cancella_espressioni(self, ctx):
-        path = os.path.join(DATA_DIR, CURRENT_WEEK_FILE)
-        if os.path.exists(path):
-            os.remove(path)
+        if os.path.exists(FULL_WEEKLY_PATH):
+            logger.warning(f"[DELETE] File eliminato manualmente: {FULL_WEEKLY_PATH}")
+            os.remove(FULL_WEEKLY_PATH)
             await ctx.send("🗑️ File delle espressioni eliminato.")
         else:
             await ctx.send("⚠️ Nessun file da eliminare.")
