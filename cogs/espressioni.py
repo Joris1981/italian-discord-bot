@@ -3,18 +3,25 @@ from discord.ext import commands
 import json
 import asyncio
 import os
+import datetime
 
-QUIZ_CHANNEL_IDS = {1388667261761359932, 1389545682007883816}  # ✅ Meerdere toegestane kanalen
+QUIZ_CHANNEL_IDS = [1388667261761359932, 1389545682007883816]
 DATA_DIR = 'persistent/data/wordle/espressioni'
 CURRENT_WEEK_FILE = 'espressioni_settimana_1.json'
 TIME_LIMIT = 90  # secondi
+SCORE_PATH = os.path.join(DATA_DIR, "scores")
+os.makedirs(SCORE_PATH, exist_ok=True)
+
+def weeknummer():
+    oggi = datetime.date.today()
+    return oggi.isocalendar().week
 
 class Espressioni(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.user_scores = {}
-        self.last_questions = {}  # Opslag per gebruiker
-        self.played_users = set()  # Bijhouden wie gespeeld heeft
+        self.last_questions = {}
+        self.played_users = set()
 
     def load_questions(self):
         path = os.path.join(DATA_DIR, CURRENT_WEEK_FILE)
@@ -29,10 +36,32 @@ class Espressioni(commands.Cog):
         formatted += "\n⏱️ Hai 90 secondi per rispondere! Scrivi A, B, C o D."
         return formatted
 
+    def salva_score(self, user_id, score):
+        week = weeknummer()
+        path = os.path.join(SCORE_PATH, f"week_{week}.json")
+
+        try:
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            else:
+                data = {}
+        except:
+            data = {}
+
+        uid_str = str(user_id)
+        if uid_str not in data:  # Alleen eerste score telt
+            data[uid_str] = score
+            try:
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                print(f"❌ Fout bij opslaan score: {e}")
+
     @commands.command(name='espressioni')
     async def start_quiz(self, ctx):
         if not isinstance(ctx.channel, discord.DMChannel) and ctx.channel.id not in QUIZ_CHANNEL_IDS:
-            return await ctx.send("❌ Questo quiz può essere avviato solo in canali autorizzati o via DM.")
+            return await ctx.send("❌ Questo quiz può essere avviato solo nel canale designato o tramite DM.")
 
         try:
             dm = await ctx.author.create_dm()
@@ -72,6 +101,8 @@ class Espressioni(commands.Cog):
                 await dm.send(f"❌ Risposta sbagliata. La risposta giusta era **{q['risposta']}**.")
 
         score = self.user_scores[ctx.author.id]
+        self.salva_score(ctx.author.id, score)
+
         await dm.send(f"\n🏁 **Fine del quiz!**\n🎯 Risposte corrette: **{score}/15**")
         await dm.send("🧠 Vuoi approfondire le espressioni? Digita il comando `!espressioni_spiegazioni` per ricevere le spiegazioni complete in DM.")
 
@@ -93,7 +124,7 @@ class Espressioni(commands.Cog):
                 frase = q['frase']
                 spiegazione = q.get('spiegazione', "— Nessuna spiegazione fornita.")
                 traduzione = q.get('traduzione', "—")
-                vocabolario = q.get('vocabolario', [])
+                vocabolario = q.get('vocabolario', {})
 
                 msg = f"🔹 **{frase}**\n🧠 *{spiegazione}*\n🇳🇱 **Vertaling**: {traduzione}"
                 if vocabolario:
@@ -104,6 +135,44 @@ class Espressioni(commands.Cog):
 
         except Exception:
             await ctx.send("❌ Non posso inviarti le spiegazioni via DM. Controlla le tue impostazioni.")
+
+    @commands.command(name='espressioni_leaderboard')
+    @commands.is_owner()
+    async def leaderboard(self, ctx):
+        week = weeknummer()
+        path = os.path.join(SCORE_PATH, f"week_{week}.json")
+        kanaal_id = 1388667261761359932
+
+        if not os.path.exists(path):
+            return await ctx.send("⚠️ Nessun punteggio trovato per questa settimana.")
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                scores = json.load(f)
+        except:
+            return await ctx.send("❌ Errore durante la lettura del file dei punteggi.")
+
+        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+
+        embed = discord.Embed(
+            title=f"🏆 Leaderboard - Settimana {week}",
+            description="📚 Punteggi del quiz *Espressioni Idiomatiche*",
+            color=0xFFD700
+        )
+
+        for i, (uid, score) in enumerate(sorted_scores[:10], 1):
+            try:
+                user = await self.bot.fetch_user(int(uid))
+                nome = user.display_name if hasattr(user, "display_name") else user.name
+            except:
+                nome = f"ID: {uid}"
+            embed.add_field(name=f"{i}. {nome}", value=f"{score}/15", inline=False)
+
+        channel = self.bot.get_channel(kanaal_id)
+        if channel:
+            await channel.send(embed=embed)
+        else:
+            await ctx.send("❌ Canale non trovato.")
 
     @commands.command(name='upload_espressioni')
     @commands.has_permissions(administrator=True)
