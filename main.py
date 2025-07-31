@@ -22,6 +22,7 @@ if not load_dotenv():
 # === 📂 Zorg dat wordle-map en frasi-map bestaan ===
 os.makedirs("/persistent/data/wordle", exist_ok=True)
 os.makedirs("/persistent/data/wordle/frasi", exist_ok=True)
+os.makedirs("/persistent/data/wordle/espressioni", exist_ok=True)
 
 # === 🦥 Logging ===
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
@@ -72,7 +73,7 @@ intents.members = True
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
-        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics", "cogs.ascolto", "cogs.frasi", "cogs.reminder", "cogs.coniuga", "cogs.post", "cogs.indovina"]:
+        for extension in ["cogs.grammatica", "cogs.wordle", "cogs.quiz", "cogs.lyrics", "cogs.ascolto", "cogs.frasi", "cogs.reminder", "cogs.coniuga", "cogs.post", "cogs.indovina", "cogs.espressioni"]:
             try:
                 await self.load_extension(extension)
                 logging.info(f"✅ Extension geladen: {extension}")

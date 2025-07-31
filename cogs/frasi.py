@@ -308,8 +308,13 @@ class Frasi(commands.Cog):
 
     @tasks.loop(time=datetime.time(hour=7, minute=0, tzinfo=datetime.timezone(datetime.timedelta(hours=2))))
     async def weekelijkse_herinnering(self):
+        # ✅ Alleen uitvoeren op zondagochtend
+        vandaag = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=2))).weekday()
+        if vandaag != 6:  # Zondag = 6
+            return
         guild = discord.utils.get(self.bot.guilds)
         if not guild:
+            logging.warning("Geen guild gevonden voor wekelijkse herinnering.")
             return
         week = weeknummer()
         pad = f"{SCORE_PATH}/week_{week}.json"
