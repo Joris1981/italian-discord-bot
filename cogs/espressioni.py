@@ -15,6 +15,9 @@ DATA_DIR = '/persistent/data/wordle/espressioni'
 CURRENT_WEEK_FILE = 'espressioni_settimana_1.json'
 TIME_LIMIT = 90
 SCORE_PATH = os.path.join(DATA_DIR, "scores")
+
+# Zorg dat alle benodigde directories bestaan
+os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(SCORE_PATH, exist_ok=True)
 
 FULL_WEEKLY_PATH = os.path.join(DATA_DIR, CURRENT_WEEK_FILE)
