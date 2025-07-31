@@ -3,21 +3,18 @@ from discord.ext import commands
 import json
 import asyncio
 import os
-import logging
-import session_manager
 
-logger = logging.getLogger(__name__)
-
-QUIZ_CHANNEL_ID = 1388667261761359932
+QUIZ_CHANNEL_ID = 1388667261761359932, 1389545682007883816 # ID del canale dove il quiz può essere avviato
 DATA_DIR = 'persistent/data/wordle/espressioni'
 CURRENT_WEEK_FILE = 'espressioni_settimana_1.json'
 TIME_LIMIT = 90  # secondi
 
-os.makedirs(DATA_DIR, exist_ok=True)
-
 class Espressioni(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.user_scores = {}
+        self.last_questions = {}  # Opslag per gebruiker
+        self.played_users = set()  # Bijhouden wie gespeeld heeft
 
     def load_questions(self):
         path = os.path.join(DATA_DIR, CURRENT_WEEK_FILE)
@@ -34,111 +31,108 @@ class Espressioni(commands.Cog):
 
     @commands.command(name='espressioni')
     async def start_quiz(self, ctx):
-        user = ctx.author
-        user_id = user.id
-
-        if session_manager.is_user_in_active_session(user_id):
-            return await ctx.send("⚠️ Hai già una sessione attiva. Completa prima quella prima di iniziarne una nuova.")
+        if not isinstance(ctx.channel, discord.DMChannel) and ctx.channel.id != QUIZ_CHANNEL_ID:
+            return await ctx.send("❌ Questo quiz può essere avviato solo nel canale designato o tramite DM.")
 
         try:
-            dm = await user.create_dm()
-            questions = self.load_questions()
-            user_score = 0
+            dm = await ctx.author.create_dm()
+        except:
+            return await ctx.send("⚠️ Impossibile inviare messaggi privati. Controlla le tue impostazioni.")
 
-            if ctx.guild and ctx.channel.id == QUIZ_CHANNEL_ID:
-                await ctx.send(f"📩 {user.mention} la quiz è iniziata nei tuoi DM!")
-            elif isinstance(ctx.channel, discord.DMChannel):
-                await ctx.send("📩 Iniziamo!")
+        await ctx.send("📬 Il quiz è stato avviato nei tuoi DM!")
 
-            session_manager.start_session(user_id, "espressioni")
-            logger.info(f"Quiz Espressioni avviato da utente {user_id}")
+        questions = self.load_questions()
+        self.user_scores[ctx.author.id] = 0
+        self.last_questions[ctx.author.id] = questions
+        self.played_users.add(ctx.author.id)
 
-            await dm.send("🎉 **Benvenuto al quiz: 'Espressioni Idiomatiche'!**\n15 domande in arrivo...")
+        await dm.send("🎉 **Benvenuto al quiz: 'Espressioni Idiomatiche'!**\n📚 15 domande in arrivo...\nPer ogni frase, scegli l'opzione corretta (A, B, C, D).")
 
-            for i, q in enumerate(questions):
-                await dm.send(self.format_question(i, q))
+        for i, q in enumerate(questions):
+            await dm.send(self.format_question(i, q))
 
-                def check(m):
-                    return (
-                        m.author == user and
-                        m.channel == dm and
-                        m.content.upper() in ['A', 'B', 'C', 'D']
-                    )
+            def check(m):
+                return (
+                    m.channel == dm and
+                    m.author == ctx.author and
+                    m.content.upper() in ['A', 'B', 'C', 'D']
+                )
 
-                try:
-                    response = await self.bot.wait_for('message', timeout=TIME_LIMIT, check=check)
-                    if response.content.upper() == q['risposta']:
-                        user_score += 1
-                        await dm.send("✅ Corretto!")
-                        logger.info(f"Risposta corretta da utente {user_id} alla domanda {i+1}")
-                    else:
-                        await dm.send(f"❌ Sbagliato. La risposta giusta era **{q['risposta']}**.")
-                        logger.info(f"Risposta sbagliata da utente {user_id} alla domanda {i+1}")
-                except asyncio.TimeoutError:
-                    await dm.send("⏰ Tempo scaduto per questa domanda!")
-                    logger.info(f"Timeout per utente {user_id} alla domanda {i+1}")
+            try:
+                response = await self.bot.wait_for('message', timeout=TIME_LIMIT, check=check)
+            except asyncio.TimeoutError:
+                await dm.send("⏰ Tempo scaduto per questa domanda!")
+                continue
 
-            await dm.send("📊 **Fine del quiz!**")
-            await dm.send(f"🏅 Hai totalizzato: **{user_score}/15**")
-            logger.info(f"Quiz completato da utente {user_id} con punteggio {user_score}")
+            if response.content.upper() == q['risposta']:
+                self.user_scores[ctx.author.id] += 1
+                traduzione = q.get('traduzione', '')
+                await dm.send(f"✅ Corretto!\n🗣️ **{q['frase']}** → 🇳🇱 {traduzione}")
+            else:
+                await dm.send(f"❌ Risposta sbagliata. La risposta giusta era **{q['risposta']}**.")
 
-        except discord.Forbidden:
-            await ctx.send("❌ Non posso inviarti messaggi privati! Controlla le tue impostazioni DM.")
-        finally:
-            session_manager.end_session(user_id)
+        score = self.user_scores[ctx.author.id]
+        await dm.send(f"\n🏁 **Fine del quiz!**\n🎯 Risposte corrette: **{score}/15**")
+        await dm.send("🧠 Vuoi approfondire le espressioni? Digita il comando `!espressioni_spiegazioni` per ricevere le spiegazioni complete in DM.")
 
-    @commands.command(name='uploadespressioni')
+    @commands.command(name='espressioni_spiegazioni')
+    async def spiega_espressioni(self, ctx):
+        user_id = ctx.author.id
+        if user_id not in self.played_users:
+            return await ctx.send("⚠️ Devi prima completare il quiz `!espressioni` per ricevere le spiegazioni.")
+
+        questions = self.last_questions.get(user_id)
+        if not questions:
+            return await ctx.send("⚠️ Non ho trovato le tue domande. Riprova il quiz con `!espressioni`.")
+
+        try:
+            dm = await ctx.author.create_dm()
+            await dm.send("📖 **Spiegazioni delle espressioni idiomatiche:**")
+
+            for q in questions:
+                frase = q['frase']
+                spiegazione = q.get('spiegazione', "— Nessuna spiegazione fornita.")
+                traduzione = q.get('traduzione', "—")
+                vocabolario = q.get('vocabolario', [])
+
+                msg = f"🔹 **{frase}**\n🧠 *{spiegazione}*\n🇳🇱 **Vertaling**: {traduzione}"
+                if vocabolario:
+                    voca_lines = "\n".join([f"📌 **{voce}** = {betekenis}" for voce, betekenis in vocabolario.items()])
+                    msg += f"\n📚 **Vocabolario**:\n{voca_lines}"
+
+                await dm.send(msg)
+
+        except Exception:
+            await ctx.send("❌ Non posso inviarti le spiegazioni via DM. Controlla le tue impostazioni.")
+
+    @commands.command(name='upload_espressioni')
     @commands.has_permissions(administrator=True)
     async def upload_espressioni(self, ctx):
         if not ctx.message.attachments:
-            return await ctx.send("❌ Per favore, allega un file .json con le espressioni.")
+            return await ctx.send("📎 Devi allegare un file JSON valido.")
+        file = ctx.message.attachments[0]
+        if not file.filename.endswith(".json"):
+            return await ctx.send("❌ Il file deve essere un .json")
 
-        attachment = ctx.message.attachments[0]
-        if not attachment.filename.endswith(".json"):
-            return await ctx.send("❌ Il file deve essere in formato .json.")
-
-        save_path = os.path.join(DATA_DIR, attachment.filename)
-
+        content = await file.read()
         try:
-            await attachment.save(save_path)
-            global CURRENT_WEEK_FILE
-            CURRENT_WEEK_FILE = attachment.filename
-            await ctx.send(f"✅ File **{attachment.filename}** caricato con successo e impostato come attivo!")
-            logger.info(f"File caricato: {attachment.filename} da {ctx.author.id}")
+            data = json.loads(content)
+            path = os.path.join(DATA_DIR, CURRENT_WEEK_FILE)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            await ctx.send("✅ Nuova lista di espressioni caricata con successo.")
         except Exception as e:
-            logger.exception("Errore durante il salvataggio del file")
-            await ctx.send(f"⚠️ Errore durante il salvataggio del file: {e}")
+            await ctx.send(f"❌ Errore durante il caricamento: {e}")
 
-    @commands.command(name='deleteespressioni')
+    @commands.command(name='cancella_espressioni')
     @commands.has_permissions(administrator=True)
-    async def delete_espressioni(self, ctx, filename: str):
-        if not filename.endswith('.json'):
-            return await ctx.send("❌ Specifica un file `.json` da eliminare.")
-
-        file_path = os.path.join(DATA_DIR, filename)
-        if not os.path.exists(file_path):
-            await ctx.send(f"❌ Il file `{filename}` non esiste.")
-            return
-
-        try:
-            os.remove(file_path)
-            await ctx.send(f"🗑️ Il file `{filename}` è stato eliminato con successo.")
-            logger.info(f"File eliminato: {filename} da {ctx.author.id}")
-        except Exception as e:
-            logger.exception("Errore durante l'eliminazione")
-            await ctx.send(f"⚠️ Errore durante l'eliminazione del file: {e}")
-
-    @commands.command(name='listeespressioni')
-    async def list_espressioni(self, ctx):
-        try:
-            files = [f for f in os.listdir(DATA_DIR) if f.endswith(".json")]
-            if not files:
-                return await ctx.send("📂 Nessun file disponibile.")
-            elenco = "\n".join(f"- {f}" for f in files)
-            await ctx.send(f"📋 File disponibili in `espressioni`:\n{elenco}")
-        except Exception as e:
-            logger.exception("Errore nel listare i file")
-            await ctx.send("⚠️ Errore nel listare i file.")
+    async def cancella_espressioni(self, ctx):
+        path = os.path.join(DATA_DIR, CURRENT_WEEK_FILE)
+        if os.path.exists(path):
+            os.remove(path)
+            await ctx.send("🗑️ File delle espressioni eliminato.")
+        else:
+            await ctx.send("⚠️ Nessun file da eliminare.")
 
 async def setup(bot):
     await bot.add_cog(Espressioni(bot))
