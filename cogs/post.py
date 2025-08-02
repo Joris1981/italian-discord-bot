@@ -58,7 +58,8 @@ class OefeningenOverzicht(commands.Cog):
                 "[BUONO o BENE](https://discord.com/channels/1387552031132094709/1397860505808535573)\n"
                 "[DIMINUTIVI ed ACCRESCITIVI](https://discord.com/channels/1387552031132094709/1398060503590244432)\n"
                 "[TUTTO / TUTTI](https://discord.com/channels/1387552031132094709/1398625132636798996)\n"
-                "[VOLERCI vs METTERCI](https://discord.com/channels/1387552031132094709/1399127152246653049)"
+                "[VOLERCI vs METTERCI](https://discord.com/channels/1387552031132094709/1399127152246653049)\n"
+                "[FARCELA](https://discord.com/channels/1387552031132094709/1401186514565595217)"
             ),
             inline=False
         )
@@ -155,6 +156,7 @@ class OefeningenOverzicht(commands.Cog):
             name="🎮 Giochi – leer via spel! (deel 2)",
             value=(
                 "[!verbi](https://discord.com/channels/1387552031132094709/1397248870056067113) – Vervoeg Italiaanse werkwoorden correct in context. Elke week nieuwe zinnen.\n\n"
+                "[!indovina](https://discord.com/channels/1387552031132094709/1399518842505400591) – Woordenschatspel waarin je op basis van omschrijvingen raadt welk woord (voorwerp, plaats, gevoel, werkwoord, beroep of begrip) bedoeld wordt.\n\n"
                 "📌 Je kunt deze spellen ook rechtstreeks starten in je inbox (DM) door een bericht te sturen naar **ItalianoBot** 🤖.\n"
                 "Typ daar gewoon `!wordle`, `!frasi` of `!verbi` om het spel onmiddellijk te starten."
             ),

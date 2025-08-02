@@ -470,7 +470,7 @@ class Quiz(commands.Cog):
             {"zin": "Non so se voi ___ senza aiuto.", "antwoord": "ce la fate"},
             {"zin": "Pensavi che fosse impossibile, ma ___", "antwoord": "ce l'hai fatta"},
             {"zin": "Anche tu pensi di non ___?", "antwoord": "farcela"},
-            {"zin": "Dopo tre ore, finalmente ___!", "antwoord": "ce l'abbiamo fatta"},
+            {"zin": "Dopo tre ore, finalmente ___ (noi)!", "antwoord": "ce l'abbiamo fatta"},
             {"zin": "Lui è sempre calmo: in ogni situazione, ___", "antwoord": "ce la fa"},
             {"zin": "Non voglio arrendermi: devo ___", "antwoord": "farcela"},
             {"zin": "Marta era in ritardo, ma ___ ad arrivare in tempo.", "antwoord": "ce l'ha fatta"},
