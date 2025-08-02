@@ -36,7 +36,7 @@ class Quiz(commands.Cog):
         self.clara_thread = 1398368313293144196 # Thread ID for CLARA quiz
         self.tutto_thread = 1398625132636798996 # Thread ID for TUTTO quiz
         self.ci_tempo_thread = 1399127152246653049 # Thread ID for CI TEMPO quiz
-        self.faercela_thread = 1401186514565595217 # Thread ID for FAERCELA quiz
+        self.farcela_thread = 1401186514565595217 # Thread ID for FAERCELA quiz
 
         # DI o DA
         self.di_da_zinnen = [
