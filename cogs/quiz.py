@@ -36,6 +36,7 @@ class Quiz(commands.Cog):
         self.clara_thread = 1398368313293144196 # Thread ID for CLARA quiz
         self.tutto_thread = 1398625132636798996 # Thread ID for TUTTO quiz
         self.ci_tempo_thread = 1399127152246653049 # Thread ID for CI TEMPO quiz
+        self.faercela_thread = 1401186514565595217 # Thread ID for FAERCELA quiz
 
         # DI o DA
         self.di_da_zinnen = [
@@ -458,6 +459,30 @@ class Quiz(commands.Cog):
             {"zin": "Per imparare bene, ___ solo volontà. Il resto viene da sé!", "antwoord": "ci vuole"}
         ]
 
+        # FARCELA QUIZ
+        self.farcela_zinnen = [
+            {"zin": "Non è facile, ma io ___", "antwoord": "ce la faccio"},
+            {"zin": "Tu sei molto bravo: lo so che ___", "antwoord": "ce la fai"},
+            {"zin": "I bambini sono piccoli, ma ___ da soli.", "antwoord": "ce la fanno"},
+            {"zin": "Lei è molto stanca, ma alla fine ___", "antwoord": "ce l'ha fatta"},
+            {"zin": "Noi non siamo forti, ma insieme ___", "antwoord": "ce la facciamo"},
+            {"zin": "Ieri ho avuto tanti problemi, ma ___", "antwoord": "ce l'ho fatta"},
+            {"zin": "Non so se voi ___ senza aiuto.", "antwoord": "ce la fate"},
+            {"zin": "Pensavi che fosse impossibile, ma ___", "antwoord": "ce l'hai fatta"},
+            {"zin": "Anche tu pensi di non ___?", "antwoord": "farcela"},
+            {"zin": "Dopo tre ore, finalmente ___!", "antwoord": "ce l'abbiamo fatta"},
+            {"zin": "Lui è sempre calmo: in ogni situazione, ___", "antwoord": "ce la fa"},
+            {"zin": "Non voglio arrendermi: devo ___", "antwoord": "farcela"},
+            {"zin": "Marta era in ritardo, ma ___ ad arrivare in tempo.", "antwoord": "ce l'ha fatta"},
+            {"zin": "Abbiamo avuto paura, ma alla fine ___", "antwoord": "ce l'abbiamo fatta"},
+            {"zin": "Ragazzi, non preoccupatevi: sono sicuro che ___", "antwoord": "ce la fate"},
+            {"zin": "I miei genitori sono contenti: ___ a finire il trasloco.", "antwoord": "ce l'hanno fatta"},
+            {"zin": "Ogni mattina è dura, ma io ___ ad alzarmi presto.", "antwoord": "ce la faccio"},
+            {"zin": "Scusa, non ___ a chiamarti prima.", "antwoord": "ce l'ho fatta"},
+            {"zin": "Voi siete forti, lo so che ___", "antwoord": "ce la fate"},
+            {"zin": "Non è stato facile, ma Lucia ___", "antwoord": "ce l'ha fatta"}
+        ]
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -557,7 +582,13 @@ class Quiz(commands.Cog):
                     logger.info(f"Starting CI TEMPO quiz for user {user_id}")
                     await self.start_ci_tempo_quiz(message)
                 except Exception as e:
-                    logger.error(f"Error starting CI TEMPO quiz for user {user_id}: {e}")  
+                    logger.error(f"Error starting CI TEMPO quiz for user {user_id}: {e}")
+            elif thread_id == self.farcela_thread:
+                try:
+                    logger.info(f"Starting FARCELA quiz for user {user_id}")
+                    await self.start_farcela_quiz(message)
+                except Exception as e:
+                    logger.error(f"Error starting FARCELA quiz for user {user_id}: {e}")
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None, use_timeout=True):
         try:
@@ -673,6 +704,11 @@ class Quiz(commands.Cog):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "\ud83c\udfaf Iniziamo il quiz! Rispondi con **TUTTO, TUTTA, TUTTI o TUTTE** alle seguenti frasi.\n Hai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.tutto_zinnen, "antwoord", "!tutto-soluzioni", intro)
+
+    async def start_farcela_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎯 Iniziamo il quiz su **FARCELA**!\nCompleta le frasi con la forma corretta di **farcela** al presente o al passato prossimo.\nHai 60 secondi per ogni frase."
+        await self.start_quiz(message.author, self.farcela_zinnen, "antwoord", "!farcela-soluzioni", intro)
 
     async def start_diminutivi_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
@@ -868,6 +904,10 @@ class Quiz(commands.Cog):
     @commands.command(name="clara-soluzioni")
     async def clara_soluzioni(self, ctx):
         await self.stuur_oplossingen(ctx, "Clara", self.clara_zinnen, speciaal_format=True)
+
+    @commands.command(name="farcela-soluzioni")
+    async def farcela_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Farcela", self.farcela_zinnen)
 
     @commands.command(name="clara-transcript")
     async def clara_transcript(self, ctx):
