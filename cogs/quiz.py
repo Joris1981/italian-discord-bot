@@ -37,6 +37,7 @@ class Quiz(commands.Cog):
         self.tutto_thread = 1398625132636798996 # Thread ID for TUTTO quiz
         self.ci_tempo_thread = 1399127152246653049 # Thread ID for CI TEMPO quiz
         self.farcela_thread = 1401186514565595217 # Thread ID for FAERCELA quiz
+        self.colori_thread = 1401539673494655148 # Thread ID for COLORI quiz
 
         # DI o DA
         self.di_da_zinnen = [
@@ -483,6 +484,30 @@ class Quiz(commands.Cog):
             {"zin": "Non è stato facile, ma Lucia ___", "antwoord": "ce l'ha fatta"}
         ]
 
+        # COLORI QUIZ (alle hints in het Nederlands)
+        self.colori_zinnen = [
+            {"zin": "Ho comprato una ___ molto elegante. (jas; zwart)", "antwoord": "giacca nera"},
+            {"zin": "Mi piacciono le ___ ___. (appels; groen)", "antwoord": "mele verdi"},
+            {"zin": "Il cielo oggi è ___ e limpido. (lichtblauw)", "antwoord": "azzurro"},
+            {"zin": "Hai visto le sue scarpe ___? (roze)", "antwoord": "rosa"},
+            {"zin": "Vorrei due ___ ___. (tomaten; rood)", "antwoord": "pomodori rossi"},
+            {"zin": "La torta al cioccolato è completamente ___. (bruin)", "antwoord": "marrone"},
+            {"zin": "Indossa un paio di pantaloni ___ ___. (blauw; donker)", "antwoord": "blu scuri"},
+            {"zin": "Le sue unghie sono sempre ___. (paars)", "antwoord": "viola"},
+            {"zin": "Preferisci il vino ___ o quello bianco? (rood)", "antwoord": "rosso"},
+            {"zin": "Le ___ ___ sono finite. (stoelen; beige)", "antwoord": "sedie beige"},
+            {"zin": "Cerchiamo delle tende ___ ___. (geel; licht)", "antwoord": "gialle chiare"},
+            {"zin": "Questi pantaloncini ___ non mi piacciono. (oranje)", "antwoord": "arancioni"},
+            {"zin": "Ho bisogno di una ___ ___ per l’inverno. (sjaal; grijs)", "antwoord": "sciarpa grigia"},
+            {"zin": "Abbiamo comprato dei ___ ___. (ballonnen; roze)", "antwoord": "palloncini rosa"},
+            {"zin": "È vestita tutta di ___. (zwart)", "antwoord": "nero"},
+            {"zin": "Le sue parole mi hanno fatto vedere ___. (rood)", "antwoord": "rosso"},
+            {"zin": "Il suo anello è fatto d’___. (goud)", "antwoord": "oro"},
+            {"zin": "Hanno gli occhi ___ ___. (groen; smaragd)", "antwoord": "verdi smeraldo"},
+            {"zin": "Ti piace la ___ ___? (auto; blauw)", "antwoord": "macchina blu"},
+            {"zin": "Cerco una ___ ___ per il salotto. (tapijt; donkergrijs)", "antwoord": "tappeto grigio scuro"}
+        ]
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -589,6 +614,12 @@ class Quiz(commands.Cog):
                     await self.start_farcela_quiz(message)
                 except Exception as e:
                     logger.error(f"Error starting FARCELA quiz for user {user_id}: {e}")
+            elif thread_id == self.colori_thread:
+                try:
+                    logger.info(f"Starting COLORI quiz for user {user_id}")
+                    await self.start_colori_quiz(message)
+                except Exception as e:
+                    logger.error(f"Error starting COLORI quiz for user {user_id}: {e}")
 
     async def start_quiz(self, user, vragen, verwacht, oplossingscommando, intro, check_func=None, use_timeout=True):
         try:
@@ -709,6 +740,11 @@ class Quiz(commands.Cog):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
         intro = "🎯 Iniziamo il quiz su **FARCELA**!\nCompleta le frasi con la forma corretta di **farcela** al presente o al passato prossimo.\nHai 60 secondi per ogni frase."
         await self.start_quiz(message.author, self.farcela_zinnen, "antwoord", "!farcela-soluzioni", intro)
+
+    async def start_colori_quiz(self, message):
+        await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
+        intro = "🎨 Iniziamo il quiz sui **colori**!\nCompleta le frasi con il colore corretto.\n Hai 60 secondi per ogni frase."
+        await self.start_quiz(message.author, self.colori_zinnen, "antwoord", "!colori-soluzioni", intro)
 
     async def start_diminutivi_quiz(self, message):
         await message.channel.send("\U0001F4E9 Il quiz è partito nei tuoi DM!")
@@ -908,6 +944,10 @@ class Quiz(commands.Cog):
     @commands.command(name="farcela-soluzioni")
     async def farcela_soluzioni(self, ctx):
         await self.stuur_oplossingen(ctx, "Farcela", self.farcela_zinnen)
+
+    @commands.command(name="colori-soluzioni")
+    async def colori_soluzioni(self, ctx):
+        await self.stuur_oplossingen(ctx, "Colori", self.colori_zinnen)
 
     @commands.command(name="clara-transcript")
     async def clara_transcript(self, ctx):

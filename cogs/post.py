@@ -43,6 +43,7 @@ class OefeningenOverzicht(commands.Cog):
                 "[QUALCHE / ALCUNI / NESSUNO](https://discord.com/channels/1387552031132094709/1390371003414216805)\n"
                 "[CI – usi diversi](https://discord.com/channels/1387552031132094709/1388241920790237347)\n"
                 "[PRONOMI – diretti e indiretti](https://discord.com/channels/1387552031132094709/1394735397824758031)"
+                "[BELLO – tutte le forme](https://discord.com/channels/1387552031132094709/1396072250221920276)"
             ),
             inline=False
         )
@@ -50,7 +51,7 @@ class OefeningenOverzicht(commands.Cog):
         embed1.add_field(
             name="🎯 Quiz interattivi (deel 2)",
             value=(
-                "[BELLO – tutte le forme](https://discord.com/channels/1387552031132094709/1396072250221920276)\n"
+            
                 "[COMPARATIVI](https://discord.com/channels/1387552031132094709/1393289069009830038)\n"
                 "[CHI o CHE](https://discord.com/channels/1387552031132094709/1393269447094960209)\n"
                 "[CI / DI / NE](https://discord.com/channels/1387552031132094709/1393280441221644328)\n"
@@ -59,7 +60,8 @@ class OefeningenOverzicht(commands.Cog):
                 "[DIMINUTIVI ed ACCRESCITIVI](https://discord.com/channels/1387552031132094709/1398060503590244432)\n"
                 "[TUTTO / TUTTI](https://discord.com/channels/1387552031132094709/1398625132636798996)\n"
                 "[VOLERCI vs METTERCI](https://discord.com/channels/1387552031132094709/1399127152246653049)\n"
-                "[FARCELA](https://discord.com/channels/1387552031132094709/1401186514565595217)"
+                "[FARCELA](https://discord.com/channels/1387552031132094709/1401186514565595217)\n"
+                "[COLORI](https://discord.com/channels/1387552031132094709/1401539673494655148)"
             ),
             inline=False
         )
@@ -155,7 +157,7 @@ class OefeningenOverzicht(commands.Cog):
         embed3.add_field(
             name="🎮 Giochi – leer via spel! (deel 2)",
             value=(
-                "[!verbi](https://discord.com/channels/1387552031132094709/1397248870056067113) – Vervoeg Italiaanse werkwoorden correct in context. Elke week nieuwe zinnen.\n\n"
+                "[!verbi](https://discord.com/channels/1387552031132094709/1397248870056067113) – Vervoeg Italiaanse werkwoorden correct in context. Elke week nieuwe zinnen.\n"
                 "[!indovina](https://discord.com/channels/1387552031132094709/1399518842505400591) – Woordenschatspel waarin je op basis van omschrijvingen raadt welk woord (voorwerp, plaats, gevoel, werkwoord, beroep of begrip) bedoeld wordt.\n\n"
                 "📌 Je kunt deze spellen ook rechtstreeks starten in je inbox (DM) door een bericht te sturen naar **ItalianoBot** 🤖.\n"
                 "Typ daar gewoon `!wordle`, `!frasi` of `!verbi` om het spel onmiddellijk te starten."
